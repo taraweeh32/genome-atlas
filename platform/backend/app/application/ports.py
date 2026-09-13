@@ -9,13 +9,9 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Protocol, Self, runtime_checkable
+from typing import Protocol, Self, runtime_checkable
 
-if TYPE_CHECKING:
-    from app.domain.value_objects.enums import CompressionKind, InputFormat
-
-    InputFormatValue = InputFormat
-    CompressionValue = CompressionKind
+from app.domain.value_objects.enums import CompressionKind, InputFormat
 
 
 class DependencyStatus(str, enum.Enum):
@@ -146,8 +142,8 @@ class FileInspection:
     ordinary code, behind the scientific integration contract.
     """
 
-    detected_format: "InputFormatValue"
-    compression: "CompressionValue"
+    detected_format: InputFormat
+    compression: CompressionKind
     columns: tuple[InspectedColumn, ...] = ()
     header_line_count: int = 0
     sampled_record_count: int = 0
