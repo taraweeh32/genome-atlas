@@ -52,6 +52,8 @@ from tests.results.support import (
 from tests.support.actors import actor_for, create_account
 from tests.support.services import build_harness
 
+pytestmark = pytest.mark.anyio
+
 
 @pytest.fixture
 def harness():
