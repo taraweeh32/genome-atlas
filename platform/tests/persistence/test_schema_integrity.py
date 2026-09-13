@@ -54,11 +54,28 @@ def _qualified(table) -> str:  # noqa: ANN001
     return f"{table.schema or 'app'}.{table.name}"
 
 
+def _domain_schema_revision():  # noqa: ANN202
+    """Load the domain-schema revision module directly from its file."""
+    import importlib.util
+    from pathlib import Path
+
+    path = (
+        Path(__file__).resolve().parents[2]
+        / "database"
+        / "migrations"
+        / "versions"
+        / "0002_domain_schema.py"
+    )
+    specification = importlib.util.spec_from_file_location("domain_schema_revision", path)
+    assert specification is not None and specification.loader is not None
+    module = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(module)
+    return module
+
+
 def test_metadata_matches_the_migration_table_set() -> None:
     """The migration owns exactly the tables the models declare."""
-    from database.migrations.versions import _load_domain_schema_revision
-
-    revision = _load_domain_schema_revision()
+    revision = _domain_schema_revision()
     assert set(revision.TABLES) == {_qualified(t) for t in Base.metadata.sorted_tables}
 
 
