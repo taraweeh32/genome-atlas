@@ -129,16 +129,43 @@ def test_every_state_column_is_constrained_to_a_vocabulary() -> None:
     assert unconstrained == []
 
 
-def test_foreign_keys_never_cascade_into_scientific_lineage() -> None:
-    """Only child rows of a parent may cascade; lineage tables never do."""
+#: A cascade is only ever allowed from a row to its own owning parent row, so
+#: deleting the parent cannot leave orphaned children. Everything else uses
+#: RESTRICT, which forces removal through the retention lifecycle instead of
+#: silently destroying dependent records or scientific lineage.
+ALLOWED_CASCADES = {
+    ("job_attempts", "job_id"),
+    ("criterion_evaluation_evidence", "criterion_evaluation_id"),
+    ("provenance_entries", "provenance_manifest_id"),
+    ("analysis_configuration_inputs", "analysis_configuration_id"),
+    ("filter_definition_versions", "filter_definition_id"),
+    ("ranking_configuration_versions", "ranking_configuration_id"),
+    ("configuration_setting_versions", "configuration_setting_id"),
+    ("notification_deliveries", "notification_id"),
+    ("notification_preferences", "user_id"),
+    ("scientific_resource_compatibility", "resource_id"),
+}
+
+
+def test_foreign_keys_never_cascade_outside_owned_child_rows() -> None:
     violations: list[str] = []
     for table in Base.metadata.sorted_tables:
         for fk in table.foreign_keys:
-            if fk.ondelete == "CASCADE" and table.name in IMMUTABLE_TABLES:
-                violations.append(f"{table.name}.{fk.parent.name}")
+            key = (table.name, fk.parent.name)
+            if fk.ondelete == "CASCADE" and key not in ALLOWED_CASCADES:
+                violations.append(f"{table.name}.{fk.parent.name}=CASCADE")
             if fk.ondelete not in {"RESTRICT", "CASCADE"}:
                 violations.append(f"{table.name}.{fk.parent.name}={fk.ondelete}")
     assert violations == []
+
+
+def test_immutable_history_tables_are_never_cascade_deleted_by_a_tenant() -> None:
+    """Audit, provenance and version history survive resource deletion."""
+    for name in IMMUTABLE_TABLES:
+        table = next(t for t in Base.metadata.sorted_tables if t.name == name)
+        for fk in table.foreign_keys:
+            if fk.ondelete == "CASCADE":
+                assert (table.name, fk.parent.name) in ALLOWED_CASCADES
 
 
 @pytest.mark.parametrize("table_name", sorted(WORKSPACE_SCOPED_TABLES))
