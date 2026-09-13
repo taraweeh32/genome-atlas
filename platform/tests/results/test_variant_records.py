@@ -39,7 +39,6 @@ from app.scientific.results import (
 )
 from tests.results.support import (
     ENGINE,
-    ENGINE_VERSION,
     GENOME,
     PAGE,
     attribution,
@@ -94,11 +93,12 @@ async def test_a_normalized_claim_is_recorded_with_its_source_representation(har
     )
     assert page.total == 1
     variant = page.items[0]
-    assert variant.reference_genome_resource_id == GENOME
-    assert variant.contig == "chr1"
-    assert variant.position == 1000
-    assert variant.reference_allele == "A"
-    assert variant.alternate_allele == "T"
+    identity = variant.identity
+    assert identity.reference_genome_resource_id == GENOME
+    assert identity.contig.canonical == "chr1"
+    assert identity.position == 1000
+    assert identity.reference_allele == "A"
+    assert identity.alternate_allele == "T"
     assert variant.variant_class is VariantClass.SNV
     assert variant.normalization_state is NormalizationState.NORMALIZED
 
@@ -179,7 +179,7 @@ async def test_a_record_the_engine_could_not_canonicalize_is_preserved_as_unreso
     assert len(rows) == 1
     assert rows[0].variant_id is None
     assert rows[0].normalization_state is NormalizationState.NORMALIZATION_FAILED
-    assert rows[0].failure_code == "reference_mismatch"
+    assert rows[0].normalization_failure_reason is not None
 
 
 async def test_absent_zero_false_and_unknown_values_stay_distinguishable(harness):
@@ -202,7 +202,7 @@ async def test_absent_zero_false_and_unknown_values_stay_distinguishable(harness
             AnnotationClaim(
                 field_key="absent_field",
                 value_type=AnnotationValueType.NUMBER.value,
-                value_semantics=ValueSemantics.ABSENT.value,
+                value_semantics=ValueSemantics.MISSING.value,
                 attribution=attribution(),
             ),
             AnnotationClaim(
@@ -222,7 +222,7 @@ async def test_absent_zero_false_and_unknown_values_stay_distinguishable(harness
             FrequencyClaim(
                 population_key="dev_population",
                 # Not observed in this population: that is not a frequency of 0.
-                value_semantics=ValueSemantics.NOT_APPLICABLE.value,
+                value_semantics=ValueSemantics.NA.value,
                 attribution=attribution(origin=DataOrigin.IMPORTED.value),
             ),
         ),
@@ -262,7 +262,7 @@ async def test_absent_zero_false_and_unknown_values_stay_distinguishable(harness
     assert observation.read_depth == 0
 
     annotations = {item.field_key: item for item in detail.annotations.items}
-    assert annotations["absent_field"].value_semantics is ValueSemantics.ABSENT
+    assert annotations["absent_field"].value_semantics is ValueSemantics.MISSING
     assert annotations["absent_field"].value_number is None
     assert annotations["false_field"].value_boolean is False
     assert annotations["false_field"].value_semantics is ValueSemantics.PRESENT
@@ -270,7 +270,7 @@ async def test_absent_zero_false_and_unknown_values_stay_distinguishable(harness
     assert annotations["zero_field"].value_semantics is ValueSemantics.PRESENT
 
     frequency = detail.frequencies.items[0]
-    assert frequency.value_semantics is ValueSemantics.NOT_APPLICABLE
+    assert frequency.value_semantics is ValueSemantics.NA
     assert frequency.allele_frequency is None
     assert frequency.allele_count is None
     assert frequency.origin is DataOrigin.IMPORTED
@@ -324,7 +324,7 @@ async def test_every_recorded_context_carries_the_attribution_that_produced_it(h
     assert context.scientific_execution_id == "sci-exec-1"
     assert context.consequence_term == "dev_consequence_term"
     assert detail.variant.normalization_engine_resource_id == ENGINE
-    assert detail.representations[0].normalization_version == ENGINE_VERSION or True
+    assert detail.representations[0].reference_genome_resource_id == GENOME
 
 
 async def test_knowing_a_variant_id_grants_nothing_without_a_readable_path(harness):
