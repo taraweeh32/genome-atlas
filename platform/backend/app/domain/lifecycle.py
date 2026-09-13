@@ -33,6 +33,9 @@ from app.domain.value_objects.enums import (
     NodeLifecycleState,
     OrganizationState,
     ProjectState,
+    ResultArtifactState,
+    ResultIngestionState,
+    ResultSetState,
     ScheduleState,
     ScientificExecutionState,
     StrEnum,
@@ -535,6 +538,100 @@ NODE_LIFECYCLE_TRANSITIONS: Mapping[NodeLifecycleState, frozenset[NodeLifecycleS
     ),
 }
 
+
+# --------------------------------------------------------------------------- #
+# Scientific result data layer (Package 6)                                    #
+# --------------------------------------------------------------------------- #
+
+#: A result set is the durable surface of one scientific execution's output. Its
+#: *content* is immutable: nothing here allows an available result set to go back
+#: to ``generating`` and be rewritten. Correction means a new result set, and the
+#: old one becomes ``superseded`` — it is never edited and never deleted as part
+#: of that move.
+RESULT_SET_TRANSITIONS: Mapping[ResultSetState, frozenset[ResultSetState]] = {
+    ResultSetState.PENDING: frozenset(
+        {ResultSetState.GENERATING, ResultSetState.FAILED, ResultSetState.INVALIDATED}
+    ),
+    ResultSetState.GENERATING: frozenset(
+        {ResultSetState.VALIDATED, ResultSetState.FAILED, ResultSetState.INVALIDATED}
+    ),
+    #: Structurally validated payload; materialization has not completed yet.
+    ResultSetState.VALIDATED: frozenset(
+        {ResultSetState.AVAILABLE, ResultSetState.FAILED, ResultSetState.INVALIDATED}
+    ),
+    ResultSetState.AVAILABLE: frozenset(
+        {ResultSetState.SUPERSEDED, ResultSetState.INVALIDATED, ResultSetState.EXPIRED}
+    ),
+    #: A failed ingestion is terminal for *this* result set. Re-ingestion creates
+    #: a new one, so a failure never turns into a success after the fact.
+    ResultSetState.FAILED: frozenset(),
+    ResultSetState.SUPERSEDED: frozenset({ResultSetState.EXPIRED}),
+    ResultSetState.INVALIDATED: frozenset({ResultSetState.EXPIRED}),
+    ResultSetState.EXPIRED: frozenset(),
+}
+
+#: One stored artifact of a result set. ``missing`` is reachable from every
+#: non-terminal state because storage reconciliation may discover that the object
+#: is gone; that is recorded as a fact rather than hidden.
+RESULT_ARTIFACT_TRANSITIONS: Mapping[ResultArtifactState, frozenset[ResultArtifactState]] = {
+    ResultArtifactState.REGISTERED: frozenset(
+        {
+            ResultArtifactState.VERIFYING,
+            ResultArtifactState.REJECTED,
+            ResultArtifactState.MISSING,
+        }
+    ),
+    ResultArtifactState.VERIFYING: frozenset(
+        {
+            ResultArtifactState.ACCEPTED,
+            ResultArtifactState.REJECTED,
+            ResultArtifactState.MISSING,
+        }
+    ),
+    ResultArtifactState.ACCEPTED: frozenset(
+        {ResultArtifactState.SUPERSEDED, ResultArtifactState.MISSING}
+    ),
+    ResultArtifactState.REJECTED: frozenset(),
+    ResultArtifactState.SUPERSEDED: frozenset({ResultArtifactState.MISSING}),
+    ResultArtifactState.MISSING: frozenset({ResultArtifactState.VERIFYING}),
+}
+
+#: The ingestion *request*, separate from the result surface it produces.
+RESULT_INGESTION_TRANSITIONS: Mapping[ResultIngestionState, frozenset[ResultIngestionState]] = {
+    ResultIngestionState.RECEIVED: frozenset(
+        {
+            ResultIngestionState.VALIDATING,
+            ResultIngestionState.REJECTED,
+            ResultIngestionState.FAILED,
+        }
+    ),
+    ResultIngestionState.VALIDATING: frozenset(
+        {
+            ResultIngestionState.VALIDATED,
+            ResultIngestionState.REJECTED,
+            ResultIngestionState.FAILED,
+        }
+    ),
+    ResultIngestionState.VALIDATED: frozenset(
+        {ResultIngestionState.MATERIALIZING, ResultIngestionState.FAILED}
+    ),
+    ResultIngestionState.MATERIALIZING: frozenset(
+        {ResultIngestionState.ACCEPTED, ResultIngestionState.FAILED}
+    ),
+    ResultIngestionState.ACCEPTED: frozenset(),
+    #: Rejected means "the payload did not satisfy the contract"; failed means
+    #: "the platform could not complete the work". Never collapsed.
+    ResultIngestionState.REJECTED: frozenset(),
+    ResultIngestionState.FAILED: frozenset(),
+}
+
+#: Result-set states whose scientific content may be read and filtered.
+READABLE_RESULT_SET_STATES: frozenset[ResultSetState] = frozenset(
+    {ResultSetState.AVAILABLE, ResultSetState.SUPERSEDED}
+)
+
+
+
 #: States in which an execution still occupies scheduling capacity. Used by the
 #: schedule concurrency policy and by administrative monitoring.
 ACTIVE_EXECUTION_STATES: frozenset[ExecutionState] = frozenset(
@@ -591,6 +688,9 @@ _TABLES: dict[str, Mapping[StrEnum, frozenset[StrEnum]]] = {
     "schedule": SCHEDULE_TRANSITIONS,  # type: ignore[dict-item]
     "scientific_execution": SCIENTIFIC_EXECUTION_TRANSITIONS,  # type: ignore[dict-item]
     "compute_node": NODE_LIFECYCLE_TRANSITIONS,  # type: ignore[dict-item]
+    "result_set": RESULT_SET_TRANSITIONS,  # type: ignore[dict-item]
+    "result_artifact": RESULT_ARTIFACT_TRANSITIONS,  # type: ignore[dict-item]
+    "result_ingestion": RESULT_INGESTION_TRANSITIONS,  # type: ignore[dict-item]
 }
 
 
@@ -634,6 +734,10 @@ __all__ = [
     "NODE_LIFECYCLE_TRANSITIONS",
     "ORGANIZATION_TRANSITIONS",
     "PROJECT_TRANSITIONS",
+    "READABLE_RESULT_SET_STATES",
+    "RESULT_ARTIFACT_TRANSITIONS",
+    "RESULT_INGESTION_TRANSITIONS",
+    "RESULT_SET_TRANSITIONS",
     "SCHEDULE_TRANSITIONS",
     "SCIENTIFIC_EXECUTION_TRANSITIONS",
     "TERMINAL_EXECUTION_STATES",

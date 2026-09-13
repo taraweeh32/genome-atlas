@@ -35,6 +35,8 @@ _PLATFORM_ADMINISTRATOR = frozenset(
         Permission.PLATFORM_COMPUTE_ADMINISTER,
         Permission.PLATFORM_COMPUTE_READ,
         Permission.PLATFORM_SCHEDULE_ADMINISTER,
+        Permission.PLATFORM_RESULT_ADMINISTER,
+        Permission.PLATFORM_RESULT_READ,
     }
 )
 
@@ -49,6 +51,9 @@ _PLATFORM_OPERATOR = frozenset(
         # An operator watches the control plane; it does not steer it.
         Permission.PLATFORM_JOB_READ,
         Permission.PLATFORM_COMPUTE_READ,
+        # Operational visibility of the result surface, without the authority to
+        # invalidate one.
+        Permission.PLATFORM_RESULT_READ,
     }
 )
 
@@ -76,6 +81,10 @@ _ORGANIZATION_MEMBER = _ORGANIZATION_GUEST | {
     Permission.WORKSPACE_ANALYSIS_CANCEL,
     Permission.WORKSPACE_SCHEDULE_MANAGE,
     Permission.WORKSPACE_JOB_READ,
+    Permission.WORKSPACE_VARIANT_READ,
+    Permission.WORKSPACE_RESULT_READ,
+    Permission.WORKSPACE_RESULT_INGEST,
+    Permission.WORKSPACE_RESULT_DOWNLOAD,
 }
 _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_UPDATE,
@@ -137,6 +146,10 @@ _PROJECT_VIEWER = frozenset(
         Permission.PROJECT_MEMBER_READ,
         Permission.PROJECT_DATA_READ,
         Permission.PROJECT_ANALYSIS_READ,
+        # Reading scientific content of the project's own results. Reading is
+        # not downloading: bytes need their own grant.
+        Permission.PROJECT_VARIANT_READ,
+        Permission.PROJECT_RESULT_READ,
     }
 )
 #: An analyst produces and imports data; deletion stays with project management.
@@ -151,11 +164,14 @@ _PROJECT_ANALYST = _PROJECT_VIEWER | {
     Permission.PROJECT_ANALYSIS_CANCEL,
     Permission.PROJECT_SCHEDULE_MANAGE,
     Permission.PROJECT_JOB_READ,
+    Permission.PROJECT_RESULT_INGEST,
+    Permission.PROJECT_RESULT_DOWNLOAD,
 }
 #: A reviewer is a scientific/clinical responsibility, not an administrator: it
 #: reviews and finalizes, it does not manage membership.
 _PROJECT_REVIEWER = _PROJECT_VIEWER | {
     Permission.PROJECT_DATA_DOWNLOAD,
+    Permission.PROJECT_RESULT_DOWNLOAD,
     Permission.PROJECT_INTERPRETATION_REVIEW,
     Permission.PROJECT_REPORT_FINALIZE,
 }
@@ -196,6 +212,10 @@ PERSONAL_WORKSPACE_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.WORKSPACE_ANALYSIS_DELETE,
         Permission.WORKSPACE_SCHEDULE_MANAGE,
         Permission.WORKSPACE_JOB_READ,
+        Permission.WORKSPACE_VARIANT_READ,
+        Permission.WORKSPACE_RESULT_READ,
+        Permission.WORKSPACE_RESULT_INGEST,
+        Permission.WORKSPACE_RESULT_DOWNLOAD,
     }
 )
 

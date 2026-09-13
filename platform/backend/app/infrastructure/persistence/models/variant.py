@@ -59,6 +59,7 @@ class Variant(Base, TimestampMixin):
         ),
         state_check("variant_class", VariantClass, "variant_class_valid"),
         state_check("normalization_state", NormalizationState, "normalization_state_valid"),
+        state_check("origin", DataOrigin, "origin_valid"),
         Index("ix_variants_contig_position", "contig", "position"),
         Index("ix_variants_canonical_key", "canonical_key"),
     )
@@ -86,6 +87,16 @@ class Variant(Base, TimestampMixin):
     )
     #: Deterministic textual rendering of the canonical identity, for lookups.
     canonical_key: Mapped[str] = mapped_column(Text, nullable=False)
+
+    # --- Package 6 ---------------------------------------------------------
+    #: How this canonical form came to exist. Not defaulted per row type: an
+    #: imported record and an engine-generated one must stay distinguishable.
+    origin: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=DataOrigin.GENERATED.value
+    )
+    scientific_execution_id: Mapped[str | None] = fk_column(
+        "app.scientific_executions.id", nullable=True
+    )
 
 
 class VariantSourceRepresentation(Base, TimestampMixin):

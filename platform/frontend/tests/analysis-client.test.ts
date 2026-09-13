@@ -84,7 +84,7 @@ describe("analysis, execution and job API client", () => {
     const [url] = fetchImpl.mock.calls[0];
     expect(url).toBe("http://backend.test/api/v1/analysis-executions/aex_1/provenance");
     expect(provenance.execution.compute_node_id).toBeNull();
-    expect(provenance.scientific_executions[0].engine_version).toBeNull();
+    expect(provenance.scientific_executions[0]!.engine_version).toBeNull();
   });
 
   it("lists jobs scoped to a workspace and filtered by recorded state", async () => {

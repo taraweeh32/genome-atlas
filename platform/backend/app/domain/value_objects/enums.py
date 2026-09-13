@@ -321,6 +321,8 @@ class JobKind(StrEnum):
     SCHEDULE_TRIGGER = "schedule_trigger"
     #: Recovers jobs whose lease expired without a heartbeat.
     STALE_RECOVERY = "stale_recovery"
+    #: Validates, materializes and accepts a scientific result payload.
+    RESULT_INGESTION = "result_ingestion"
 
 
 class JobQueue(StrEnum):
@@ -444,6 +446,14 @@ class ScientificResourceState(StrEnum):
 
 
 class VariantClass(StrEnum):
+    """Variant type as *declared by the source or the scientific engine*.
+
+    The application never derives a class from allele strings: deciding that a
+    record is an indel rather than an MNV is a scientific judgement made outside
+    this codebase. ``UNKNOWN`` exists so an undeclared class stays undeclared
+    instead of being guessed.
+    """
+
     SNV = "snv"
     MNV = "mnv"
     INSERTION = "insertion"
@@ -451,21 +461,35 @@ class VariantClass(StrEnum):
     INDEL = "indel"
     SYMBOLIC = "symbolic"
     STRUCTURAL = "structural"
+    COPY_NUMBER = "copy_number"
     COMPLEX = "complex"
+    UNKNOWN = "unknown"
 
 
 class NormalizationState(StrEnum):
+    """Whether a representation has been through scientific normalization.
+
+    ``NOT_NORMALIZED`` means "not yet"; ``NORMALIZATION_UNAVAILABLE`` means the
+    engine capability was not available at all. Collapsing the two would hide
+    an operational gap behind a scientific-looking statement.
+    """
+
     NOT_NORMALIZED = "not_normalized"
     NORMALIZED = "normalized"
     NORMALIZATION_FAILED = "normalization_failed"
+    NORMALIZATION_UNAVAILABLE = "normalization_unavailable"
 
 
 class Zygosity(StrEnum):
+    """Zygosity exactly as reported. Never inferred from a genotype string."""
+
     HOMOZYGOUS_REFERENCE = "homozygous_reference"
     HETEROZYGOUS = "heterozygous"
     HOMOZYGOUS_ALTERNATE = "homozygous_alternate"
     HEMIZYGOUS = "hemizygous"
     UNKNOWN = "unknown"
+    #: Reported, but not expressible in the categories above (e.g. polyploid).
+    OTHER = "other"
 
 
 class DataOrigin(StrEnum):
@@ -597,11 +621,93 @@ class ReviewDecision(StrEnum):
 
 
 class ResultSetState(StrEnum):
+    """Operational state of a result surface.
+
+    Content immutability is a separate property from state: an ``AVAILABLE``
+    result set is never edited, and a corrected run produces a *new* result set
+    that supersedes it.
+    """
+
     PENDING = "pending"
     GENERATING = "generating"
+    #: Payload received, structurally validated, not yet materialized/accepted.
+    VALIDATED = "validated"
     AVAILABLE = "available"
+    #: Ingestion or materialization failed; no scientific content is claimed.
+    FAILED = "failed"
+    #: Replaced by a newer result set for the same result key. History is kept.
+    SUPERSEDED = "superseded"
     INVALIDATED = "invalidated"
     EXPIRED = "expired"
+
+
+class ResultCompleteness(StrEnum):
+    """How complete the scientific engine declared its own output to be.
+
+    Declared by the engine, never computed here, and never conflated with
+    ``ResultSetState``: a *complete* payload can still fail materialization, and
+    a *partial* payload can be perfectly available.
+    """
+
+    COMPLETE = "complete"
+    PARTIAL = "partial"
+    EMPTY = "empty"
+    UNKNOWN = "unknown"
+
+
+class ResultArtifactFormat(StrEnum):
+    """Physical format of a stored result artifact."""
+
+    PARQUET = "parquet"
+    JSON = "json"
+    JSONL = "jsonl"
+    CSV = "csv"
+    TSV = "tsv"
+    VCF = "vcf"
+    BINARY = "binary"
+    OTHER = "other"
+
+
+class ResultArtifactKind(StrEnum):
+    """What a result artifact *is*, independent of its format."""
+
+    VARIANT_TABLE = "variant_table"
+    ANNOTATION_TABLE = "annotation_table"
+    FREQUENCY_TABLE = "frequency_table"
+    SUMMARY = "summary"
+    MANIFEST = "manifest"
+    LOG = "log"
+    OTHER = "other"
+
+
+class ResultArtifactState(StrEnum):
+    """Lifecycle of one artifact belonging to a result set."""
+
+    REGISTERED = "registered"
+    VERIFYING = "verifying"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    #: Kept for lineage, no longer the current artifact for its key.
+    SUPERSEDED = "superseded"
+    MISSING = "missing"
+
+
+class ResultIngestionState(StrEnum):
+    """Lifecycle of a result-ingestion request.
+
+    Deliberately separate from ``ResultSetState``: the request is an application
+    workflow, the result set is the durable scientific surface it produces.
+    """
+
+    RECEIVED = "received"
+    VALIDATING = "validating"
+    VALIDATED = "validated"
+    MATERIALIZING = "materializing"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    FAILED = "failed"
+
+
 
 
 class ReportState(StrEnum):

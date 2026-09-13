@@ -46,6 +46,9 @@ JOB_KIND_NODE_CLASS: dict[JobKind, NodeClass] = {
     JobKind.MAINTENANCE: NodeClass.APPLICATION_WORKER,
     JobKind.SCHEDULE_TRIGGER: NodeClass.APPLICATION_WORKER,
     JobKind.STALE_RECOVERY: NodeClass.APPLICATION_WORKER,
+    # Ingesting a result surface is application work — verifying bytes, reading a
+    # file's declared shape, writing rows. It never runs on a scientific node.
+    JobKind.RESULT_INGESTION: NodeClass.APPLICATION_WORKER,
 }
 
 DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
@@ -57,6 +60,7 @@ DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
     JobKind.MAINTENANCE: JobQueue.MAINTENANCE,
     JobKind.SCHEDULE_TRIGGER: JobQueue.MAINTENANCE,
     JobKind.STALE_RECOVERY: JobQueue.MAINTENANCE,
+    JobKind.RESULT_INGESTION: JobQueue.IMPORT,
 }
 
 

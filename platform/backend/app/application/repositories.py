@@ -71,8 +71,31 @@ from app.domain.value_objects.enums import (
     NodeClass,
     OrganizationState,
     PlatformRole,
+    ResultIngestionState,
+    ResultSetState,
     ScheduleState,
     ScheduleTriggerOutcome,
+)
+from app.domain.variant.entities import (
+    ClinicalAssertionRecord,
+    DatasetVersionVariant,
+    GeneReference,
+    PopulationFrequencyRecord,
+    PopulationRecord,
+    SampleObservation,
+    SampleRecord,
+    TranscriptContext,
+    TranscriptReference,
+    VariantAnnotationRecord,
+    VariantExternalIdentifier,
+    VariantRecord,
+    VariantRepresentation,
+    VariantSourceRepresentation,
+)
+from app.domain.variant.results import (
+    ResultArtifactRecord,
+    ResultIngestionRequest,
+    ResultSetRecord,
 )
 from app.domain.workspace.entities import Workspace
 
@@ -654,6 +677,245 @@ class ScientificExecutionRepository(Protocol):
     ) -> tuple[ScientificExecutionRecord, ...]: ...
 
 
+# --------------------------------------------------------------------------- #
+# Package 6: the scientific data layer
+# --------------------------------------------------------------------------- #
+
+
+@runtime_checkable
+class VariantRepository(Protocol):
+    """Canonical variants and everything attached to them.
+
+    Canonical variants are *shared reference data*: they carry no tenant, because
+    the same genomic change observed in two organizations is the same change.
+    Tenant isolation therefore happens on the rows that are tenant-owned —
+    observations, dataset-version membership, result sets — never on this table,
+    and no listing method here is reachable without a scope filter supplied by
+    the caller.
+    """
+
+    async def get(self, variant_id: str) -> VariantRecord | None: ...
+    async def get_by_canonical_key(self, canonical_key: str) -> VariantRecord | None: ...
+    async def add(self, variant: VariantRecord) -> VariantRecord: ...
+    async def get_or_add(self, variant: VariantRecord) -> tuple[VariantRecord, bool]:
+        """Idempotent insert. Returns ``(record, created)``.
+
+        Concurrent ingestion of the same variant must converge on one row rather
+        than raise: two datasets legitimately contain the same variant.
+        """
+        ...
+
+    async def list_for_dataset_version(
+        self,
+        dataset_version_id: str,
+        *,
+        page: Page,
+        contig: str | None = None,
+        position_from: int | None = None,
+        position_to: int | None = None,
+        query: str | None = None,
+    ) -> Paged[VariantRecord]: ...
+    async def count_for_dataset_version(self, dataset_version_id: str) -> int: ...
+
+
+@runtime_checkable
+class VariantRepresentationRepository(Protocol):
+    """Append-only normalization history, including failures."""
+
+    async def add_many(
+        self, representations: tuple[VariantRepresentation, ...]
+    ) -> tuple[VariantRepresentation, ...]: ...
+    async def list_for_variant(
+        self, variant_id: str
+    ) -> tuple[VariantRepresentation, ...]: ...
+    async def list_for_source_representation(
+        self, source_representation_id: str
+    ) -> tuple[VariantRepresentation, ...]: ...
+
+
+@runtime_checkable
+class VariantSourceRepresentationRepository(Protocol):
+    """The submitted representation, preserved verbatim and never rewritten."""
+
+    async def add_many(
+        self, representations: tuple[VariantSourceRepresentation, ...]
+    ) -> tuple[VariantSourceRepresentation, ...]: ...
+    async def get(self, representation_id: str) -> VariantSourceRepresentation | None: ...
+    async def link_variant(
+        self, *, representation_id: str, variant_id: str
+    ) -> VariantSourceRepresentation | None: ...
+    async def list_for_variant(
+        self, variant_id: str, *, dataset_version_id: str | None = None
+    ) -> tuple[VariantSourceRepresentation, ...]: ...
+    async def find_by_source_key(
+        self, *, dataset_version_id: str, source_record_key: str
+    ) -> VariantSourceRepresentation | None: ...
+
+
+@runtime_checkable
+class DatasetVersionVariantRepository(Protocol):
+    async def add_many(
+        self, memberships: tuple[DatasetVersionVariant, ...]
+    ) -> tuple[DatasetVersionVariant, ...]: ...
+    async def workspace_ids_for_variant(self, variant_id: str) -> tuple[str, ...]:
+        """Which tenants may see this variant at all. Used for authorization."""
+        ...
+
+    async def list_dataset_versions(self, variant_id: str) -> tuple[str, ...]: ...
+
+
+@runtime_checkable
+class VariantContextRepository(Protocol):
+    """Transcript contexts, observations, annotations, frequencies, assertions.
+
+    One port, because these are all *per-variant scientific facts with their own
+    provenance* and are always read together on a variant detail surface. They
+    are separate tables, never one JSONB column, and none of them is derivable
+    from another.
+    """
+
+    #: Resolves the cohort a frequency observation refers to. The cohort identity
+    #: comes from the population resource; the platform only records it.
+    async def get_or_add_population(
+        self, population: PopulationRecord
+    ) -> tuple[PopulationRecord, bool]: ...
+    async def add_transcript_contexts(
+        self, contexts: tuple[TranscriptContext, ...]
+    ) -> tuple[TranscriptContext, ...]: ...
+    async def list_transcript_contexts(
+        self, variant_id: str, *, page: Page
+    ) -> Paged[TranscriptContext]: ...
+    async def add_observations(
+        self, observations: tuple[SampleObservation, ...]
+    ) -> tuple[SampleObservation, ...]: ...
+    async def list_observations(
+        self,
+        variant_id: str,
+        *,
+        page: Page,
+        dataset_version_id: str | None = None,
+    ) -> Paged[SampleObservation]: ...
+    async def add_annotations(
+        self, annotations: tuple[VariantAnnotationRecord, ...]
+    ) -> tuple[VariantAnnotationRecord, ...]: ...
+    async def list_annotations(
+        self, variant_id: str, *, page: Page, source_key: str | None = None
+    ) -> Paged[VariantAnnotationRecord]: ...
+    async def add_frequencies(
+        self, frequencies: tuple[PopulationFrequencyRecord, ...]
+    ) -> tuple[PopulationFrequencyRecord, ...]: ...
+    async def list_frequencies(
+        self, variant_id: str, *, page: Page
+    ) -> Paged[PopulationFrequencyRecord]: ...
+    async def add_clinical_assertions(
+        self, assertions: tuple[ClinicalAssertionRecord, ...]
+    ) -> tuple[ClinicalAssertionRecord, ...]: ...
+    async def list_clinical_assertions(
+        self, variant_id: str, *, page: Page
+    ) -> Paged[ClinicalAssertionRecord]: ...
+
+
+@runtime_checkable
+class SampleRepository(Protocol):
+    """Tenant-scoped subjects. A sample key is unique within a workspace only."""
+
+    async def get(self, sample_id: str) -> SampleRecord | None: ...
+    async def get_or_add(self, sample: SampleRecord) -> tuple[SampleRecord, bool]: ...
+    async def find_by_key(
+        self, *, workspace_id: str, sample_key: str
+    ) -> SampleRecord | None: ...
+    async def list_for_workspace(
+        self, workspace_id: str, *, page: Page
+    ) -> Paged[SampleRecord]: ...
+
+
+@runtime_checkable
+class GeneTranscriptRepository(Protocol):
+    """Reference gene/transcript rows, resolved by identifier, never invented."""
+
+    async def get_or_add_gene(self, gene: GeneReference) -> tuple[GeneReference, bool]: ...
+    async def get_or_add_transcript(
+        self, transcript: TranscriptReference
+    ) -> tuple[TranscriptReference, bool]: ...
+    async def find_gene(
+        self, *, source_key: str, gene_identifier: str
+    ) -> GeneReference | None: ...
+    async def find_transcript(
+        self, *, source_key: str, transcript_identifier: str
+    ) -> TranscriptReference | None: ...
+
+
+@runtime_checkable
+class VariantIdentifierRepository(Protocol):
+    """External identifiers. An identifier is a label, never an identity."""
+
+    async def add_many(
+        self, identifiers: tuple[VariantExternalIdentifier, ...]
+    ) -> tuple[VariantExternalIdentifier, ...]: ...
+    async def list_for_variant(
+        self, variant_id: str
+    ) -> tuple[VariantExternalIdentifier, ...]: ...
+
+
+@runtime_checkable
+class ResultSetRepository(Protocol):
+    """Immutable result surfaces produced by an execution.
+
+    ``save`` exists for *state and lineage* transitions only — becoming
+    available, being superseded, being invalidated. Scientific content is never
+    updated: a corrected run creates a new result set that supersedes the old.
+    """
+
+    async def add(self, result_set: ResultSetRecord) -> ResultSetRecord: ...
+    async def get(self, result_set_id: str) -> ResultSetRecord | None: ...
+    async def save(self, result_set: ResultSetRecord) -> ResultSetRecord: ...
+    async def find_by_result_key(
+        self, *, analysis_execution_id: str, result_key: str
+    ) -> ResultSetRecord | None: ...
+    async def list_for_scope(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        project_id: str | None = None,
+        analysis_execution_id: str | None = None,
+        states: tuple[ResultSetState, ...] = (),
+    ) -> Paged[ResultSetRecord]: ...
+    async def list_all(
+        self, *, page: Page, states: tuple[ResultSetState, ...] = ()
+    ) -> Paged[ResultSetRecord]:
+        """Platform-wide listing for the control plane. Never a tenant path."""
+        ...
+
+
+@runtime_checkable
+class ResultArtifactRepository(Protocol):
+    async def add_many(
+        self, artifacts: tuple[ResultArtifactRecord, ...]
+    ) -> tuple[ResultArtifactRecord, ...]: ...
+    async def get(self, artifact_id: str) -> ResultArtifactRecord | None: ...
+    async def save(self, artifact: ResultArtifactRecord) -> ResultArtifactRecord: ...
+    async def list_for_result_set(
+        self, result_set_id: str
+    ) -> tuple[ResultArtifactRecord, ...]: ...
+
+
+@runtime_checkable
+class ResultIngestionRepository(Protocol):
+    async def add(self, request: ResultIngestionRequest) -> ResultIngestionRequest: ...
+    async def get(self, request_id: str) -> ResultIngestionRequest | None: ...
+    async def save(self, request: ResultIngestionRequest) -> ResultIngestionRequest: ...
+    async def get_by_idempotency_key(self, key: str) -> ResultIngestionRequest | None: ...
+    async def list_for_scope(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        project_id: str | None = None,
+        states: tuple[ResultIngestionState, ...] = (),
+    ) -> Paged[ResultIngestionRequest]: ...
+
+
 @runtime_checkable
 class TransactionalRepositories(Protocol):
     """Every repository bound to one transaction.
@@ -688,6 +950,17 @@ class TransactionalRepositories(Protocol):
     schedules: ScheduleRepository
     compute_nodes: ComputeNodeRepository
     scientific_executions: ScientificExecutionRepository
+    variants: VariantRepository
+    variant_representations: VariantRepresentationRepository
+    variant_source_representations: VariantSourceRepresentationRepository
+    variant_identifiers: VariantIdentifierRepository
+    variant_contexts: VariantContextRepository
+    dataset_version_variants: DatasetVersionVariantRepository
+    samples: SampleRepository
+    genes_transcripts: GeneTranscriptRepository
+    result_sets: ResultSetRepository
+    result_artifacts: ResultArtifactRepository
+    result_ingestions: ResultIngestionRepository
     jobs: JobRepository
     audit: AuditRepository
     security_events: SecurityEventRepository
@@ -703,6 +976,17 @@ class UnitOfWorkFactory(Protocol):
 
 
 __all__ = [
+    "VariantSourceRepresentationRepository",
+    "VariantRepresentationRepository",
+    "VariantRepository",
+    "VariantIdentifierRepository",
+    "VariantContextRepository",
+    "SampleRepository",
+    "ResultSetRepository",
+    "ResultIngestionRepository",
+    "ResultArtifactRepository",
+    "GeneTranscriptRepository",
+    "DatasetVersionVariantRepository",
     "AnalysisConfigurationRepository",
     "AnalysisExecutionRepository",
     "AnalysisRepository",

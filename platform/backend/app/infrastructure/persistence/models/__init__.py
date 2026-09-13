@@ -125,6 +125,12 @@ from app.infrastructure.persistence.models.variant import (
     VariantSourceRepresentation,
     VariantTranscriptConsequence,
 )
+from app.infrastructure.persistence.models.variant_results import (
+    DatasetVersionVariant,
+    ResultArtifact,
+    ResultIngestionRequest,
+    VariantRepresentation,
+)
 from app.infrastructure.persistence.models.workspace import Workspace
 
 __all__ = [
@@ -143,6 +149,7 @@ __all__ = [
     "Dataset",
     "DatasetColumnMapping",
     "DatasetVersion",
+    "DatasetVersionVariant",
     "DiscussionComment",
     "DomainEventOutbox",
     "EvidenceItem",
@@ -180,6 +187,8 @@ __all__ = [
     "ReportVersionInterpretation",
     "ResourceAssignment",
     "ResourceUsageRecord",
+    "ResultArtifact",
+    "ResultIngestionRequest",
     "ResultSet",
     "RetentionAction",
     "RetentionPolicy",
@@ -209,6 +218,7 @@ __all__ = [
     "VariantAnnotation",
     "VariantExternalIdentifier",
     "VariantObservation",
+    "VariantRepresentation",
     "VariantSourceRepresentation",
     "VariantTranscriptConsequence",
     "WorkerNode",

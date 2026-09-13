@@ -19,12 +19,14 @@ from app.application.use_cases.identity.dependencies import IdentityServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.application.use_cases.analysis.dependencies import AnalysisServices
+from app.application.use_cases.results.dependencies import ResultServices
 from app.core.environment import Environment
 from app.scientific.adapters.development import DevelopmentScientificAdapter
 from app.domain.identity.passwords import PasswordPolicy
 from app.infrastructure.security.clock import FixedClock
 from app.infrastructure.security.passwords import Argon2PasswordHasher
 from app.infrastructure.security.tokens import TokenHasher
+from tests.support.analytics import StubAnalyticalReader
 from tests.support.data_storage import (
     MemoryObjectStorage,
     StubChecksums,
@@ -61,6 +63,8 @@ class Harness:
     scanner: StubScanner
     analysis: AnalysisServices
     scientific: DevelopmentScientificAdapter
+    results: ResultServices
+    analytics: StubAnalyticalReader
 
     def advance_to(self, moment: datetime) -> None:
         self.clock._moment = moment  # noqa: SLF001 - test clock
@@ -123,7 +127,19 @@ def build_harness(
         config=ApplicationSettings(),
         scientific=scientific,
     )
+    analytics = StubAnalyticalReader()
+    results = ResultServices(
+        unit_of_work=unit_of_work,
+        clock=clock,
+        authorization=authorization,
+        config=ApplicationSettings(),
+        analytics=analytics,
+        checksums=StubChecksums(storage),
+        object_storage=storage,
+    )
     return Harness(
+        results=results,
+        analytics=analytics,
         analysis=analysis,
         scientific=scientific,
         data=data,

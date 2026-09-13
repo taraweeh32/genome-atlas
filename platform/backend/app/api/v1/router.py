@@ -17,6 +17,7 @@ from app.api.v1.routes import (
     identity,
     organizations,
     projects,
+    results,
     scientific,
     system,
     workspaces,
@@ -43,4 +44,7 @@ api_v1_router.include_router(analyses.jobs_router)
 api_v1_router.include_router(analyses.schedules_router)
 api_v1_router.include_router(analyses.platform_jobs_router)
 api_v1_router.include_router(analyses.compute_router)
+api_v1_router.include_router(results.router)
+api_v1_router.include_router(results.variants_router)
+api_v1_router.include_router(results.platform_results_router)
 api_v1_router.include_router(administration.router)

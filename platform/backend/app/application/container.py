@@ -12,6 +12,7 @@ from app.application.ports import HealthProbe
 from app.application.services.authorization import AuthorizationService
 from app.application.services.sessions import SessionService
 from app.application.use_cases.analysis.dependencies import AnalysisServices
+from app.application.use_cases.results.dependencies import ResultServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
@@ -28,6 +29,7 @@ from app.domain.authorization.policy import AuthorizationPolicy
 from app.domain.identity.passwords import PasswordPolicy
 from app.domain.value_objects.enums import JobKind
 from app.infrastructure.analytics.duckdb_gateway import AnalyticsGateway
+from app.infrastructure.analytics.result_reader import DuckDbResultReader
 from app.infrastructure.observability.health import (
     ObjectStorageHealthProbe,
     PostgresHealthProbe,
@@ -251,6 +253,25 @@ class Container:
                 },
             ),
             retention_days=self.application.analysis_retention_days,
+        )
+
+    def result_services(self) -> ResultServices:
+        """Scientific data-layer dependencies.
+
+        The analytical reader, object storage and checksum service are all here
+        because making a result surface available means *verifying* it: reading
+        what the file actually contains and checking the bytes against what the
+        producer declared.
+        """
+        return ResultServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            authorization=self.authorization,
+            config=self.application,
+            analytics=DuckDbResultReader(self.analytics),
+            checksums=StreamingChecksumService(self.object_storage),
+            object_storage=self.object_storage,
+            download_url_seconds=self.application.download_url_ttl_seconds,
         )
 
     def get_readiness(self) -> GetReadiness:

@@ -165,3 +165,54 @@ class ChecksumService(Protocol):
     """Computes a checksum over stored bytes, for transfer-integrity checks."""
 
     async def checksum(self, key: str, *, algorithm: str) -> str: ...
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalColumn:
+    """A column of a materialized result surface, as the file itself declares it."""
+
+    name: str
+    data_type: str
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalDescription:
+    """Structural facts read back from a materialized result surface.
+
+    These are *checks*, not interpretations: how many rows are there, and which
+    columns exist with which physical types. What the columns mean scientifically
+    is the engine's statement, carried in the result payload.
+    """
+
+    location: str
+    row_count: int
+    columns: tuple[AnalyticalColumn, ...]
+
+    def column_schema(self) -> dict[str, str]:
+        return {column.name: column.data_type for column in self.columns}
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalPage:
+    """A bounded window of result rows, for presentation."""
+
+    columns: tuple[str, ...]
+    rows: tuple[tuple[object, ...], ...]
+    total_rows: int
+
+
+@runtime_checkable
+class AnalyticalReadService(Protocol):
+    """Reads materialized result surfaces (Parquet) through the query engine.
+
+    Deliberately narrow. It can describe a surface and return a bounded window of
+    it; it cannot filter, rank, join or aggregate. Those are separate concerns
+    with their own packages, own configuration and own provenance — folding them
+    in here would make every result read an unversioned scientific decision.
+    """
+
+    async def describe(self, location: str) -> AnalyticalDescription: ...
+
+    async def read_page(
+        self, location: str, *, offset: int, limit: int
+    ) -> AnalyticalPage: ...

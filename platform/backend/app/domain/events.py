@@ -109,6 +109,30 @@ class EventType:
     COMPUTE_NODE_DRAINED = "compute_node.drained"
     COMPUTE_NODE_UNHEALTHY = "compute_node.unhealthy"
 
+    # Scientific data layer (Package 6). "Recorded" rather than "computed": the
+    # platform stores what the scientific subsystem produced.
+    VARIANT_RECORDED = "variant.recorded"
+    VARIANT_REPRESENTATION_RECORDED = "variant_representation.recorded"
+    VARIANT_NORMALIZATION_FAILED = "variant_representation.normalization_failed"
+    VARIANT_OBSERVATIONS_RECORDED = "variant_observation.recorded"
+    VARIANT_ANNOTATIONS_RECORDED = "variant_annotation.recorded"
+    VARIANT_FREQUENCIES_RECORDED = "population_frequency.recorded"
+    VARIANT_CLINICAL_ASSERTIONS_RECORDED = "clinical_assertion.recorded"
+
+    RESULT_SET_REGISTERED = "result_set.registered"
+    RESULT_SET_VALIDATED = "result_set.validated"
+    RESULT_SET_AVAILABLE = "result_set.available"
+    RESULT_SET_FAILED = "result_set.failed"
+    RESULT_SET_SUPERSEDED = "result_set.superseded"
+    RESULT_SET_INVALIDATED = "result_set.invalidated"
+    RESULT_ARTIFACT_REGISTERED = "result_artifact.registered"
+    RESULT_ARTIFACT_ACCEPTED = "result_artifact.accepted"
+    RESULT_ARTIFACT_REJECTED = "result_artifact.rejected"
+    RESULT_ARTIFACT_DOWNLOAD_AUTHORIZED = "result_artifact.download_authorized"
+    RESULT_INGESTION_RECEIVED = "result_ingestion.received"
+    RESULT_INGESTION_ACCEPTED = "result_ingestion.accepted"
+    RESULT_INGESTION_REJECTED = "result_ingestion.rejected"
+
 
 @dataclass(frozen=True, slots=True)
 class DomainEvent:

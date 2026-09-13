@@ -50,6 +50,11 @@ from app.infrastructure.persistence.repositories.projects import (
     SqlProjectMembershipRepository,
     SqlProjectRepository,
 )
+from app.infrastructure.persistence.repositories.results import (
+    SqlResultArtifactRepository,
+    SqlResultIngestionRepository,
+    SqlResultSetRepository,
+)
 from app.infrastructure.persistence.repositories.scheduling import (
     SqlComputeNodeRepository,
     SqlScheduleRepository,
@@ -62,6 +67,16 @@ from app.infrastructure.persistence.repositories.tenancy import (
     SqlOrganizationMembershipRepository,
     SqlOrganizationRepository,
     SqlWorkspaceRepository,
+)
+from app.infrastructure.persistence.repositories.variants import (
+    SqlDatasetVersionVariantRepository,
+    SqlGeneTranscriptRepository,
+    SqlSampleRepository,
+    SqlVariantContextRepository,
+    SqlVariantIdentifierRepository,
+    SqlVariantRepository,
+    SqlVariantRepresentationRepository,
+    SqlVariantSourceRepresentationRepository,
 )
 
 
@@ -94,6 +109,17 @@ class SqlRepositories:
     schedules: SqlScheduleRepository
     compute_nodes: SqlComputeNodeRepository
     scientific_executions: SqlScientificExecutionRepository
+    variants: SqlVariantRepository
+    variant_representations: SqlVariantRepresentationRepository
+    variant_source_representations: SqlVariantSourceRepresentationRepository
+    variant_identifiers: SqlVariantIdentifierRepository
+    variant_contexts: SqlVariantContextRepository
+    dataset_version_variants: SqlDatasetVersionVariantRepository
+    samples: SqlSampleRepository
+    genes_transcripts: SqlGeneTranscriptRepository
+    result_sets: SqlResultSetRepository
+    result_artifacts: SqlResultArtifactRepository
+    result_ingestions: SqlResultIngestionRepository
     jobs: SqlJobRepository
     audit: SqlAuditRepository
     security_events: SqlSecurityEventRepository
@@ -128,6 +154,17 @@ class SqlRepositories:
             schedules=SqlScheduleRepository(session),
             compute_nodes=SqlComputeNodeRepository(session),
             scientific_executions=SqlScientificExecutionRepository(session),
+            variants=SqlVariantRepository(session),
+            variant_representations=SqlVariantRepresentationRepository(session),
+            variant_source_representations=SqlVariantSourceRepresentationRepository(session),
+            variant_identifiers=SqlVariantIdentifierRepository(session),
+            variant_contexts=SqlVariantContextRepository(session),
+            dataset_version_variants=SqlDatasetVersionVariantRepository(session),
+            samples=SqlSampleRepository(session),
+            genes_transcripts=SqlGeneTranscriptRepository(session),
+            result_sets=SqlResultSetRepository(session),
+            result_artifacts=SqlResultArtifactRepository(session),
+            result_ingestions=SqlResultIngestionRepository(session),
             jobs=SqlJobRepository(session),
             audit=SqlAuditRepository(session),
             security_events=SqlSecurityEventRepository(session),
