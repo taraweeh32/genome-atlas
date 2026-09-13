@@ -43,13 +43,21 @@ from app.domain.value_objects.enums import (
     SessionState,
 )
 from app.domain.workspace.entities import Workspace
+from tests.support.analysis_memory import (
+    MemoryAnalyses,
+    MemoryAnalysisConfigurations,
+    MemoryAnalysisExecutions,
+    MemoryComputeNodes,
+    MemoryJobQueue,
+    MemorySchedules,
+    MemoryScientificExecutions,
+)
 from tests.support.data_memory import (
     MemoryColumnMappings,
     MemoryDatasets,
     MemoryDatasetVersions,
     MemoryFileArtifacts,
     MemoryImportSessions,
-    MemoryJobs,
     MemoryUploadSessions,
     MemoryValidationIssues,
     MemoryValidationRuns,
@@ -591,7 +599,20 @@ class MemoryRepositories:
     column_mappings: MemoryColumnMappings = field(default_factory=MemoryColumnMappings)
     validation_runs: MemoryValidationRuns = field(default_factory=MemoryValidationRuns)
     validation_issues: MemoryValidationIssues = field(default_factory=MemoryValidationIssues)
-    jobs: MemoryJobs = field(default_factory=MemoryJobs)
+    # Package 5 orchestration repositories, same transaction.
+    analyses: MemoryAnalyses = field(default_factory=MemoryAnalyses)
+    analysis_configurations: MemoryAnalysisConfigurations = field(
+        default_factory=MemoryAnalysisConfigurations
+    )
+    analysis_executions: MemoryAnalysisExecutions = field(
+        default_factory=MemoryAnalysisExecutions
+    )
+    schedules: MemorySchedules = field(default_factory=MemorySchedules)
+    compute_nodes: MemoryComputeNodes = field(default_factory=MemoryComputeNodes)
+    scientific_executions: MemoryScientificExecutions = field(
+        default_factory=MemoryScientificExecutions
+    )
+    jobs: MemoryJobQueue = field(default_factory=MemoryJobQueue)
 
     def __post_init__(self) -> None:
         self.organizations.memberships = self.organization_memberships

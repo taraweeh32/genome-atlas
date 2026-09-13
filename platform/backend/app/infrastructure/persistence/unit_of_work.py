@@ -15,6 +15,11 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.repositories.analysis import (
+    SqlAnalysisConfigurationRepository,
+    SqlAnalysisExecutionRepository,
+    SqlAnalysisRepository,
+)
 from app.infrastructure.persistence.repositories.datasets import (
     SqlDatasetRepository,
     SqlDatasetVersionRepository,
@@ -44,6 +49,13 @@ from app.infrastructure.persistence.repositories.jobs import SqlJobRepository
 from app.infrastructure.persistence.repositories.projects import (
     SqlProjectMembershipRepository,
     SqlProjectRepository,
+)
+from app.infrastructure.persistence.repositories.scheduling import (
+    SqlComputeNodeRepository,
+    SqlScheduleRepository,
+)
+from app.infrastructure.persistence.repositories.scientific import (
+    SqlScientificExecutionRepository,
 )
 from app.infrastructure.persistence.repositories.tenancy import (
     SqlOrganizationInvitationRepository,
@@ -76,6 +88,12 @@ class SqlRepositories:
     column_mappings: SqlColumnMappingRepository
     validation_runs: SqlValidationRunRepository
     validation_issues: SqlValidationIssueRepository
+    analyses: SqlAnalysisRepository
+    analysis_configurations: SqlAnalysisConfigurationRepository
+    analysis_executions: SqlAnalysisExecutionRepository
+    schedules: SqlScheduleRepository
+    compute_nodes: SqlComputeNodeRepository
+    scientific_executions: SqlScientificExecutionRepository
     jobs: SqlJobRepository
     audit: SqlAuditRepository
     security_events: SqlSecurityEventRepository
@@ -104,6 +122,12 @@ class SqlRepositories:
             column_mappings=SqlColumnMappingRepository(session),
             validation_runs=SqlValidationRunRepository(session),
             validation_issues=SqlValidationIssueRepository(session),
+            analyses=SqlAnalysisRepository(session),
+            analysis_configurations=SqlAnalysisConfigurationRepository(session),
+            analysis_executions=SqlAnalysisExecutionRepository(session),
+            schedules=SqlScheduleRepository(session),
+            compute_nodes=SqlComputeNodeRepository(session),
+            scientific_executions=SqlScientificExecutionRepository(session),
             jobs=SqlJobRepository(session),
             audit=SqlAuditRepository(session),
             security_events=SqlSecurityEventRepository(session),

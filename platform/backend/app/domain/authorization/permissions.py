@@ -42,6 +42,17 @@ class Permission(str, enum.Enum):
     #: release of quarantined artifacts. Storage is platform infrastructure: an
     #: organization administrator may never reach it.
     PLATFORM_STORAGE_ADMINISTER = "platform.storage.administer"
+    #: The durable-job control plane: inspect any tenant's jobs, cancel or
+    #: requeue them, and recover stale work. Operational, never scientific.
+    PLATFORM_JOB_ADMINISTER = "platform.job.administer"
+    PLATFORM_JOB_READ = "platform.job.read"
+    #: Compute-node registry and drain/health control. Scientific compute nodes
+    #: are platform infrastructure; an organization administrator may never
+    #: reach them.
+    PLATFORM_COMPUTE_ADMINISTER = "platform.compute.administer"
+    PLATFORM_COMPUTE_READ = "platform.compute.read"
+    #: Platform-wide schedule oversight, distinct from owning one schedule.
+    PLATFORM_SCHEDULE_ADMINISTER = "platform.schedule.administer"
 
     # --- organization scope ---------------------------------------------- #
     ORGANIZATION_READ = "organization.read"
@@ -69,6 +80,16 @@ class Permission(str, enum.Enum):
     #: never implies the right to retrieve the genomic content behind it.
     WORKSPACE_DATA_DOWNLOAD = "workspace.data.download"
     WORKSPACE_DATA_DELETE = "workspace.data.delete"
+    #: Workspace-scoped analysis capabilities, for an analysis that belongs to a
+    #: workspace without belonging to a project.
+    WORKSPACE_ANALYSIS_READ = "workspace.analysis.read"
+    WORKSPACE_ANALYSIS_CREATE = "workspace.analysis.create"
+    WORKSPACE_ANALYSIS_UPDATE = "workspace.analysis.update"
+    WORKSPACE_ANALYSIS_EXECUTE = "workspace.analysis.execute"
+    WORKSPACE_ANALYSIS_CANCEL = "workspace.analysis.cancel"
+    WORKSPACE_ANALYSIS_DELETE = "workspace.analysis.delete"
+    WORKSPACE_SCHEDULE_MANAGE = "workspace.schedule.manage"
+    WORKSPACE_JOB_READ = "workspace.job.read"
 
     # --- project scope --------------------------------------------------- #
     PROJECT_READ = "project.read"
@@ -89,7 +110,17 @@ class Permission(str, enum.Enum):
     #: Retrieval of the actual bytes, separate from metadata read.
     PROJECT_DATA_DOWNLOAD = "project.data.download"
     PROJECT_DATA_DELETE = "project.data.delete"
+    PROJECT_ANALYSIS_READ = "project.analysis.read"
+    PROJECT_ANALYSIS_CREATE = "project.analysis.create"
+    PROJECT_ANALYSIS_UPDATE = "project.analysis.update"
     PROJECT_ANALYSIS_EXECUTE = "project.analysis.execute"
+    #: Stopping work in flight is its own capability: being able to start an
+    #: analysis never implies the right to cancel someone else's run.
+    PROJECT_ANALYSIS_CANCEL = "project.analysis.cancel"
+    PROJECT_ANALYSIS_DELETE = "project.analysis.delete"
+    PROJECT_SCHEDULE_MANAGE = "project.schedule.manage"
+    #: Reading the operational job history of one project's work.
+    PROJECT_JOB_READ = "project.job.read"
     PROJECT_INTERPRETATION_REVIEW = "project.interpretation.review"
     PROJECT_REPORT_FINALIZE = "project.report.finalize"
 

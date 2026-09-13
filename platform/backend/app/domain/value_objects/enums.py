@@ -236,6 +236,14 @@ class AnalysisState(StrEnum):
 
 
 class AnalysisKind(StrEnum):
+    """Application-level analysis *type*, never an implementation of science.
+
+    A kind selects which scientific capabilities an analysis may request and how
+    the UI groups it. Extending the vocabulary is a migration plus a constraint
+    replacement; no application branch may assume every analysis performs the
+    same scientific steps.
+    """
+
     VARIANT_PRIORITIZATION = "variant_prioritization"
     ANNOTATION = "annotation"
     FILTERING = "filtering"
@@ -243,14 +251,39 @@ class AnalysisKind(StrEnum):
     INTERPRETATION = "interpretation"
     QUALITY_CONTROL = "quality_control"
     CUSTOM = "custom"
+    #: Package 5 additions: capability-driven types that carry no assumption
+    #: about which scientific steps run inside the compute subsystem.
+    GENOMIC_ANALYSIS = "genomic_analysis"
+    ANNOTATED_DATA_ANALYSIS = "annotated_data_analysis"
+    IMPORT_PROCESSING = "import_processing"
+    SCIENTIFIC_PIPELINE = "scientific_pipeline"
+
+
+class ConfigurationValidationState(StrEnum):
+    """Validation outcome of one immutable analysis configuration version."""
+
+    UNVALIDATED = "unvalidated"
+    VALID = "valid"
+    INVALID = "invalid"
 
 
 class ExecutionState(StrEnum):
+    """One concrete invocation of an analysis configuration version.
+
+    ``cancel_requested`` is deliberately distinct from ``cancelled``: a request
+    to stop is not evidence that work stopped.
+    """
+
+    DRAFT = "draft"
+    VALIDATING = "validating"
+    VALIDATED = "validated"
+    SUBMITTED = "submitted"
     REQUESTED = "requested"
     QUEUED = "queued"
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    CANCEL_REQUESTED = "cancel_requested"
     CANCELLED = "cancelled"
     TIMED_OUT = "timed_out"
 
@@ -262,8 +295,15 @@ class JobState(StrEnum):
     RUNNING = "running"
     SUCCEEDED = "succeeded"
     FAILED = "failed"
+    #: A cancellation was requested; the worker has not yet acknowledged it.
+    CANCEL_REQUESTED = "cancel_requested"
     CANCELLING = "cancelling"
     CANCELLED = "cancelled"
+    #: Waiting out a retry backoff. Distinct from ``queued`` so a backoff is
+    #: visible instead of looking like ordinary queue latency.
+    RETRY_WAITING = "retry_waiting"
+    #: The lease expired without a heartbeat: the worker is presumed gone.
+    STALE = "stale"
     DEAD_LETTER = "dead_letter"
 
 
@@ -277,12 +317,93 @@ class JobKind(StrEnum):
     NOTIFICATION_DELIVERY = "notification_delivery"
     RETENTION = "retention"
     MAINTENANCE = "maintenance"
+    #: Fires a schedule; each firing creates a *new* analysis execution.
+    SCHEDULE_TRIGGER = "schedule_trigger"
+    #: Recovers jobs whose lease expired without a heartbeat.
+    STALE_RECOVERY = "stale_recovery"
+
+
+class JobQueue(StrEnum):
+    """Logical queues. Extensible: queue assignment is always explicit."""
+
+    DEFAULT = "default"
+    SCIENTIFIC = "scientific"
+    IMPORT = "import"
+    VALIDATION = "validation"
+    MAINTENANCE = "maintenance"
+    EXPORT = "export"
+
+
+class JobErrorClass(StrEnum):
+    """Structured job failure taxonomy.
+
+    Retryability is a property of the class (see
+    ``domain/analysis/policies.py``), never a guess made at the call site.
+    """
+
+    VALIDATION_ERROR = "validation_error"
+    AUTHORIZATION_ERROR = "authorization_error"
+    CONFIGURATION_ERROR = "configuration_error"
+    RESOURCE_UNAVAILABLE = "resource_unavailable"
+    SCIENTIFIC_CAPABILITY_UNAVAILABLE = "scientific_capability_unavailable"
+    SCIENTIFIC_EXECUTION_ERROR = "scientific_execution_error"
+    TRANSIENT_INFRASTRUCTURE_ERROR = "transient_infrastructure_error"
+    TIMEOUT = "timeout"
+    CANCELLATION = "cancellation"
+    INTERNAL_ERROR = "internal_error"
 
 
 class ScheduleState(StrEnum):
     ENABLED = "enabled"
     DISABLED = "disabled"
     ARCHIVED = "archived"
+
+
+class ScheduleConcurrencyPolicy(StrEnum):
+    ALLOW_CONCURRENT = "allow_concurrent"
+    SKIP_IF_RUNNING = "skip_if_running"
+    QUEUE_IF_RUNNING = "queue_if_running"
+
+
+class MissedSchedulePolicy(StrEnum):
+    """What happens to firings that never ran (downtime, disabled schedule)."""
+
+    SKIP = "skip"
+    RUN_ONCE_AFTER_RECOVERY = "run_once_after_recovery"
+    CATCH_UP = "catch_up"
+
+
+class ScheduleTriggerOutcome(StrEnum):
+    TRIGGERED = "triggered"
+    SKIPPED_CONCURRENCY = "skipped_concurrency"
+    SKIPPED_MISSED = "skipped_missed"
+    SKIPPED_DISABLED = "skipped_disabled"
+    FAILED = "failed"
+
+
+class NodeClass(StrEnum):
+    APPLICATION_WORKER = "application_worker"
+    SCIENTIFIC_WORKER = "scientific_worker"
+
+
+class NodeHealthState(StrEnum):
+    """Observed health. ``unknown`` is never treated as healthy."""
+
+    UNKNOWN = "unknown"
+    HEALTHY = "healthy"
+    DEGRADED = "degraded"
+    UNHEALTHY = "unhealthy"
+    UNAVAILABLE = "unavailable"
+    MAINTENANCE = "maintenance"
+
+
+class NodeLifecycleState(StrEnum):
+    """Administrative intent for a node, separate from its observed health."""
+
+    ACTIVE = "active"
+    DRAINING = "draining"
+    MAINTENANCE = "maintenance"
+    UNAVAILABLE = "unavailable"
 
 
 class ScientificExecutionState(StrEnum):

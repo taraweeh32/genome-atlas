@@ -170,6 +170,8 @@ class ActorContext:
                         Permission.PROJECT_READ,
                         Permission.PROJECT_MEMBER_READ,
                         Permission.PROJECT_DATA_READ,
+                        Permission.PROJECT_ANALYSIS_READ,
+                        Permission.PROJECT_JOB_READ,
                         Permission.PROJECT_REOPEN,
                     }
                 )

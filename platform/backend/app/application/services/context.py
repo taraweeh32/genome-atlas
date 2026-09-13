@@ -23,5 +23,19 @@ class RequestContext:
     #: Stable, non-secret key for rate limiting by origin.
     rate_limit_key: str | None = None
 
+    @classmethod
+    def system(
+        cls,
+        *,
+        correlation_id: str | None = None,
+        channel: AuditChannel = AuditChannel.SYSTEM,
+    ) -> RequestContext:
+        """Context for work with no HTTP caller: workers, scheduler, maintenance.
+
+        There is no address and no agent to observe, and deliberately no identity:
+        a background process is never an authenticated user.
+        """
+        return cls(correlation_id=correlation_id, channel=channel)
+
 
 __all__ = ["RequestContext"]

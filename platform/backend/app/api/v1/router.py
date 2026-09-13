@@ -11,6 +11,7 @@ from fastapi import APIRouter
 
 from app.api.v1.routes import (
     administration,
+    analyses,
     authentication,
     datasets,
     identity,
@@ -36,4 +37,10 @@ api_v1_router.include_router(datasets.uploads_router)
 api_v1_router.include_router(datasets.artifacts_router)
 api_v1_router.include_router(datasets.imports_router)
 api_v1_router.include_router(datasets.validation_router)
+api_v1_router.include_router(analyses.router)
+api_v1_router.include_router(analyses.executions_router)
+api_v1_router.include_router(analyses.jobs_router)
+api_v1_router.include_router(analyses.schedules_router)
+api_v1_router.include_router(analyses.platform_jobs_router)
+api_v1_router.include_router(analyses.compute_router)
 api_v1_router.include_router(administration.router)

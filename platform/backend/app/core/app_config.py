@@ -96,8 +96,39 @@ class ApplicationSettings(BaseSettings):
     #: than treating unscanned bytes as clean.
     feature_development_file_scanner: bool = True
 
+    # Durable job execution. One declaration for every worker and every job kind,
+    # so operational behaviour is tuned per deployment instead of per call site.
+    job_max_attempts: int = Field(default=3, ge=1, le=25)
+    job_initial_backoff_seconds: int = Field(default=30, ge=1, le=3600)
+    job_backoff_multiplier: int = Field(default=4, ge=1, le=10)
+    job_max_backoff_seconds: int = Field(default=3600, ge=1, le=24 * 3600)
+    #: How long a claim is honoured without a heartbeat, and how often a worker
+    #: refreshes it. The interval must stay well below the lease.
+    job_lease_seconds: int = Field(default=60, ge=10, le=3600)
+    job_heartbeat_interval_seconds: int = Field(default=15, ge=1, le=600)
+    job_stale_grace_seconds: int = Field(default=30, ge=0, le=3600)
+    #: Wall-clock ceiling for one attempt.
+    job_timeout_seconds: int = Field(default=3600, ge=30, le=24 * 3600)
+    job_scientific_timeout_seconds: int = Field(default=6 * 3600, ge=60, le=7 * 24 * 3600)
+    #: How long a soft-deleted analysis stays recoverable.
+    analysis_retention_days: int = Field(default=30, ge=1, le=3650)
+    #: Worker fleet shape. Application and scientific workers are the same runtime
+    #: with different queues, never the same process pretending to be both.
+    worker_application_queues: str = "default,import,validation,export,maintenance"
+    worker_scientific_queues: str = "scientific"
+    worker_scientific_enabled: bool = True
+    worker_recovery_interval_seconds: int = Field(default=30, ge=5, le=3600)
+    worker_schedule_interval_seconds: int = Field(default=60, ge=5, le=3600)
 
     security: SecurityPolicySettings = Field(default_factory=SecurityPolicySettings)
+
+    @property
+    def application_queue_names(self) -> tuple[str, ...]:
+        return tuple(part.strip() for part in self.worker_application_queues.split(",") if part.strip())
+
+    @property
+    def scientific_queue_names(self) -> tuple[str, ...]:
+        return tuple(part.strip() for part in self.worker_scientific_queues.split(",") if part.strip())
 
 
 @lru_cache(maxsize=1)
@@ -110,6 +141,22 @@ def get_application_settings() -> ApplicationSettings:
         raise ConfigurationError(
             "session idle timeout cannot exceed the absolute session lifetime",
             key="SECURITY_SESSION_IDLE_MINUTES",
+        )
+    if settings.job_heartbeat_interval_seconds >= settings.job_lease_seconds:
+        raise ConfigurationError(
+            "the heartbeat interval must be shorter than the job lease, "
+            "otherwise every claim expires before it is refreshed",
+            key="PLATFORM_JOB_HEARTBEAT_INTERVAL_SECONDS",
+        )
+    if not settings.application_queue_names:
+        raise ConfigurationError(
+            "an application worker must be given at least one queue",
+            key="PLATFORM_WORKER_APPLICATION_QUEUES",
+        )
+    if settings.worker_scientific_enabled and not settings.scientific_queue_names:
+        raise ConfigurationError(
+            "the scientific worker fleet is enabled but has no queue",
+            key="PLATFORM_WORKER_SCIENTIFIC_QUEUES",
         )
     if settings.default_page_size > settings.max_page_size:
         raise ConfigurationError(
