@@ -223,7 +223,11 @@ async def test_absent_zero_false_and_unknown_values_stay_distinguishable(harness
                 population_key="dev_population",
                 # Not observed in this population: that is not a frequency of 0.
                 value_semantics=ValueSemantics.NA.value,
-                attribution=attribution(origin=DataOrigin.IMPORTED.value),
+                attribution=attribution(
+                    origin=DataOrigin.IMPORTED.value,
+                    source_resource_id="dev_population_resource",
+                    source_version="0.0.0-development-only",
+                ),
             ),
         ),
     )
