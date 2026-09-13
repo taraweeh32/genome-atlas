@@ -166,7 +166,7 @@ class TestExecutionTransport:
         # The request path queues; it never runs the scientific work itself.
         assert body["state"] == "queued"
         job = await harness.repositories.jobs.get(body["scheduled_job_id"])
-        assert job.state is JobState.QUEUED
+        assert job["state"] == JobState.QUEUED.value
         # Nothing has been submitted to the scientific subsystem by the request.
         assert body["scientific_execution_id"] is None
 
