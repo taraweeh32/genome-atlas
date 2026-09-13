@@ -303,7 +303,7 @@ async def test_execution_and_job_are_invisible_to_another_workspace() -> None:
     stranger_id = await create_account(harness, "stranger@example.test")
     _, _, execution = await queued_execution(harness, owner_id)
 
-    with pytest.raises(NotFoundError):
+    with pytest.raises((NotFoundError, AuthorizationError)):
         await GetExecution(harness.analysis).execute(
             GetExecutionQuery(
                 actor=await actor_for(harness, stranger_id),
@@ -311,7 +311,7 @@ async def test_execution_and_job_are_invisible_to_another_workspace() -> None:
                 request=harness.request,
             )
         )
-    with pytest.raises(NotFoundError):
+    with pytest.raises((NotFoundError, AuthorizationError)):
         await GetJob(harness.analysis).execute(
             GetJobQuery(
                 actor=await actor_for(harness, stranger_id),

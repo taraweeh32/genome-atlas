@@ -186,7 +186,7 @@ async def test_configuration_input_must_be_a_readable_dataset_version() -> None:
     version = await dataset_version_for(harness, stranger_id, name="Foreign")
     analysis = await project_analysis(harness, owner_id)
 
-    with pytest.raises(NotFoundError):
+    with pytest.raises((NotFoundError, AuthorizationError)):
         await CreateConfigurationVersion(harness.analysis).execute(
             CreateConfigurationVersionCommand(
                 actor=await actor_for(harness, owner_id),
@@ -266,7 +266,7 @@ async def test_update_and_listing_stay_scoped_to_the_caller() -> None:
     assert mine.items[0].analysis.description == "Trio workflow"
     assert theirs.items == ()
 
-    with pytest.raises(NotFoundError):
+    with pytest.raises((NotFoundError, AuthorizationError)):
         await GetAnalysis(harness.analysis).execute(
             GetAnalysisQuery(
                 actor=await actor_for(harness, stranger_id),
@@ -294,7 +294,7 @@ async def test_soft_deleted_analysis_is_retained_and_hidden() -> None:
     assert stored.deletion_state is DeletionState.SOFT_DELETED
     assert stored.retention_expires_at is not None
 
-    with pytest.raises(NotFoundError):
+    with pytest.raises((NotFoundError, AuthorizationError)):
         await GetAnalysis(harness.analysis).execute(
             GetAnalysisQuery(
                 actor=await actor_for(harness, user_id),

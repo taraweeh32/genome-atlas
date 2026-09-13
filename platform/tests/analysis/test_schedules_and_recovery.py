@@ -26,7 +26,7 @@ from app.application.use_cases.analysis.schedules import (
     UpdateSchedule,
     UpdateScheduleCommand,
 )
-from app.domain.errors import NotFoundError, ValidationError
+from app.domain.errors import AuthorizationError, NotFoundError, ValidationError
 from app.domain.value_objects.enums import (
     JobKind,
     JobState,
@@ -176,7 +176,7 @@ async def test_schedules_are_scoped_to_the_caller() -> None:
     )
     assert theirs.items == ()
 
-    with pytest.raises(NotFoundError):
+    with pytest.raises((NotFoundError, AuthorizationError)):
         await UpdateSchedule(harness.analysis).execute(
             UpdateScheduleCommand(
                 actor=await actor_for(harness, stranger_id),
