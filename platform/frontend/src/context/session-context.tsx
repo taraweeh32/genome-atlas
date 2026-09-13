@@ -109,7 +109,13 @@ export function SessionProvider({
   const signOut = useCallback(
     async (allSessions = false) => {
       try {
+        // The backend revokes the server-side session; that is the authoritative
+        // step. A failure here is deliberately not propagated: the caller must
+        // still end up signed out locally, and the revoked-or-not session is
+        // re-checked on the next request either way.
         await resolveClient().signOut(allSessions);
+      } catch {
+        // Intentionally ignored; local state is cleared below regardless.
       } finally {
         // Whatever the backend answered, the client keeps no identity.
         setState({ status: "anonymous", identity: null, error: null, correlationId: null });
