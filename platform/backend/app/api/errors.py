@@ -97,7 +97,7 @@ def register_exception_handlers(app: FastAPI, environment: Environment) -> None:
 
     @app.exception_handler(Exception)
     async def _unexpected(_: Request, exc: Exception) -> JSONResponse:
-        logger.error("unhandled internal error", exc_info=True)
+        logger.error("unhandled internal error", exc_info=exc)
         details = (
             {"exception": type(exc).__name__, "diagnostic": str(exc)}
             if environment.exposes_diagnostics
