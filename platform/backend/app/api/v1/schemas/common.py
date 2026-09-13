@@ -42,7 +42,7 @@ class PageInfo(ApiModel):
     next_cursor: str | None = None
 
 
-class Collection(ApiModel, Generic[ItemT]):
+class Collection[ItemT](ApiModel):
     items: list[ItemT]
     page: PageInfo
 

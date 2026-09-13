@@ -6,6 +6,8 @@ capabilities* only. No scientific computation is triggered or implemented here.
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from app.api.dependencies import AuthorizationContextDep, get_scientific_capabilities_use_case
@@ -35,7 +37,9 @@ router = APIRouter(prefix="/scientific", tags=["scientific"])
 )
 async def describe_capabilities(
     _: AuthorizationContextDep,
-    use_case: DescribeScientificCapabilities = Depends(get_scientific_capabilities_use_case),
+    use_case: Annotated[
+        DescribeScientificCapabilities, Depends(get_scientific_capabilities_use_case)
+    ],
 ) -> ScientificCapabilitiesResponse:
     capabilities = await use_case.execute()
     return ScientificCapabilitiesResponse(
