@@ -103,14 +103,33 @@ def test_factory_selects_the_configured_adapter() -> None:
 
 
 def test_no_scientific_algorithm_terms_exist_in_the_application_tree() -> None:
-    """Architectural guard: scientific computation stays out of the application."""
+    """Architectural guard: scientific computation stays out of the application.
+
+    ``app/scientific`` is the integration boundary itself, so it may *name*
+    scientific concepts (for example an ACMG ruleset version carried as engine
+    identity) without computing them. Every other layer — api, application,
+    domain, infrastructure, workers — must not mention them at all.
+    """
+    boundary = BACKEND_ROOT / "scientific"
     offenders: list[str] = []
     for path in BACKEND_ROOT.rglob("*.py"):
+        if boundary in path.parents:
+            continue
         lowered = path.read_text(encoding="utf-8").lower()
         for term in FORBIDDEN_SCIENTIFIC_TERMS:
             if term in lowered:
                 offenders.append(f"{path.name}:{term}")
     assert offenders == []
+
+
+def test_scientific_boundary_names_concepts_without_computing_them() -> None:
+    """The contract carries scientific *identity*, never scientific logic."""
+    source = (BACKEND_ROOT / "scientific" / "contracts.py").read_text(encoding="utf-8").lower()
+    # Identity/provenance vocabulary is expected...
+    assert "acmg" in source
+    # ...but no evaluation, scoring or classification is implemented here.
+    for implementation_term in ("def classify", "def evaluate_criterion", "def score_variant"):
+        assert implementation_term not in source
 
 
 def test_domain_does_not_import_infrastructure_or_frameworks() -> None:
