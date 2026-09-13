@@ -68,11 +68,11 @@ class DuckDbResultReader:
             columns = tuple(
                 AnalyticalColumn(name=str(row[0]), data_type=str(row[1]))
                 for row in connection.execute(
-                    f"DESCRIBE SELECT * FROM read_parquet('{location}')"  # noqa: S608
+                    f"DESCRIBE SELECT * FROM read_parquet('{location}')"
                 ).fetchall()
             )
             count_row = connection.execute(
-                f"SELECT count(*) FROM read_parquet('{location}')"  # noqa: S608
+                f"SELECT count(*) FROM read_parquet('{location}')"
             ).fetchone()
         if count_row is None:
             raise InfrastructureError("analytical surface could not be read")
@@ -85,13 +85,13 @@ class DuckDbResultReader:
             # Stable ordering by physical row position: presentation ordering is a
             # separate, versioned concern and is not decided here.
             result = connection.execute(
-                "SELECT * FROM read_parquet"  # noqa: S608
+                "SELECT * FROM read_parquet"
                 f"('{location}') LIMIT {limit} OFFSET {offset}"
             )
             names = tuple(str(description[0]) for description in result.description or ())
             rows = tuple(tuple(row) for row in result.fetchall())
             count_row = connection.execute(
-                f"SELECT count(*) FROM read_parquet('{location}')"  # noqa: S608
+                f"SELECT count(*) FROM read_parquet('{location}')"
             ).fetchone()
         return AnalyticalPage(
             columns=names,

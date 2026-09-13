@@ -41,13 +41,6 @@ from app.domain.analysis.policies import default_queue_for, node_class_for
 from app.domain.authorization.context import ActorContext
 from app.domain.errors import ConflictError, InfrastructureError, NotFoundError, ValidationError
 from app.domain.events import EventType
-from app.domain.variant.ingestion import validate_result_payload
-from app.domain.variant.results import (
-    ResultArtifactRecord,
-    ResultIngestionRequest,
-    ResultProvenance,
-    ResultSetRecord,
-)
 from app.domain.value_objects.enums import (
     AuditOutcome,
     ChecksumAlgorithm,
@@ -59,6 +52,13 @@ from app.domain.value_objects.enums import (
     ResultCompleteness,
     ResultIngestionState,
     ResultSetState,
+)
+from app.domain.variant.ingestion import validate_result_payload
+from app.domain.variant.results import (
+    ResultArtifactRecord,
+    ResultIngestionRequest,
+    ResultProvenance,
+    ResultSetRecord,
 )
 from app.infrastructure.persistence.repositories.base import new_id
 from app.scientific.results import RESULT_CONTRACT_VERSION, ResultPayload
