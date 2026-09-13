@@ -49,3 +49,9 @@ target-version = "py312"
 python_version = "3.12"
 strict = true
 plugins = []
+
+# aioboto3/botocore ship no type information. The ignore is scoped to those
+# imports only; our own object-storage boundary stays fully typed.
+[[tool.mypy.overrides]]
+module = ["aioboto3.*", "botocore.*"]
+ignore_missing_imports = true
