@@ -8,6 +8,9 @@ package.
 
 from __future__ import annotations
 
+from contextlib import AbstractAsyncContextManager
+from typing import Any
+
 import aioboto3
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
@@ -32,7 +35,11 @@ class S3ObjectStorage:
     async def close(self) -> None:
         self._session = None
 
-    def _client(self):  # type: ignore[no-untyped-def] - aioboto3 returns a context manager
+    def _client(self) -> AbstractAsyncContextManager[Any]:
+        """aioboto3 ships no type information, so the client is opaque here.
+
+        The looseness stops at this method: every caller below is fully typed.
+        """
         if self._session is None:
             raise InfrastructureError("object storage is not connected")
         kwargs: dict[str, object] = {
@@ -47,7 +54,8 @@ class S3ObjectStorage:
         if self._settings.access_key_id and self._settings.secret_access_key:
             kwargs["aws_access_key_id"] = self._settings.access_key_id
             kwargs["aws_secret_access_key"] = self._settings.secret_access_key
-        return self._session.client("s3", **kwargs)  # type: ignore[union-attr]
+        client: AbstractAsyncContextManager[Any] = self._session.client("s3", **kwargs)
+        return client
 
     async def presign_upload(self, key: str, *, expires_seconds: int) -> str:
         return await self._presign("put_object", key, expires_seconds)

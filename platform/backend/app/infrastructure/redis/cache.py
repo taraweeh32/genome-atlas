@@ -44,9 +44,13 @@ class RedisCache:
 
     async def get(self, key: str) -> str | None:
         try:
-            return await self._require().get(key)
+            raw = await self._require().get(key)
         except RedisError as exc:
             raise InfrastructureError("redis read failed") from exc
+        if raw is None:
+            return None
+        # decode_responses may be off depending on client construction; normalise.
+        return raw.decode("utf-8") if isinstance(raw, bytes) else str(raw)
 
     async def set(self, key: str, value: str, *, ttl_seconds: int | None = None) -> None:
         try:
