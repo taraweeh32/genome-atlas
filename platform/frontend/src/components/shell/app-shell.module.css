@@ -1,0 +1,50 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.body {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.main {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: var(--space-5) var(--space-4) var(--space-7);
+}
+
+.content {
+  max-width: var(--layout-content-max-width);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.pageTitle {
+  font-size: var(--font-size-xl);
+}
+
+.pageDescription {
+  margin: var(--space-2) 0 0;
+  max-width: 60ch;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.pageActions {
+  display: flex;
+  gap: var(--space-2);
+}

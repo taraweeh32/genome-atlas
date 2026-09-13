@@ -66,7 +66,7 @@ def register_exception_handlers(app: FastAPI, environment: Environment) -> None:
     async def _domain_error(_: Request, exc: DomainError) -> JSONResponse:
         status = status_for(exc)
         if status >= 500:
-            logger.error("domain error", extra={"error_code": exc.code}, exc_info=True)
+            logger.error("domain error", extra={"error_code": exc.code}, exc_info=exc)
         return error_response(
             status=status, code=exc.code, message=exc.message, details=exc.details
         )
@@ -97,8 +97,9 @@ def register_exception_handlers(app: FastAPI, environment: Environment) -> None:
 
     @app.exception_handler(Exception)
     async def _unexpected(_: Request, exc: Exception) -> JSONResponse:
-        logger.error("unhandled internal error", exc_info=True)
-        details = (
+        # Full traceback goes to the log only; the response body stays opaque.
+        logger.error("unhandled internal error", exc_info=exc)
+        details: dict[str, object] | None = (
             {"exception": type(exc).__name__, "diagnostic": str(exc)}
             if environment.exposes_diagnostics
             else None

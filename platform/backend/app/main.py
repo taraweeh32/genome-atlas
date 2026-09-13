@@ -60,7 +60,9 @@ def create_app() -> FastAPI:
             app.state.container = None
             logger.info("application stopped")
 
-    docs_enabled = application.feature_openapi_docs and not environment.environment.is_production_like
+    docs_enabled = (
+        application.feature_openapi_docs and not environment.environment.is_production_like
+    )
     app = FastAPI(
         title=API_TITLE,
         description=API_DESCRIPTION,

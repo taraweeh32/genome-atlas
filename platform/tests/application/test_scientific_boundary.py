@@ -11,10 +11,10 @@ from app.application.use_cases.describe_scientific_capabilities import (
 )
 from app.core.environment import Environment
 from app.core.errors import ConfigurationError
+from app.core.scientific_config import ScientificAdapterKind, ScientificSettings
 from app.domain.errors import ScientificIntegrationError
 from app.scientific.adapters.development import DevelopmentScientificAdapter
 from app.scientific.adapters.factory import build_scientific_gateway
-from app.core.scientific_config import ScientificAdapterKind, ScientificSettings
 from app.scientific.contracts import (
     ExecutionStatus,
     ScientificEngineGateway,
@@ -103,9 +103,18 @@ def test_factory_selects_the_configured_adapter() -> None:
 
 
 def test_no_scientific_algorithm_terms_exist_in_the_application_tree() -> None:
-    """Architectural guard: scientific computation stays out of the application."""
+    """Architectural guard: scientific computation stays out of the application.
+
+    ``app/scientific`` is the integration boundary itself, so it may *name*
+    scientific concepts (for example an ACMG ruleset version carried as engine
+    identity) without computing them. Every other layer — api, application,
+    domain, infrastructure, workers — must not mention them at all.
+    """
+    boundary = BACKEND_ROOT / "scientific"
     offenders: list[str] = []
     for path in BACKEND_ROOT.rglob("*.py"):
+        if boundary in path.parents:
+            continue
         lowered = path.read_text(encoding="utf-8").lower()
         for term in FORBIDDEN_SCIENTIFIC_TERMS:
             if term in lowered:
@@ -113,9 +122,25 @@ def test_no_scientific_algorithm_terms_exist_in_the_application_tree() -> None:
     assert offenders == []
 
 
+def test_scientific_boundary_names_concepts_without_computing_them() -> None:
+    """The contract carries scientific *identity*, never scientific logic."""
+    source = (BACKEND_ROOT / "scientific" / "contracts.py").read_text(encoding="utf-8").lower()
+    # Identity/provenance vocabulary is expected...
+    assert "acmg" in source
+    # ...but no evaluation, scoring or classification is implemented here.
+    for implementation_term in ("def classify", "def evaluate_criterion", "def score_variant"):
+        assert implementation_term not in source
+
+
 def test_domain_does_not_import_infrastructure_or_frameworks() -> None:
     """Architectural guard: the dependency rule points inward."""
-    forbidden = ("import fastapi", "import sqlalchemy", "import redis", "import boto3", "import duckdb")
+    forbidden = (
+        "import fastapi",
+        "import sqlalchemy",
+        "import redis",
+        "import boto3",
+        "import duckdb",
+    )
     offenders: list[str] = []
     for path in (BACKEND_ROOT / "domain").rglob("*.py"):
         content = path.read_text(encoding="utf-8")

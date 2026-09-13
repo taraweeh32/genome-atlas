@@ -10,11 +10,8 @@ Conventions fixed here and reused by every later resource module:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
-
-ItemT = TypeVar("ItemT")
 
 
 class ApiModel(BaseModel):
@@ -42,7 +39,7 @@ class PageInfo(ApiModel):
     next_cursor: str | None = None
 
 
-class Collection(ApiModel, Generic[ItemT]):
+class Collection[ItemT](ApiModel):
     items: list[ItemT]
     page: PageInfo
 

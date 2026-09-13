@@ -6,7 +6,9 @@ response. No business rules here.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Response
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Response
 
 from app import __version__
 from app.api.dependencies import ContainerDep, get_readiness_use_case
@@ -17,10 +19,8 @@ from app.api.v1.schemas.system import (
     MetaResponse,
     ReadinessResponse,
 )
-from app.domain.entities.base import utc_now
-from fastapi import Depends
-
 from app.application.use_cases.get_readiness import GetReadiness
+from app.domain.entities.base import utc_now
 
 router = APIRouter(tags=["system"])
 
@@ -52,7 +52,7 @@ async def get_health(container: ContainerDep) -> HealthResponse:
 )
 async def get_ready(
     response: Response,
-    use_case: GetReadiness = Depends(get_readiness_use_case),
+    use_case: Annotated[GetReadiness, Depends(get_readiness_use_case)],
 ) -> ReadinessResponse:
     report = await use_case.execute()
     if not report.ready:

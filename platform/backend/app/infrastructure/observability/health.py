@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from app.application.ports import DependencyProbe, DependencyStatus
 from app.infrastructure.analytics.duckdb_gateway import AnalyticsGateway
@@ -13,7 +13,9 @@ from app.infrastructure.storage.object_storage import S3ObjectStorage
 from app.scientific.contracts import ScientificEngineGateway
 
 
-async def _timed(name: str, required: bool, action: Callable[[], Awaitable[None]]) -> DependencyProbe:
+async def _timed(
+    name: str, required: bool, action: Callable[[], Awaitable[None]]
+) -> DependencyProbe:
     started = time.perf_counter()
     try:
         await action()

@@ -159,8 +159,7 @@ def _parse_execution(raw: dict[str, Any]) -> ScientificExecutionResponse:
                 engine=_parse_engine(provenance_raw["engine"]),
                 environment=_parse_environment(provenance_raw["environment"]),
                 reference_resources=tuple(
-                    _parse_resource(item)
-                    for item in provenance_raw.get("reference_resources", [])
+                    _parse_resource(item) for item in provenance_raw.get("reference_resources", [])
                 ),
                 started_at=_parse_time(provenance_raw.get("started_at")),
                 completed_at=_parse_time(provenance_raw.get("completed_at")),

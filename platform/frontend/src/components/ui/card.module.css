@@ -1,0 +1,64 @@
+.card {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  font-size: var(--font-size-lg);
+}
+
+.description {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.body {
+  padding: var(--space-4);
+}
+
+.definitionList {
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.definitionRow {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr;
+  gap: var(--space-3);
+}
+
+@media (max-width: 640px) {
+  .definitionRow {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+}
+
+.definitionTerm {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.definitionValue {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}

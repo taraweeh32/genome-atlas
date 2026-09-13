@@ -82,7 +82,7 @@ class Container:
         ):
             try:
                 await closer()
-            except Exception:  # noqa: BLE001
+            except Exception:
                 logger.warning("shutdown step failed", extra={"component": name}, exc_info=True)
         logger.info("container shutdown complete")
 

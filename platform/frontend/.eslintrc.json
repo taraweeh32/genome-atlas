@@ -1,0 +1,16 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["pg", "postgres", "knex", "sequelize", "duckdb", "boto3"],
+            "message": "The frontend never talks to persistence directly. Use the versioned REST API client."
+          }
+        ]
+      }
+    ]
+  }
+}
