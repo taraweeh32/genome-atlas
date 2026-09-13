@@ -38,7 +38,7 @@ def test_container_wires_every_infrastructure_boundary(container: Container) -> 
 
 def test_health_probes_cover_the_declared_dependencies(container: Container) -> None:
     names = {probe.name for probe in container.health_probes()}
-    assert names == {"postgresql", "redis", "object_storage", "scientific"}
+    assert names == {"postgresql", "redis", "object_storage", "scientific_subsystem"}
 
 
 def test_use_cases_are_resolvable(container: Container) -> None:
