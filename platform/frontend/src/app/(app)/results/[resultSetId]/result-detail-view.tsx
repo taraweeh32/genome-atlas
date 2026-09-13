@@ -82,7 +82,7 @@ export function ResultDetailView({ resultSetId }: { resultSetId: string }) {
     async (artifactId: string) => {
       setBusyArtifact(artifactId);
       try {
-        const grant = await client.requestArtifactDownload(resultSetId, artifactId);
+        const grant = await client.requestResultArtifactDownload(resultSetId, artifactId);
         publish({
           tone: "success",
           title: "Download authorized",

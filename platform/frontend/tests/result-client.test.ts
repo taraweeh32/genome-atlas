@@ -72,7 +72,7 @@ describe("result and variant API client", () => {
         expires_in_seconds: 300,
       }),
     );
-    const grant = await clientWith(fetchImpl).requestArtifactDownload("rst_1", "rar_1");
+    const grant = await clientWith(fetchImpl).requestResultArtifactDownload("rst_1", "rar_1");
 
     const [url, init] = fetchImpl.mock.calls[0];
     expect(url).toBe(

@@ -826,7 +826,7 @@ export class ApiClient {
   }
 
   /** Asks the server for a short-lived grant. Bytes never pass through the app. */
-  requestArtifactDownload(
+  requestResultArtifactDownload(
     resultSetId: string,
     artifactId: string,
   ): Promise<ArtifactDownloadResponse> {
