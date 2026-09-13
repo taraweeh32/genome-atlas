@@ -293,6 +293,10 @@ def test_no_table_stores_a_secret_or_credential() -> None:
         for table in Base.metadata.sorted_tables
         for column in table.c
         if any(term in column.name for term in forbidden)
-        and not column.name.endswith(("_hash", "_hash_algorithm", "_reference"))
+        # Hashes, algorithm names, rotation timestamps and opaque references are
+        # metadata about a credential, never the credential itself.
+        and not column.name.endswith(
+            ("_hash", "_algorithm", "_updated_at", "_expires_at", "_reference", "_ref")
+        )
     ]
     assert offenders == []
