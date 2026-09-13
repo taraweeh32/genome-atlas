@@ -6,6 +6,8 @@ response. No business rules here.
 
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Response
 
 from app import __version__
