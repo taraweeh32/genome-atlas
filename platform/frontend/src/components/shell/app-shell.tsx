@@ -44,7 +44,7 @@ export function AppShell({
         <PrimaryNav
           items={navigation}
           label={navigationLabel}
-          isOpen={isNavigationOpen || undefined === undefined ? true : true}
+          isOpen={isNavigationOpen}
         />
         <main id="main-content" className={styles.main} tabIndex={-1}>
           <div className={styles.content}>{children}</div>
