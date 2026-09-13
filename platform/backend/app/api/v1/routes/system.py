@@ -50,7 +50,7 @@ async def get_health(container: ContainerDep) -> HealthResponse:
 )
 async def get_ready(
     response: Response,
-    use_case: GetReadiness = Depends(get_readiness_use_case),
+    use_case: Annotated[GetReadiness, Depends(get_readiness_use_case)],
 ) -> ReadinessResponse:
     report = await use_case.execute()
     if not report.ready:
