@@ -76,7 +76,7 @@ from app.infrastructure.persistence.models.organization import (
     Organization,
     OrganizationInvitation,
     OrganizationMembership,
-    OrganizationSettings,
+    OrganizationSetting,
 )
 from app.infrastructure.persistence.models.project import (
     DiscussionComment,
@@ -153,7 +153,7 @@ __all__ = [
     "Organization",
     "OrganizationInvitation",
     "OrganizationMembership",
-    "OrganizationSettings",
+    "OrganizationSetting",
     "PlatformRoleAssignment",
     "Population",
     "PopulationFrequencyObservation",
