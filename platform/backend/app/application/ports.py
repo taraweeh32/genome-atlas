@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import enum
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Protocol, Self, runtime_checkable
 
 
 class DependencyStatus(str, enum.Enum):
@@ -48,7 +48,7 @@ class HealthProbe(Protocol):
 class UnitOfWork(Protocol):
     """Transaction boundary owned by the application layer."""
 
-    async def __aenter__(self) -> UnitOfWork: ...
+    async def __aenter__(self) -> Self: ...
     async def __aexit__(self, *exc: object) -> None: ...
     async def commit(self) -> None: ...
     async def rollback(self) -> None: ...
