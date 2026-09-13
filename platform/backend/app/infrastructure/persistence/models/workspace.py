@@ -7,7 +7,7 @@ not by frontend or service-layer convention alone.
 
 from __future__ import annotations
 
-from sqlalchemy import CheckConstraint, Index, String, Text, UniqueConstraint
+from sqlalchemy import CheckConstraint, Index, String, UniqueConstraint, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import DeletionState, WorkspaceKind
@@ -38,7 +38,7 @@ class Workspace(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
             "uq_workspaces_personal_owner",
             "owner_user_id",
             unique=True,
-            postgresql_where=Text("kind = 'personal'"),
+            postgresql_where=text("kind = 'personal'"),
         ),
         UniqueConstraint("organization_id", name="uq_workspaces_organization_id"),
     )
