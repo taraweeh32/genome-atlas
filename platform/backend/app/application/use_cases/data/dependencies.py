@@ -16,7 +16,7 @@ from typing import Any
 
 from app.application.services.authorization import AuthorizationService
 from app.application.services.recorder import ActivityRecorder
-from app.core.app_config import AppConfig
+from app.core.app_config import ApplicationSettings
 from app.domain.authorization.context import ActorContext
 from app.domain.authorization.permissions import Permission
 from app.domain.data.entities import Dataset
@@ -33,7 +33,7 @@ class DataServices:
     scanner: Any
     inspector: Any
     checksums: Any
-    config: AppConfig
+    config: ApplicationSettings
     storage_provider: str = "s3"
     storage_bucket: str = ""
     upload_url_ttl_seconds: int = 900

@@ -491,7 +491,7 @@ class SoftDeleteDataset:
             deletion_state = require_transition(
                 "deletion", dataset.deletion_state, DeletionState.SOFT_DELETED
             )
-            retention_days = self._services.config.application.default_result_retention_days
+            retention_days = self._services.config.default_result_retention_days
             await repositories.datasets.save(
                 replace(
                     dataset,
