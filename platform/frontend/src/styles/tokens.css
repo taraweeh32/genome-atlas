@@ -1,0 +1,100 @@
+/**
+ * Design tokens.
+ *
+ * Every colour, spacing, radius, typography and state value used by the shell is
+ * declared here. Components reference tokens only — no ad-hoc colour literals —
+ * so theming (including a later dark theme and high-contrast mode) is a token
+ * change rather than a component rewrite.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces and text */
+  --color-canvas: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-sunken: #eef1f5;
+  --color-border: #d5dae2;
+  --color-border-strong: #b6bec9;
+  --color-text: #121a24;
+  --color-text-muted: #5a6675;
+  --color-text-inverted: #ffffff;
+
+  /* Brand / accent */
+  --color-accent: #14557a;
+  --color-accent-hover: #0f4362;
+  --color-accent-subtle: #e5eef4;
+  --color-focus-ring: #1d7fb8;
+
+  /* Status */
+  --color-info: #14557a;
+  --color-success: #1c6b46;
+  --color-warning: #8a5a08;
+  --color-danger: #a02020;
+  --color-danger-subtle: #fbeaea;
+
+  /* Typography */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.8125rem;
+  --font-size-md: 0.9375rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.5rem;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  /* Radii, elevation, motion */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --shadow-sm: 0 1px 2px rgba(18, 26, 36, 0.08);
+  --shadow-md: 0 4px 12px rgba(18, 26, 36, 0.1);
+  --duration-fast: 120ms;
+
+  /* Layout */
+  --layout-header-height: 3.5rem;
+  --layout-sidebar-width: 15rem;
+  --layout-content-max-width: 96rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --color-canvas: #0d1319;
+    --color-surface: #141c24;
+    --color-surface-raised: #1a232d;
+    --color-surface-sunken: #101820;
+    --color-border: #2a3542;
+    --color-border-strong: #3b4857;
+    --color-text: #e9eef4;
+    --color-text-muted: #a2afbd;
+    --color-accent: #4aa3d6;
+    --color-accent-hover: #6fb8e3;
+    --color-accent-subtle: #16303f;
+    --color-danger: #ea8383;
+    --color-danger-subtle: #2a1717;
+  }
+}
+
+/* Accessibility: honour reduced-motion preferences platform-wide. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
