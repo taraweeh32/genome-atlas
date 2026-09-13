@@ -16,6 +16,9 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
     ImportSessionState,
+    InputFormat,
+    ReferenceBuildDeclaration,
+    ValidationCategory,
     ValidationRunState,
     ValidationSeverity,
     ValueSemantics,
@@ -34,8 +37,15 @@ from app.infrastructure.persistence.base import (
 class ImportSession(Base, TimestampMixin, ConcurrencyMixin):
     __tablename__ = "import_sessions"
     __table_args__ = (
+        UniqueConstraint("idempotency_key", name="uq_import_sessions_idempotency_key"),
         state_check("state", ImportSessionState, "state_valid"),
+        state_check("declared_format", InputFormat, "declared_format_valid"),
+        state_check("detected_format", InputFormat, "detected_format_valid"),
+        state_check(
+            "reference_build_declared", ReferenceBuildDeclaration, "reference_build_valid"
+        ),
         Index("ix_import_sessions_workspace_id_state", "workspace_id", "state"),
+        Index("ix_import_sessions_correlation_id", "correlation_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -47,9 +57,28 @@ class ImportSession(Base, TimestampMixin, ConcurrencyMixin):
         String(64), nullable=False, server_default=ImportSessionState.OPEN.value
     )
     initiated_by: Mapped[str] = fk_column("app.users.id")
+    file_artifact_id: Mapped[str | None] = fk_column("app.file_artifacts.id", nullable=True)
+    declared_format: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=InputFormat.UNKNOWN.value
+    )
+    detected_format: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=InputFormat.UNKNOWN.value
+    )
+    reference_build_declared: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=ReferenceBuildDeclaration.UNSPECIFIED.value
+    )
     #: Column/field mapping chosen for this import; part of import provenance.
     mapping_metadata: Mapped[dict | None] = json_column()
     import_provenance: Mapped[dict | None] = json_column()
+    #: Identity of the code that performed the import, so a historical import
+    #: stays attributable to the exact importer behaviour that produced it.
+    importer_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: Idempotency: a retried submission cannot create a second import.
+    idempotency_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    correlation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    mapping_confirmed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decided_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     decided_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
@@ -91,6 +120,14 @@ class ValidationRun(Base, TimestampMixin):
         String(64), nullable=False, server_default=ValidationRunState.PENDING.value
     )
     requested_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
+    #: Validator identity, so a historical outcome is reproducible against the
+    #: exact rules that produced it.
+    validator_name: Mapped[str] = mapped_column(
+        String(128), nullable=False, server_default="platform.input_validator"
+    )
+    validator_version: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default="1"
+    )
     correlation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -105,6 +142,7 @@ class ValidationIssue(Base, TimestampMixin):
     __tablename__ = "validation_issues"
     __table_args__ = (
         state_check("severity", ValidationSeverity, "severity_valid"),
+        state_check("category", ValidationCategory, "category_valid"),
         state_check("value_semantics", ValueSemantics, "value_semantics_valid"),
         Index("ix_validation_issues_validation_run_id_severity", "validation_run_id", "severity"),
     )
@@ -113,6 +151,13 @@ class ValidationIssue(Base, TimestampMixin):
     validation_run_id: Mapped[str] = fk_column("app.validation_runs.id", ondelete="CASCADE")
     validation_rule_id: Mapped[str | None] = fk_column("app.validation_rules.id", nullable=True)
     severity: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: Which concern the finding belongs to: a transfer problem, a security
+    #: refusal and a schema mismatch are never the same class of failure.
+    category: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=ValidationCategory.STRUCTURE.value
+    )
+    #: Stable machine-readable finding code, safe to present and to test against.
+    code: Mapped[str] = mapped_column(String(128), nullable=False, server_default="unspecified")
     message: Mapped[str] = mapped_column(Text, nullable=False)
     #: Where the issue was found: file line/record/field locator.
     locator: Mapped[dict | None] = json_column()

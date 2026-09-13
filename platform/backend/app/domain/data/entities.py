@@ -154,7 +154,6 @@ class FileArtifact:
     uploaded_by: str
     dataset_id: str | None = None
     dataset_version_id: str | None = None
-    upload_session_id: str | None = None
     content_type: str | None = None
     size_bytes: int | None = None
     checksum_algorithm: ChecksumAlgorithm = ChecksumAlgorithm.SHA256

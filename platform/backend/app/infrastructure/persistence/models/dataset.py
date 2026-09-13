@@ -26,12 +26,16 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
     ChecksumAlgorithm,
+    CompressionKind,
     DatasetKind,
     DatasetState,
     DatasetVersionState,
     DeletionState,
     FileUploadState,
     FileValidationState,
+    InputFormat,
+    MalwareScanState,
+    ReferenceBuildDeclaration,
 )
 from app.infrastructure.persistence.base import (
     Base,
@@ -52,6 +56,9 @@ class Dataset(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         state_check("kind", DatasetKind, "kind_valid"),
         state_check("state", DatasetState, "state_valid"),
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
+        state_check(
+            "reference_build_declared", ReferenceBuildDeclaration, "reference_build_valid"
+        ),
         Index("ix_datasets_project_id_state", "project_id", "state"),
     )
 
@@ -70,6 +77,11 @@ class Dataset(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
     owner_user_id: Mapped[str | None] = fk_column("app.users.id", nullable=True)
     #: Pointer to the current accepted version; history stays intact.
     current_version_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: A *declared* build, never a verified one. Confirming that coordinates are
+    #: consistent with a build is scientific work performed outside this layer.
+    reference_build_declared: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=ReferenceBuildDeclaration.UNSPECIFIED.value
+    )
     source_metadata: Mapped[dict | None] = json_column()
     scientific_metadata: Mapped[dict | None] = json_column()
 
@@ -90,6 +102,12 @@ class DatasetVersion(Base, TimestampMixin, RetentionMixin):
         state_check("state", DatasetVersionState, "state_valid"),
         state_check("checksum_algorithm", ChecksumAlgorithm, "checksum_algorithm_valid"),
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
+        state_check("declared_format", InputFormat, "declared_format_valid"),
+        state_check("detected_format", InputFormat, "detected_format_valid"),
+        state_check("compression", CompressionKind, "compression_valid"),
+        state_check(
+            "reference_build_declared", ReferenceBuildDeclaration, "reference_build_valid"
+        ),
         Index("ix_dataset_versions_dataset_id_state", "dataset_id", "state"),
     )
 
@@ -105,6 +123,20 @@ class DatasetVersion(Base, TimestampMixin, RetentionMixin):
         String(64), nullable=False, server_default=ChecksumAlgorithm.SHA256.value
     )
     checksum_value: Mapped[str | None] = mapped_column(String(256), nullable=True)
+    #: What the submitter claimed, and what the bytes actually looked like. Kept
+    #: as two columns so a contradiction stays visible instead of being resolved.
+    declared_format: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=InputFormat.UNKNOWN.value
+    )
+    detected_format: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=InputFormat.UNKNOWN.value
+    )
+    compression: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=CompressionKind.UNKNOWN.value
+    )
+    reference_build_declared: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=ReferenceBuildDeclaration.UNSPECIFIED.value
+    )
     #: Verbatim source representation metadata; never rewritten.
     source_representation: Mapped[dict | None] = json_column()
     version_metadata: Mapped[dict | None] = json_column()
@@ -137,6 +169,10 @@ class FileArtifact(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         ),
         state_check("upload_state", FileUploadState, "upload_state_valid"),
         state_check("validation_state", FileValidationState, "validation_state_valid"),
+        state_check("scan_state", MalwareScanState, "scan_state_valid"),
+        state_check("declared_format", InputFormat, "declared_format_valid"),
+        state_check("detected_format", InputFormat, "detected_format_valid"),
+        state_check("compression", CompressionKind, "compression_valid"),
         state_check("checksum_algorithm", ChecksumAlgorithm, "checksum_algorithm_valid"),
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
         Index("ix_file_artifacts_dataset_version_id_upload_state", "dataset_version_id",
@@ -164,6 +200,24 @@ class FileArtifact(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
     validation_state: Mapped[str] = mapped_column(
         String(64), nullable=False, server_default=FileValidationState.NOT_VALIDATED.value
     )
+    #: Scanning is a separate gate from validation, and it fails closed: an
+    #: artifact that could not be scanned is never treated as safe.
+    scan_state: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=MalwareScanState.NOT_SCANNED.value
+    )
+    scan_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+    declared_format: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=InputFormat.UNKNOWN.value
+    )
+    detected_format: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=InputFormat.UNKNOWN.value
+    )
+    compression: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=CompressionKind.UNKNOWN.value
+    )
+    #: The name exactly as submitted, preserved as source metadata. ``filename``
+    #: holds the sanitised name used for display and download.
+    original_filename: Mapped[str | None] = mapped_column(String(512), nullable=True)
     quarantined_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     quarantine_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     uploaded_by: Mapped[str] = fk_column("app.users.id")

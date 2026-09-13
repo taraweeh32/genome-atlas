@@ -110,6 +110,10 @@ from app.infrastructure.persistence.models.scientific import (
     ScientificResource,
     ScientificResourceCompatibility,
 )
+from app.infrastructure.persistence.models.uploads import (
+    DatasetColumnMapping,
+    UploadSession,
+)
 from app.infrastructure.persistence.models.variant import (
     Gene,
     Sample,
@@ -136,6 +140,7 @@ __all__ = [
     "CriterionEvaluation",
     "CriterionEvaluationEvidence",
     "Dataset",
+    "DatasetColumnMapping",
     "DatasetVersion",
     "DiscussionComment",
     "DomainEventOutbox",
@@ -193,6 +198,7 @@ __all__ = [
     "UserAuthenticationMetadata",
     "UserCredentialToken",
     "UserSession",
+    "UploadSession",
     "UserPreference",
     "ValidationIssue",
     "ValidationRule",
