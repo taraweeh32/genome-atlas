@@ -1,0 +1,119 @@
+/* Dataset surfaces: dense tabular presentation for scientific inputs. */
+
+.list {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3) 0;
+  border-block-end: 1px solid var(--color-border-subtle);
+}
+
+.row:last-child {
+  border-block-end: none;
+}
+
+.rowMain {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowTitle {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.rowMeta {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.rowActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.badges {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  font-size: var(--font-size-xs);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.badgeBlocking {
+  border-color: var(--color-danger-border, var(--color-border-subtle));
+  color: var(--color-danger-text, var(--color-text-primary));
+}
+
+.tableScroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+}
+
+.table th,
+.table td {
+  text-align: start;
+  padding: var(--space-2);
+  border-block-end: 1px solid var(--color-border-subtle);
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.table th {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.wrap {
+  white-space: normal;
+}
+
+.notice {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.select {
+  width: 100%;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-strong, var(--color-border-subtle));
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-raised, transparent);
+  color: inherit;
+  font: inherit;
+}
+
+.semanticsAbsent {
+  font-style: italic;
+  color: var(--color-text-secondary);
+}
