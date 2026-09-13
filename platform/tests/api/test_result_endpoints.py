@@ -146,7 +146,7 @@ class TestResultSetTransport:
         content = client.get(f"/api/v1/result-sets/{view.result_set.id}/content")
         assert content.status_code == 200, content.text
         page = content.json()
-        assert [column["name"] for column in page["columns"]] == ["variant_id", "score"]
+        assert page["columns"] == ["variant_id", "score"]
         assert page["rows"] == [["v1", 1]]
         assert page["is_development_payload"] is True
 
@@ -231,7 +231,7 @@ class TestResultSetTransport:
         assert body["invalidation_reason"] == "withdrawn"
         # Withdrawal is a lifecycle statement; the recorded content is untouched.
         assert body["row_count"] == view.result_set.row_count
-        assert body["analytical_location"] == view.result_set.analytical_location
+        assert body["column_schema"] == dict(view.result_set.column_schema)
 
 
 class TestVariantTransport:
