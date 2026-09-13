@@ -15,11 +15,23 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.repositories.datasets import (
+    SqlDatasetRepository,
+    SqlDatasetVersionRepository,
+    SqlFileArtifactRepository,
+    SqlUploadSessionRepository,
+)
 from app.infrastructure.persistence.repositories.governance import (
     SqlAuditRepository,
     SqlNotificationRepository,
     SqlOutboxRepository,
     SqlSecurityEventRepository,
+)
+from app.infrastructure.persistence.repositories.ingest import (
+    SqlColumnMappingRepository,
+    SqlImportSessionRepository,
+    SqlValidationIssueRepository,
+    SqlValidationRunRepository,
 )
 from app.infrastructure.persistence.repositories.identity import (
     SqlCredentialsRepository,
@@ -28,6 +40,7 @@ from app.infrastructure.persistence.repositories.identity import (
     SqlSessionRepository,
     SqlUserRepository,
 )
+from app.infrastructure.persistence.repositories.jobs import SqlJobRepository
 from app.infrastructure.persistence.repositories.projects import (
     SqlProjectMembershipRepository,
     SqlProjectRepository,
@@ -55,6 +68,15 @@ class SqlRepositories:
     projects: SqlProjectRepository
     project_memberships: SqlProjectMembershipRepository
     platform_roles: SqlPlatformRoleRepository
+    datasets: SqlDatasetRepository
+    dataset_versions: SqlDatasetVersionRepository
+    file_artifacts: SqlFileArtifactRepository
+    upload_sessions: SqlUploadSessionRepository
+    import_sessions: SqlImportSessionRepository
+    column_mappings: SqlColumnMappingRepository
+    validation_runs: SqlValidationRunRepository
+    validation_issues: SqlValidationIssueRepository
+    jobs: SqlJobRepository
     audit: SqlAuditRepository
     security_events: SqlSecurityEventRepository
     outbox: SqlOutboxRepository
@@ -74,6 +96,15 @@ class SqlRepositories:
             projects=SqlProjectRepository(session),
             project_memberships=SqlProjectMembershipRepository(session),
             platform_roles=SqlPlatformRoleRepository(session),
+            datasets=SqlDatasetRepository(session),
+            dataset_versions=SqlDatasetVersionRepository(session),
+            file_artifacts=SqlFileArtifactRepository(session),
+            upload_sessions=SqlUploadSessionRepository(session),
+            import_sessions=SqlImportSessionRepository(session),
+            column_mappings=SqlColumnMappingRepository(session),
+            validation_runs=SqlValidationRunRepository(session),
+            validation_issues=SqlValidationIssueRepository(session),
+            jobs=SqlJobRepository(session),
             audit=SqlAuditRepository(session),
             security_events=SqlSecurityEventRepository(session),
             outbox=SqlOutboxRepository(session),
