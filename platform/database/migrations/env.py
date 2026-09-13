@@ -43,7 +43,6 @@ _CONFIGURE_OPTIONS = {
     "include_object": _include_object,
     "compare_type": True,
     "compare_server_default": True,
-    "version_table_schema": "platform",
 }
 
 
