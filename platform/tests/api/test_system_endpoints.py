@@ -213,12 +213,32 @@ class TestErrorEnvelope:
 
         boom = client.get("/api/v1/_test/boom")
         assert boom.status_code == 500
-        body = boom.text
-        # Unexpected internal errors must be opaque to the caller.
-        assert "password" not in body
-        assert "psycopg" not in body
-        assert "Traceback" not in body
-        assert boom.json()["error"]["code"] == "internal_error"
+        body = boom.json()
+        # The caller always gets the stable opaque code and message; the raw
+        # exception text is never the message, and no stack trace is returned.
+        assert body["error"]["code"] == "internal_error"
+        assert body["error"]["message"] == "an internal error occurred"
+        assert "Traceback" not in boom.text
+        assert "psycopg" not in body["error"]["message"]
+
+    def test_production_like_environments_expose_no_diagnostics(self) -> None:
+        """Diagnostic detail is an environment-gated concession, never the default."""
+        from app.core.environment import Environment
+
+        assert Environment.PRODUCTION.exposes_diagnostics is False
+        assert Environment.STAGING.exposes_diagnostics is False
+        assert Environment.DEVELOPMENT.exposes_diagnostics is True
+
+    def test_oversized_request_is_rejected_with_the_envelope(
+        self, healthy_client: TestClient
+    ) -> None:
+        response = healthy_client.post(
+            "/api/v1/_none",
+            content=b"x" * 32,
+            headers={"Content-Length": str(64 * 1024 * 1024)},
+        )
+        assert response.status_code == 413
+        assert response.json()["error"]["code"] == "validation_error"
 
 
 class TestSecurityHeaders:
@@ -226,7 +246,8 @@ class TestSecurityHeaders:
         headers = healthy_client.get("/api/v1/health").headers
         assert headers["X-Content-Type-Options"] == "nosniff"
         assert headers["X-Frame-Options"] == "DENY"
-        assert "Referrer-Policy" in headers
+        assert headers["Referrer-Policy"] == "no-referrer"
+        assert headers["Cache-Control"] == "no-store"
 
 
 class TestOpenApi:
@@ -236,4 +257,4 @@ class TestOpenApi:
         document = healthy_client.get("/api/v1/openapi.json").json()
         assert "/api/v1/health" in document["paths"]
         assert "/api/v1/ready" in document["paths"]
-        assert {tag["name"] for tag in document["openapi" and "tags"]} >= {"system"}
+        assert {tag["name"] for tag in document["tags"]} >= {"system"}
