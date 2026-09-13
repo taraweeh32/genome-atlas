@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from app.api.v1.routes import (
     administration,
     authentication,
+    datasets,
     identity,
     organizations,
     projects,
@@ -29,4 +30,10 @@ api_v1_router.include_router(workspaces.router)
 api_v1_router.include_router(organizations.router)
 api_v1_router.include_router(organizations.invitations_router)
 api_v1_router.include_router(projects.router)
+api_v1_router.include_router(datasets.router)
+api_v1_router.include_router(datasets.versions_router)
+api_v1_router.include_router(datasets.uploads_router)
+api_v1_router.include_router(datasets.artifacts_router)
+api_v1_router.include_router(datasets.imports_router)
+api_v1_router.include_router(datasets.validation_router)
 api_v1_router.include_router(administration.router)

@@ -74,11 +74,15 @@ class ApplicationSettings(BaseSettings):
     api_prefix: str = API_PREFIX
     api_version: str = API_VERSION
 
-    # Limits. Enforcement of dataset/file limits belongs to later packages; the
-    # values live here so no module invents its own constant.
+    # Limits. Declared once here so no module invents its own constant.
     max_upload_bytes: int = Field(default=50 * 1024 * 1024 * 1024, ge=1)
     max_page_size: int = Field(default=200, ge=1, le=1000)
     default_page_size: int = Field(default=25, ge=1, le=1000)
+
+    # Transfer grants. Short-lived on purpose: a presigned URL is a temporary
+    # permission to move bytes, never a durable capability over an artifact.
+    upload_url_ttl_seconds: int = Field(default=900, ge=60, le=24 * 3600)
+    download_url_ttl_seconds: int = Field(default=300, ge=30, le=3600)
 
     # Policies (enforced by later packages, declared once here).
     default_result_retention_days: int = Field(default=365, ge=1)
@@ -86,6 +90,12 @@ class ApplicationSettings(BaseSettings):
 
     # Feature configuration.
     feature_openapi_docs: bool = True
+    #: Enables the development/test signature scanner. It is refused in
+    #: production-like environments regardless of this flag; with no scanner the
+    #: platform reports ``unavailable`` and refuses to accept uploads, rather
+    #: than treating unscanned bytes as clean.
+    feature_development_file_scanner: bool = True
+
 
     security: SecurityPolicySettings = Field(default_factory=SecurityPolicySettings)
 

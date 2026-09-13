@@ -32,6 +32,20 @@ import type {
   WorkspaceResponse,
 } from "./identity-types";
 import type {
+  ColumnMappingDecision,
+  DatasetCollection,
+  DatasetResponse,
+  DatasetVersionCollection,
+  DatasetVersionResponse,
+  DownloadGrantResponse,
+  ImportSessionCollection,
+  ImportSessionResponse,
+  UploadSessionResponse,
+  UploadTicketResponse,
+  ValidationRunCollection,
+  ValidationRunResponse,
+} from "./data-types";
+import type {
   ApiErrorBody,
   HealthResponse,
   MetaResponse,
@@ -371,5 +385,191 @@ export class ApiClient {
       `/admin/organization-requests/${encodeURIComponent(organizationId)}/decision`,
       { method: "POST", body },
     );
+  }
+
+  // -- datasets, uploads, imports and validation ---------------------------
+
+  datasets(params?: {
+    workspace_id?: string;
+    project_id?: string;
+    query?: string;
+    include_archived?: boolean;
+  }): Promise<DatasetCollection> {
+    const search = new URLSearchParams();
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    if (params?.query) search.set("query", params.query);
+    if (params?.include_archived) search.set("include_archived", "true");
+    const query = search.toString();
+    return this.request<DatasetCollection>(`/datasets${query ? `?${query}` : ""}`);
+  }
+
+  dataset(datasetId: string): Promise<DatasetResponse> {
+    return this.request<DatasetResponse>(`/datasets/${encodeURIComponent(datasetId)}`);
+  }
+
+  createDataset(body: {
+    workspace_id?: string | null;
+    project_id?: string | null;
+    name: string;
+    kind: string;
+    description?: string | null;
+    reference_build_declared?: string;
+  }): Promise<DatasetResponse> {
+    return this.request<DatasetResponse>("/datasets", { method: "POST", body });
+  }
+
+  changeDatasetState(
+    datasetId: string,
+    body: { target_state: string; reason?: string | null },
+  ): Promise<DatasetResponse> {
+    return this.request<DatasetResponse>(
+      `/datasets/${encodeURIComponent(datasetId)}/state`,
+      { method: "POST", body },
+    );
+  }
+
+  datasetVersions(datasetId: string): Promise<DatasetVersionCollection> {
+    return this.request<DatasetVersionCollection>(
+      `/datasets/${encodeURIComponent(datasetId)}/versions`,
+    );
+  }
+
+  createDatasetVersion(
+    datasetId: string,
+    body: { notes?: string | null; reference_build_declared?: string | null } = {},
+  ): Promise<DatasetVersionResponse> {
+    return this.request<DatasetVersionResponse>(
+      `/datasets/${encodeURIComponent(datasetId)}/versions`,
+      { method: "POST", body },
+    );
+  }
+
+  datasetImports(datasetId: string): Promise<ImportSessionCollection> {
+    return this.request<ImportSessionCollection>(
+      `/datasets/${encodeURIComponent(datasetId)}/imports`,
+    );
+  }
+
+  /** Accepting or rejecting a validated version: an explicit human decision. */
+  decideDatasetVersion(
+    versionId: string,
+    body: { accept: boolean; reason?: string | null },
+  ): Promise<DatasetVersionResponse> {
+    return this.request<DatasetVersionResponse>(
+      `/dataset-versions/${encodeURIComponent(versionId)}/decision`,
+      { method: "POST", body },
+    );
+  }
+
+  openUploadSession(
+    versionId: string,
+    body: {
+      filename: string;
+      size_bytes: number;
+      declared_format?: string | null;
+      checksum_algorithm?: string;
+      checksum_value?: string | null;
+      content_type?: string | null;
+    },
+  ): Promise<UploadTicketResponse> {
+    return this.request<UploadTicketResponse>(
+      `/dataset-versions/${encodeURIComponent(versionId)}/uploads`,
+      { method: "POST", body },
+    );
+  }
+
+  completeUpload(sessionId: string): Promise<UploadSessionResponse> {
+    return this.request<UploadSessionResponse>(
+      `/uploads/${encodeURIComponent(sessionId)}/complete`,
+      { method: "POST", body: {} },
+    );
+  }
+
+  cancelUpload(sessionId: string, reason?: string | null): Promise<UploadSessionResponse> {
+    return this.request<UploadSessionResponse>(
+      `/uploads/${encodeURIComponent(sessionId)}/cancel`,
+      { method: "POST", body: { reason: reason ?? null } },
+    );
+  }
+
+  requestArtifactDownload(artifactId: string): Promise<DownloadGrantResponse> {
+    return this.request<DownloadGrantResponse>(
+      `/file-artifacts/${encodeURIComponent(artifactId)}/download`,
+      { method: "POST", body: {} },
+    );
+  }
+
+  openImportSession(
+    artifactId: string,
+    body: { idempotency_key?: string | null } = {},
+  ): Promise<ImportSessionResponse> {
+    return this.request<ImportSessionResponse>(
+      `/file-artifacts/${encodeURIComponent(artifactId)}/imports`,
+      { method: "POST", body: { file_artifact_id: artifactId, ...body } },
+    );
+  }
+
+  importSession(sessionId: string): Promise<ImportSessionResponse> {
+    return this.request<ImportSessionResponse>(`/imports/${encodeURIComponent(sessionId)}`);
+  }
+
+  confirmColumnMapping(
+    sessionId: string,
+    mappings: readonly ColumnMappingDecision[],
+  ): Promise<ImportSessionResponse> {
+    return this.request<ImportSessionResponse>(
+      `/imports/${encodeURIComponent(sessionId)}/mapping`,
+      { method: "PUT", body: { mappings } },
+    );
+  }
+
+  submitImport(sessionId: string): Promise<ImportSessionResponse> {
+    return this.request<ImportSessionResponse>(
+      `/imports/${encodeURIComponent(sessionId)}/submit`,
+      { method: "POST", body: {} },
+    );
+  }
+
+  abandonImport(sessionId: string, reason?: string | null): Promise<ImportSessionResponse> {
+    return this.request<ImportSessionResponse>(
+      `/imports/${encodeURIComponent(sessionId)}/abandon`,
+      { method: "POST", body: { reason: reason ?? null } },
+    );
+  }
+
+  validationRuns(subjectType: string, subjectId: string): Promise<ValidationRunCollection> {
+    const search = new URLSearchParams({
+      subject_type: subjectType,
+      subject_id: subjectId,
+    });
+    return this.request<ValidationRunCollection>(`/validation/runs?${search.toString()}`);
+  }
+
+  validationRun(runId: string): Promise<ValidationRunResponse> {
+    return this.request<ValidationRunResponse>(
+      `/validation/runs/${encodeURIComponent(runId)}`,
+    );
+  }
+
+  /**
+   * Transfers the bytes straight to object storage with the grant the backend
+   * issued. Deliberately not a platform API call: no session cookie, no CSRF
+   * token and no correlation header are sent to the storage origin, and the
+   * platform still refuses the artifact afterwards if verification fails.
+   */
+  async transferBytes(uploadUrl: string, file: Blob, contentType?: string): Promise<void> {
+    const response = await this.fetchImpl(uploadUrl, {
+      method: "PUT",
+      body: file,
+      headers: contentType ? { "Content-Type": contentType } : undefined,
+    });
+    if (!response.ok) {
+      throw new ApiError(
+        response.status,
+        "upload_transfer_failed",
+        "The file could not be transferred to storage. Nothing was accepted.",
+      );
+    }
   }
 }

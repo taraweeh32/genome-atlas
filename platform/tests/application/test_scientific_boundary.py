@@ -107,9 +107,13 @@ def test_factory_selects_the_configured_adapter() -> None:
 #: declares the controlled value sets a scientific engine reports back, and the
 #: persistence models declare the columns those values are stored in. Storing
 #: and naming a result is a persistence concern; deriving one is not.
+#: ``domain/data/mapping.py`` is also vocabulary: it declares which source column
+#: a submitter says holds which *concept*, and refuses ambiguous or incomplete
+#: declarations. It never reads a value, derives a frequency or interprets one.
 VOCABULARY_ONLY_PATHS = (
     "scientific",
     "domain/value_objects/enums.py",
+    "domain/data/mapping.py",
     "infrastructure/persistence/models",
 )
 

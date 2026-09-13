@@ -14,13 +14,20 @@ from app.application.services.authorization import AuthorizationService
 from app.domain.authorization.policy import AuthorizationPolicy
 from app.application.services.context import RequestContext
 from app.application.services.sessions import SessionService
-from app.core.app_config import SecurityPolicySettings
+from app.core.app_config import ApplicationSettings, SecurityPolicySettings
 from app.application.use_cases.identity.dependencies import IdentityServices
+from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.domain.identity.passwords import PasswordPolicy
 from app.infrastructure.security.clock import FixedClock
 from app.infrastructure.security.passwords import Argon2PasswordHasher
 from app.infrastructure.security.tokens import TokenHasher
+from tests.support.data_storage import (
+    MemoryObjectStorage,
+    StubChecksums,
+    StubInspector,
+    StubScanner,
+)
 from tests.support.memory import (
     AllowAllRateLimiter,
     MemoryRepositories,
@@ -46,6 +53,9 @@ class Harness:
     tokens: TokenHasher
     policy: SecurityPolicySettings
     request: RequestContext
+    data: DataServices
+    storage: MemoryObjectStorage
+    scanner: StubScanner
 
     def advance_to(self, moment: datetime) -> None:
         self.clock._moment = moment  # noqa: SLF001 - test clock
@@ -86,7 +96,24 @@ def build_harness(
         policy=policy,
         expose_development_tokens=expose_development_tokens,
     )
+    storage = MemoryObjectStorage()
+    scanner = StubScanner()
+    data = DataServices(
+        unit_of_work=unit_of_work,
+        clock=clock,
+        authorization=authorization,
+        storage=storage,
+        scanner=scanner,
+        inspector=StubInspector(storage),
+        checksums=StubChecksums(storage),
+        config=ApplicationSettings(),
+        storage_provider="s3",
+        storage_bucket="test-bucket",
+    )
     return Harness(
+        data=data,
+        storage=storage,
+        scanner=scanner,
         repositories=repositories,
         unit_of_work=unit_of_work,
         clock=clock,

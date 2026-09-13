@@ -39,9 +39,32 @@ class AuthorizationError(DomainError):
 
 
 class NotFoundError(DomainError):
-    """The addressed resource does not exist or is not visible to the caller."""
+    """The addressed resource does not exist or is not visible to the caller.
+
+    Two call shapes are supported deliberately. ``NotFoundError("no such page")``
+    carries a message directly; ``NotFoundError("dataset", dataset_id)`` names a
+    resource type and the identifier the caller supplied. The second form is what
+    use cases raise, so "does not exist" and "not yours" are answered
+    identically — the response never confirms that an id exists.
+    """
 
     code = "not_found"
+
+    def __init__(
+        self,
+        message: str,
+        resource_id: str | None = None,
+        *,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        if resource_id is None:
+            super().__init__(message, details=details)
+            return
+        merged = {"resource_type": message, "resource_id": resource_id}
+        merged.update(details or {})
+        super().__init__(f"{message} was not found", details=merged)
+
+
 
 
 class ConflictError(DomainError):

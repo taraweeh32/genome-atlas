@@ -181,8 +181,10 @@ class FileArtifact:
             self.deletion_state is DeletionState.ACTIVE
             and self.upload_state is FileUploadState.UPLOADED
             and self.scan_state is MalwareScanState.CLEAN
-            and self.validation_state
-            in (FileValidationState.VALID, FileValidationState.INVALID)
+            # Only a passed validation qualifies. An ``invalid`` artifact may be
+            # bytes that are not what was submitted at all, so it is never handed
+            # back out as the dataset's file; it is replaced by a new upload.
+            and self.validation_state is FileValidationState.VALID
         )
 
 
