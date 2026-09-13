@@ -210,9 +210,9 @@ async def test_an_unattributed_payload_is_refused_and_the_refusal_is_recorded(ha
             )
         )
 
-    ingestions = await harness.repositories.result_ingestions.list_all(page=PAGE)
-    assert [item.state for item in ingestions.items] == [ResultIngestionState.REJECTED]
-    assert ingestions.items[0].rejection_code is not None
+    ingestions = tuple(harness.repositories.result_ingestions.rows.values())
+    assert [item.state for item in ingestions] == [ResultIngestionState.REJECTED]
+    assert ingestions[0].rejection_code is not None
     # A refused delivery never produced a surface.
     sets = await harness.repositories.result_sets.list_all(page=PAGE)
     assert sets.items == []
