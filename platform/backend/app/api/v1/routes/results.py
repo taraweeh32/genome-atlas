@@ -26,7 +26,6 @@ from app.api.authentication import CallerDep, RequestContextDep
 from app.api.dependencies import ContainerDep
 from app.api.v1.mapping import PageDep, page_meta, parse_enum
 from app.api.v1.result_mapping import (
-    artifact_response,
     result_content_response,
     result_set_response,
     variant_detail_response,
