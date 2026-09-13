@@ -163,6 +163,11 @@ def _as_utc(moment: datetime) -> datetime:
     return moment.astimezone(UTC)
 
 
+#: A slot reached within this many seconds counts as an on-time firing rather
+#: than a missed one; scheduler ticks are never perfectly punctual.
+ON_TIME_GRACE_SECONDS = 300
+
+
 @dataclass(frozen=True, slots=True)
 class MissedFirings:
     """What to do about firings whose slot has already passed."""
@@ -205,23 +210,39 @@ def resolve_missed(
     next_execution_at = cursor
     if not slots:
         return MissedFirings(due=(), skipped=(), next_execution_at=next_execution_at)
-    if policy is MissedSchedulePolicy.SKIP:
-        return MissedFirings(
-            due=(), skipped=tuple(slots), next_execution_at=next_execution_at
-        )
-    if policy is MissedSchedulePolicy.RUN_ONCE_AFTER_RECOVERY:
-        return MissedFirings(
-            due=(slots[-1],), skipped=tuple(slots[:-1]), next_execution_at=next_execution_at
-        )
-    limit = max(1, catch_up_limit)
-    due = tuple(slots[-limit:])
-    skipped = tuple(slots[: max(0, len(slots) - limit)])
-    return MissedFirings(due=due, skipped=skipped, next_execution_at=next_execution_at)
+    # A slot the scheduler reached within the grace window is *punctual*: it is
+    # the schedule running normally, so the missed-slot policy does not apply to
+    # it. Only genuinely late slots are subject to the policy.
+    grace = timedelta(seconds=ON_TIME_GRACE_SECONDS)
+    punctual = [slot for slot in slots if now - slot <= grace]
+    late = [slot for slot in slots if now - slot > grace]
+    due: list[datetime] = []
+    skipped: list[datetime] = []
+    if punctual:
+        # Several punctual slots at once still mean one run: the newest.
+        due.append(punctual[-1])
+        skipped.extend(punctual[:-1])
+    if late:
+        if policy is MissedSchedulePolicy.SKIP:
+            skipped.extend(late)
+        elif policy is MissedSchedulePolicy.RUN_ONCE_AFTER_RECOVERY:
+            skipped.extend(late[:-1])
+            due.append(late[-1])
+        else:
+            limit = max(1, catch_up_limit)
+            skipped.extend(late[: max(0, len(late) - limit)])
+            due.extend(late[-limit:])
+    return MissedFirings(
+        due=tuple(sorted(due)),
+        skipped=tuple(sorted(skipped)),
+        next_execution_at=next_execution_at,
+    )
 
 
 __all__ = [
     "MIN_INTERVAL_MINUTES",
     "SCHEDULE_KINDS",
+    "ON_TIME_GRACE_SECONDS",
     "MissedFirings",
     "ScheduleExpression",
     "resolve_missed",

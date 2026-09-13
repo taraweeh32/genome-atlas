@@ -765,7 +765,7 @@ class MemoryJobQueue(MemoryJobs):
                 lease_expires_at=None,
                 failure_code="job.lease_expired",
                 failure_message="the worker holding this job stopped reporting progress",
-                error_class=JobErrorClass.INFRASTRUCTURE,
+                error_class=JobErrorClass.TRANSIENT_INFRASTRUCTURE_ERROR,
                 version=row.version + 1,
             )
             self.jobs[job_id] = updated

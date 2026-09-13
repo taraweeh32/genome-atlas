@@ -422,10 +422,11 @@ class GetExecutionProvenance:
             records = await repositories.scientific_executions.list_for_execution(
                 query.execution_id
             )
-            enriched = tuple(
-                (record, await repositories.scientific_executions.list_artifacts(record.id))
-                for record in records
-            )
+            enriched_records = []
+            for record in records:
+                artifacts = await repositories.scientific_executions.list_artifacts(record.id)
+                enriched_records.append((record, artifacts))
+            enriched = tuple(enriched_records)
         return ExecutionProvenanceView(
             execution=view,
             scientific_executions=enriched,

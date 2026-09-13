@@ -400,7 +400,7 @@ class SqlJobRepository(SqlRepository):
             values: dict[str, Any] = {
                 "failure_code": "job.lease_expired",
                 "failure_message": "the worker holding this job stopped reporting progress",
-                "error_class": JobErrorClass.INFRASTRUCTURE.value,
+                "error_class": JobErrorClass.TRANSIENT_INFRASTRUCTURE_ERROR.value,
                 "claimed_at": None,
                 "claimed_by_worker_id": None,
                 "assigned_node_id": None,
