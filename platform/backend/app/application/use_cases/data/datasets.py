@@ -18,6 +18,7 @@ Rules the backend owns here:
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import timedelta
 
 from app.application.repositories import Page, Paged
 from app.application.services.context import RequestContext
@@ -497,8 +498,7 @@ class SoftDeleteDataset:
                     deletion_state=deletion_state,
                     deleted_at=now,
                     deleted_by=scope.actor.actor_id,
-                    retention_expires_at=now.replace(microsecond=0)
-                    + _days(retention_days),
+                    retention_expires_at=now + timedelta(days=retention_days),
                 )
             )
             await recorder.audit(
@@ -524,12 +524,6 @@ class SoftDeleteDataset:
                 occurred_at=now,
                 workspace_id=dataset.workspace_id,
             )
-
-
-def _days(count: int):  # noqa: ANN202 - tiny helper, timedelta import kept local
-    from datetime import timedelta
-
-    return timedelta(days=count)
 
 
 # --------------------------------------------------------------------------- #
