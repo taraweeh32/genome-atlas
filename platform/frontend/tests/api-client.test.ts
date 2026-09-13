@@ -86,4 +86,39 @@ describe("api client", () => {
       expect(error.isRetryable).toBe(retryable);
     }
   });
+
+  it("attaches the CSRF double-submit header to state-changing requests only", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ accepted: true, message: "ok" }));
+    const client = new ApiClient({
+      config,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      csrfTokenReader: () => "csrf-token",
+    });
+
+    await client.identity().catch(() => undefined);
+    await client.requestPasswordReset("researcher@example.org");
+
+    const readHeaders = (index: number) =>
+      fetchImpl.mock.calls[index][1].headers as Record<string, string>;
+    expect(readHeaders(0)["X-CSRF-Token"]).toBeUndefined();
+    expect(readHeaders(1)["X-CSRF-Token"]).toBe("csrf-token");
+  });
+
+  it("sends cookies with every request and never carries a token in the body", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({ accepted: true, message: "ok" }));
+    const client = new ApiClient({
+      config,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      csrfTokenReader: () => null,
+    });
+
+    await client.signOut(false);
+
+    const [, init] = fetchImpl.mock.calls[0];
+    expect(init.credentials).toBe("include");
+    // No CSRF cookie present: the request still goes out and the backend refuses
+    // it. The client never fabricates a token.
+    expect((init.headers as Record<string, string>)["X-CSRF-Token"]).toBeUndefined();
+    expect(String(init.body ?? "")).not.toContain("csrf");
+  });
 });
