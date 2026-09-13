@@ -13,7 +13,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, DefinitionList } from "@/components/ui/card";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { useToast } from "@/components/ui/toast";
+import { useToasts } from "@/components/ui/toast";
 import { Field, authStyles as formStyles } from "@/components/auth/field";
 import { useApiResource } from "@/hooks/use-api-resource";
 import { useWorkspace } from "@/context/workspace-context";
@@ -22,7 +22,7 @@ import { ApiClient, ApiError } from "@/lib/api-client";
 export function ProjectsView() {
   const client = useMemo(() => new ApiClient(), []);
   const { activeWorkspace, resolution } = useWorkspace();
-  const { publish } = useToast();
+  const { publish } = useToasts();
   const workspaceId = activeWorkspace?.id ?? null;
 
   const projects = useApiResource(

@@ -12,14 +12,14 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, DefinitionList } from "@/components/ui/card";
 import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
-import { useToast } from "@/components/ui/toast";
+import { useToasts } from "@/components/ui/toast";
 import { Field, authStyles as formStyles } from "@/components/auth/field";
 import { useApiResource } from "@/hooks/use-api-resource";
 import { ApiClient, ApiError } from "@/lib/api-client";
 
 export function OrganizationsView() {
   const client = useMemo(() => new ApiClient(), []);
-  const { publish } = useToast();
+  const { publish } = useToasts();
   const organizations = useApiResource(() => client.organizations(), [client]);
   const invitations = useApiResource(() => client.myInvitations(), [client]);
 
