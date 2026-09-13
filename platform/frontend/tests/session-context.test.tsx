@@ -74,7 +74,7 @@ describe("session context", () => {
     render(
       <SessionProvider
         client={clientStub({
-          identity: vi.fn().mockRejectedValue(new ApiError("Unauthorized", 401)),
+          identity: vi.fn().mockRejectedValue(new ApiError(401, "unauthorized", "Authentication is required.")),
         })}
       >
         <Probe />
@@ -112,7 +112,7 @@ describe("session context", () => {
   });
 
   it("forgets the identity on sign-out even when the backend call fails", async () => {
-    const signOut = vi.fn().mockRejectedValue(new ApiError("Service unavailable", 503));
+    const signOut = vi.fn().mockRejectedValue(new ApiError(503, "unavailable", "The service is unavailable."));
     render(
       <SessionProvider
         client={clientStub({ identity: vi.fn().mockResolvedValue(identity), signOut })}
