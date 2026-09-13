@@ -31,9 +31,13 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 
-  /** Errors the user can act on vs. errors that need an operator. */
+  /**
+   * Whether retrying the same request can plausibly succeed. Transport failures
+   * (status 0), server failures and throttling are retryable; a rejected or
+   * missing resource is not.
+   */
   get isRetryable(): boolean {
-    return this.status >= 500 || this.status === 429;
+    return this.status === 0 || this.status >= 500 || this.status === 429;
   }
 }
 
