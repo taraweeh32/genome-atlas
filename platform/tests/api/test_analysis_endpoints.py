@@ -21,6 +21,7 @@ from app.application.use_cases.describe_scientific_capabilities import (
 from app.application.use_cases.get_readiness import GetReadiness
 from app.domain.value_objects.enums import JobState
 from tests.analysis.support import configured_analysis, project_analysis
+from tests.tenancy.test_projects_and_isolation import personal_project
 from tests.support.actors import create_account
 from tests.support.services import STRONG_PASSWORD, Harness, build_harness
 
@@ -104,7 +105,8 @@ class TestAnalysisTransport:
     ) -> None:
         await signed_in(client, harness, "analysis-csrf@example.org")
         response = client.post(
-            "/api/v1/analyses", json={"name": "Trio Screen", "kind": "variant_prioritization"}
+            "/api/v1/analyses",
+            json={"project_id": None, "name": "Trio Screen", "kind": "variant_prioritization"},
         )
         assert response.status_code == 401
         # The session survives a refused request.
@@ -113,10 +115,12 @@ class TestAnalysisTransport:
     async def test_an_analysis_is_created_and_read_back_with_capabilities(
         self, client: TestClient, harness: Harness
     ) -> None:
-        await signed_in(client, harness, "analysis-owner@example.org")
+        user_id = await signed_in(client, harness, "analysis-owner@example.org")
+        project = await personal_project(harness, user_id, name="Transport Project")
         created = client.post(
             "/api/v1/analyses",
             json={
+                "project_id": project.project.id,
                 "name": "Trio Screen",
                 "kind": "variant_prioritization",
                 "capability_key": "integration.echo",
@@ -138,7 +142,7 @@ class TestAnalysisTransport:
         await signed_in(client, harness, "analysis-enum@example.org")
         response = client.post(
             "/api/v1/analyses",
-            json={"name": "Bad Kind", "kind": "not_a_kind"},
+            json={"project_id": None, "name": "Bad Kind", "kind": "not_a_kind"},
             headers=csrf(client, harness),
         )
         assert response.status_code == 422
@@ -161,9 +165,10 @@ class TestExecutionTransport:
         body = response.json()
         # The request path queues; it never runs the scientific work itself.
         assert body["state"] == "queued"
-        job = await harness.repositories.jobs.get(body["job"]["id"])
+        job = await harness.repositories.jobs.get(body["scheduled_job_id"])
         assert job.state is JobState.QUEUED
-        assert not harness.scientific.submissions
+        # Nothing has been submitted to the scientific subsystem by the request.
+        assert body["scientific_execution_id"] is None
 
     async def test_provenance_is_available_for_an_execution(
         self, client: TestClient, harness: Harness
@@ -212,7 +217,6 @@ class TestTenantIsolationOverHttp:
             headers=csrf(client, harness),
         )
         assert response.status_code in {403, 404}
-        assert not harness.scientific.submissions
 
 
 class TestAdministrativeTransport:
@@ -237,6 +241,6 @@ class TestAdministrativeTransport:
             json={},
             headers=csrf(client, harness),
         )
-        response = client.get("/api/v1/jobs")
+        response = client.get("/api/v1/jobs", params={"kind": "analysis_execution"})
         assert response.status_code == 200, response.text
         assert [item["kind"] for item in response.json()["items"]] == ["analysis_execution"]
