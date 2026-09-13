@@ -72,7 +72,7 @@ class EvidenceItem(Base, TimestampMixin, ConcurrencyMixin):
     project_id: Mapped[str | None] = fk_column("app.projects.id", nullable=True)
     category: Mapped[str] = mapped_column(String(64), nullable=False)
     strength: Mapped[str] = mapped_column(
-        String(64), nullable=False, server_default=EvidenceStrength.NOT_ASSESSED.value
+        String(64), nullable=False, server_default=EvidenceStrength.NOT_APPLICABLE.value
     )
     direction: Mapped[str] = mapped_column(
         String(64), nullable=False, server_default=CriterionDirection.NEUTRAL.value
