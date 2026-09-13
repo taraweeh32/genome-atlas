@@ -100,15 +100,19 @@ from app.infrastructure.persistence.models.results import (
     ResultSet,
     SavedView,
 )
-from app.infrastructure.persistence.models.session import (
-    UserCredentialToken,
-    UserSession,
-)
 from app.infrastructure.persistence.models.scientific import (
     ScientificArtifact,
     ScientificExecution,
     ScientificResource,
     ScientificResourceCompatibility,
+)
+from app.infrastructure.persistence.models.session import (
+    UserCredentialToken,
+    UserSession,
+)
+from app.infrastructure.persistence.models.uploads import (
+    DatasetColumnMapping,
+    UploadSession,
 )
 from app.infrastructure.persistence.models.variant import (
     Gene,
@@ -136,6 +140,7 @@ __all__ = [
     "CriterionEvaluation",
     "CriterionEvaluationEvidence",
     "Dataset",
+    "DatasetColumnMapping",
     "DatasetVersion",
     "DiscussionComment",
     "DomainEventOutbox",
@@ -189,11 +194,12 @@ __all__ = [
     "SecurityEvent",
     "ServiceAccount",
     "Transcript",
+    "UploadSession",
     "User",
     "UserAuthenticationMetadata",
     "UserCredentialToken",
-    "UserSession",
     "UserPreference",
+    "UserSession",
     "ValidationIssue",
     "ValidationRule",
     "ValidationRun",

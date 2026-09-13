@@ -30,16 +30,18 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
-    DeletionState,
     Classification,
     CriterionDirection,
     CriterionStrength,
     DataOrigin,
+    DeletionState,
     EvidenceCategory,
     EvidenceStrength,
     InterpretationState,
-    ReviewDecision as ReviewDecisionVocabulary,
     ReviewState,
+)
+from app.domain.value_objects.enums import (
+    ReviewDecision as ReviewDecisionVocabulary,
 )
 from app.infrastructure.persistence.base import (
     Base,

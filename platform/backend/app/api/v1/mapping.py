@@ -63,7 +63,7 @@ def parse_enum(enum_type: type[EnumT], raw: str, *, field: str) -> EnumT:
         ) from exc
 
 
-def workspace_response(view) -> WorkspaceResponse:  # noqa: ANN001 - WorkspaceView
+def workspace_response(view) -> WorkspaceResponse:
     workspace = view.workspace
     return WorkspaceResponse(
         id=workspace.id,
@@ -75,7 +75,7 @@ def workspace_response(view) -> WorkspaceResponse:  # noqa: ANN001 - WorkspaceVi
     )
 
 
-def organization_response(view) -> OrganizationResponse:  # noqa: ANN001 - OrganizationView
+def organization_response(view) -> OrganizationResponse:
     organization = view.organization
     return OrganizationResponse(
         id=organization.id,
@@ -142,7 +142,7 @@ def membership_response(membership: OrganizationMembership) -> MembershipRespons
     )
 
 
-def project_response(view) -> ProjectResponse:  # noqa: ANN001 - ProjectView
+def project_response(view) -> ProjectResponse:
     project = view.project
     return ProjectResponse(
         id=project.id,

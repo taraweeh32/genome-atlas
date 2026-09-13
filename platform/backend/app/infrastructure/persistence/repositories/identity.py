@@ -11,8 +11,8 @@ from sqlalchemy import and_, insert, select, update
 
 from app.application.repositories import Page, Paged
 from app.domain.identity.entities import (
-    CredentialToken,
     Credentials,
+    CredentialToken,
     Session,
     UserAccount,
 )

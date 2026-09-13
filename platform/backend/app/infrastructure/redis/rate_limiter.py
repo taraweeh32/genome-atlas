@@ -34,7 +34,7 @@ class RateLimitDecision:
 
 
 class RedisRateLimiter:
-    def __init__(self, client, *, fail_open: bool = False) -> None:  # noqa: ANN001
+    def __init__(self, client, *, fail_open: bool = False) -> None:
         self._client = client
         self._fail_open = fail_open
 

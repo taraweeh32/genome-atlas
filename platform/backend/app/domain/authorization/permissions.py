@@ -38,6 +38,10 @@ class Permission(str, enum.Enum):
     PLATFORM_ROLE_MANAGE = "platform.role.manage"
     PLATFORM_AUDIT_READ = "platform.audit.read"
     PLATFORM_SECURITY_POLICY_MANAGE = "platform.security_policy.manage"
+    #: Reconciliation of object storage against the artifact catalogue, and
+    #: release of quarantined artifacts. Storage is platform infrastructure: an
+    #: organization administrator may never reach it.
+    PLATFORM_STORAGE_ADMINISTER = "platform.storage.administer"
 
     # --- organization scope ---------------------------------------------- #
     ORGANIZATION_READ = "organization.read"
@@ -54,6 +58,17 @@ class Permission(str, enum.Enum):
     # --- workspace scope ------------------------------------------------- #
     WORKSPACE_READ = "workspace.read"
     WORKSPACE_PROJECT_CREATE = "workspace.project.create"
+    #: Workspace-scoped data capability, for a dataset that belongs to a
+    #: workspace without belonging to a project. Evaluated against that one
+    #: workspace, so membership of another workspace never satisfies it.
+    WORKSPACE_DATASET_CREATE = "workspace.dataset.create"
+    WORKSPACE_DATA_READ = "workspace.data.read"
+    WORKSPACE_DATA_WRITE = "workspace.data.write"
+    WORKSPACE_DATA_IMPORT = "workspace.data.import"
+    #: Downloading bytes is its own capability: reading a dataset's metadata
+    #: never implies the right to retrieve the genomic content behind it.
+    WORKSPACE_DATA_DOWNLOAD = "workspace.data.download"
+    WORKSPACE_DATA_DELETE = "workspace.data.delete"
 
     # --- project scope --------------------------------------------------- #
     PROJECT_READ = "project.read"
@@ -69,6 +84,11 @@ class Permission(str, enum.Enum):
     #: scientific review stays a distinct responsibility from administration.
     PROJECT_DATA_READ = "project.data.read"
     PROJECT_DATA_WRITE = "project.data.write"
+    PROJECT_DATASET_CREATE = "project.dataset.create"
+    PROJECT_DATA_IMPORT = "project.data.import"
+    #: Retrieval of the actual bytes, separate from metadata read.
+    PROJECT_DATA_DOWNLOAD = "project.data.download"
+    PROJECT_DATA_DELETE = "project.data.delete"
     PROJECT_ANALYSIS_EXECUTE = "project.analysis.execute"
     PROJECT_INTERPRETATION_REVIEW = "project.interpretation.review"
     PROJECT_REPORT_FINALIZE = "project.report.finalize"

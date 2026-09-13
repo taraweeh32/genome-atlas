@@ -29,8 +29,8 @@ from app.domain.errors import (
     ValidationError,
 )
 from app.domain.events import EventType
-from app.domain.organization.entities import Organization, OrganizationMembership, normalize_slug
 from app.domain.lifecycle import require_transition
+from app.domain.organization.entities import Organization, OrganizationMembership, normalize_slug
 from app.domain.value_objects.enums import (
     AuditOutcome,
     MembershipState,
@@ -144,13 +144,13 @@ class RequestOrganization:
 
 
 async def _provision_approved_organization(
-    repositories,  # noqa: ANN001
+    repositories,
     recorder: ActivityRecorder,
     *,
     organization: Organization,
     decided_by: str | None,
     reason: str | None,
-    moment,  # noqa: ANN001
+    moment,
 ) -> tuple[Organization, str]:
     """Approve, provision the workspace and seat the requester as owner.
 
@@ -313,7 +313,7 @@ class GetOrganization:
 
     async def _authorize(
         self, recorder: ActivityRecorder, query: GetOrganizationQuery, now
-    ) -> None:  # noqa: ANN001
+    ) -> None:
         if Permission.PLATFORM_ORGANIZATION_READ_ANY in query.actor.platform_capabilities():
             return
         await self._services.authorization.require(

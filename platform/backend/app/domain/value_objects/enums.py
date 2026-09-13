@@ -211,6 +211,12 @@ class ValueSemantics(StrEnum):
 
     PRESENT = "present"
     MISSING = "missing"
+    #: An explicit null marker in the source, distinct from an absent field.
+    NULL = "null"
+    #: Present but empty (e.g. ``""``), distinct from absent and from null.
+    EMPTY = "empty"
+    #: A literal ``NA``/``N/A`` marker, which is not the same as "unknown".
+    NA = "na"
     UNKNOWN = "unknown"
     NOT_APPLICABLE = "not_applicable"
     ZERO = "zero"
@@ -603,3 +609,158 @@ class CredentialTokenState(StrEnum):
     CONSUMED = "consumed"
     EXPIRED = "expired"
     INVALIDATED = "invalidated"
+
+
+# --------------------------------------------------------------------------- #
+# Datasets, uploads, import and validation (Package 4)                        #
+# --------------------------------------------------------------------------- #
+
+
+class UploadSessionState(StrEnum):
+    """Server-authoritative upload lifecycle.
+
+    An upload session is the *permission to transfer bytes*, not the artifact
+    itself. It is created before any byte is accepted, and its state is only ever
+    advanced by the backend: a client that possesses a presigned URL still cannot
+    make an artifact usable, because usability is decided by transfer-integrity
+    verification, scanning and validation recorded here.
+    """
+
+    CREATED = "created"
+    UPLOADING = "uploading"
+    UPLOADED = "uploaded"
+    SCANNING = "scanning"
+    QUARANTINED = "quarantined"
+    VALIDATING = "validating"
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    EXPIRED = "expired"
+    CANCELLED = "cancelled"
+    FAILED = "failed"
+
+
+class InputFormat(StrEnum):
+    """Declared or detected container format of an uploaded artifact.
+
+    This is a *file format* fact, not a scientific interpretation: recognising
+    that a file is a VCF says nothing about whether its variants are valid.
+    """
+
+    CSV = "csv"
+    TSV = "tsv"
+    VCF = "vcf"
+    BCF = "bcf"
+    TEXT = "text"
+    JSON = "json"
+    UNKNOWN = "unknown"
+
+
+class CompressionKind(StrEnum):
+    NONE = "none"
+    GZIP = "gzip"
+    BGZF = "bgzf"
+    ZIP = "zip"
+    UNKNOWN = "unknown"
+
+
+class MalwareScanState(StrEnum):
+    """Scanning is an integration boundary, and it fails closed.
+
+    ``unavailable`` is deliberately distinct from ``clean``: an artifact that
+    could not be scanned is never treated as safe.
+    """
+
+    NOT_SCANNED = "not_scanned"
+    SCANNING = "scanning"
+    CLEAN = "clean"
+    INFECTED = "infected"
+    UNAVAILABLE = "unavailable"
+    FAILED = "failed"
+
+
+class MappingStatus(StrEnum):
+    """Per-column outcome of an import mapping decision."""
+
+    MAPPED = "mapped"
+    UNMAPPED = "unmapped"
+    AMBIGUOUS = "ambiguous"
+    IGNORED = "ignored"
+
+
+class MappingOrigin(StrEnum):
+    """Whether a mapping decision came from a human or from a suggestion.
+
+    Suggested and confirmed mappings are never conflated: an import that ran on
+    unconfirmed suggestions stays distinguishable forever.
+    """
+
+    USER_SELECTED = "user_selected"
+    SYSTEM_SUGGESTED = "system_suggested"
+    TEMPLATE_APPLIED = "template_applied"
+
+
+class FieldConcept(StrEnum):
+    """Canonical platform field concepts a source column may be mapped to.
+
+    A concept records *declared meaning only*. No normalization, no allele
+    interpretation and no reference-genome processing happens in application
+    code; those belong to the scientific compute subsystem.
+    """
+
+    CHROMOSOME = "chromosome"
+    POSITION = "position"
+    REFERENCE_ALLELE = "reference_allele"
+    ALTERNATE_ALLELE = "alternate_allele"
+    VARIANT_IDENTIFIER = "variant_identifier"
+    GENE_SYMBOL = "gene_symbol"
+    TRANSCRIPT_IDENTIFIER = "transcript_identifier"
+    CONSEQUENCE = "consequence"
+    SAMPLE_IDENTIFIER = "sample_identifier"
+    GENOTYPE = "genotype"
+    ZYGOSITY = "zygosity"
+    READ_DEPTH = "read_depth"
+    ALLELE_FREQUENCY = "allele_frequency"
+    QUALITY = "quality"
+    FILTER_STATUS = "filter_status"
+    PHENOTYPE_TERM = "phenotype_term"
+    #: Carried through verbatim as source metadata, with no platform meaning.
+    PASSTHROUGH = "passthrough"
+    IGNORED = "ignored"
+
+
+class ReferenceBuildDeclaration(StrEnum):
+    """The genome build a submitter *declares* for an input.
+
+    A declaration is metadata, never a verification. Confirming that coordinates
+    are consistent with a build is scientific work performed outside this layer.
+    """
+
+    GRCH37 = "grch37"
+    GRCH38 = "grch38"
+    T2T_CHM13 = "t2t_chm13"
+    UNSPECIFIED = "unspecified"
+
+
+class ValidationCategory(StrEnum):
+    """Which concern a validation issue belongs to.
+
+    Categories are kept explicit so that a transfer problem, a security refusal
+    and a schema mismatch are never presented as the same class of failure.
+    """
+
+    TRANSFER_INTEGRITY = "transfer_integrity"
+    SECURITY = "security"
+    FILE_FORMAT = "file_format"
+    STRUCTURE = "structure"
+    TABULAR_SCHEMA = "tabular_schema"
+    METADATA = "metadata"
+    GENOMIC_SUITABILITY = "genomic_suitability"
+    IMPORT_CONFIGURATION = "import_configuration"
+
+
+class DuplicateRelation(StrEnum):
+    """How a candidate input relates to something already in the same scope."""
+
+    NONE = "none"
+    SAME_CHECKSUM_IN_SCOPE = "same_checksum_in_scope"
+    SAME_NAME_IN_SCOPE = "same_name_in_scope"

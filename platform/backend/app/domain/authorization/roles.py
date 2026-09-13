@@ -29,6 +29,7 @@ _PLATFORM_ADMINISTRATOR = frozenset(
         Permission.PLATFORM_ROLE_MANAGE,
         Permission.PLATFORM_AUDIT_READ,
         Permission.PLATFORM_SECURITY_POLICY_MANAGE,
+        Permission.PLATFORM_STORAGE_ADMINISTER,
     }
 )
 
@@ -55,6 +56,11 @@ _ORGANIZATION_MEMBER = _ORGANIZATION_GUEST | {
     Permission.ORGANIZATION_MEMBER_READ,
     Permission.WORKSPACE_READ,
     Permission.WORKSPACE_PROJECT_CREATE,
+    Permission.WORKSPACE_DATASET_CREATE,
+    Permission.WORKSPACE_DATA_READ,
+    Permission.WORKSPACE_DATA_WRITE,
+    Permission.WORKSPACE_DATA_IMPORT,
+    Permission.WORKSPACE_DATA_DOWNLOAD,
 }
 _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_UPDATE,
@@ -65,6 +71,7 @@ _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_INVITATION_READ,
     Permission.ORGANIZATION_INVITATION_REVOKE,
     Permission.ORGANIZATION_AUDIT_READ,
+    Permission.WORKSPACE_DATA_DELETE,
 }
 
 ORGANIZATION_ROLE_PERMISSIONS: Mapping[OrganizationRole, frozenset[Permission]] = {
@@ -111,17 +118,23 @@ ORGANIZATION_ROLE_PROJECT_PERMISSIONS: Mapping[OrganizationRole, frozenset[Permi
 _PROJECT_VIEWER = frozenset(
     {Permission.PROJECT_READ, Permission.PROJECT_MEMBER_READ, Permission.PROJECT_DATA_READ}
 )
+#: An analyst produces and imports data; deletion stays with project management.
 _PROJECT_ANALYST = _PROJECT_VIEWER | {
     Permission.PROJECT_DATA_WRITE,
+    Permission.PROJECT_DATASET_CREATE,
+    Permission.PROJECT_DATA_IMPORT,
+    Permission.PROJECT_DATA_DOWNLOAD,
     Permission.PROJECT_ANALYSIS_EXECUTE,
 }
 #: A reviewer is a scientific/clinical responsibility, not an administrator: it
 #: reviews and finalizes, it does not manage membership.
 _PROJECT_REVIEWER = _PROJECT_VIEWER | {
+    Permission.PROJECT_DATA_DOWNLOAD,
     Permission.PROJECT_INTERPRETATION_REVIEW,
     Permission.PROJECT_REPORT_FINALIZE,
 }
 _PROJECT_MANAGER = _PROJECT_ANALYST | {
+    Permission.PROJECT_DATA_DELETE,
     Permission.PROJECT_UPDATE,
     Permission.PROJECT_ARCHIVE,
     Permission.PROJECT_REOPEN,
@@ -139,7 +152,16 @@ PROJECT_ROLE_PERMISSIONS: Mapping[ProjectRole, frozenset[Permission]] = {
 
 #: Permissions the owner of a personal workspace holds over that workspace.
 PERSONAL_WORKSPACE_PERMISSIONS: frozenset[Permission] = frozenset(
-    {Permission.WORKSPACE_READ, Permission.WORKSPACE_PROJECT_CREATE}
+    {
+        Permission.WORKSPACE_READ,
+        Permission.WORKSPACE_PROJECT_CREATE,
+        Permission.WORKSPACE_DATASET_CREATE,
+        Permission.WORKSPACE_DATA_READ,
+        Permission.WORKSPACE_DATA_WRITE,
+        Permission.WORKSPACE_DATA_IMPORT,
+        Permission.WORKSPACE_DATA_DOWNLOAD,
+        Permission.WORKSPACE_DATA_DELETE,
+    }
 )
 
 

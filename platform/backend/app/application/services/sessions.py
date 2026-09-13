@@ -35,8 +35,8 @@ class SessionService:
     def __init__(
         self,
         *,
-        token_hasher,  # noqa: ANN001 - TokenHasher
-        clock,  # noqa: ANN001 - Clock
+        token_hasher,
+        clock,
         policy: SecurityPolicySettings,
     ) -> None:
         self._tokens = token_hasher
@@ -49,7 +49,7 @@ class SessionService:
 
     async def issue(
         self,
-        repositories,  # noqa: ANN001
+        repositories,
         account: UserAccount,
         *,
         moment: datetime,
@@ -79,7 +79,7 @@ class SessionService:
 
     async def _enforce_session_ceiling(
         self,
-        repositories,  # noqa: ANN001
+        repositories,
         user_id: str,
         *,
         moment: datetime,
@@ -97,7 +97,7 @@ class SessionService:
 
     async def resolve(
         self,
-        repositories,  # noqa: ANN001
+        repositories,
         raw_token: str | None,
         *,
         moment: datetime,
@@ -151,7 +151,7 @@ class SessionService:
 
     async def revoke(
         self,
-        repositories,  # noqa: ANN001
+        repositories,
         session_id: str,
         *,
         reason: str,
@@ -161,7 +161,7 @@ class SessionService:
 
     async def revoke_every_session(
         self,
-        repositories,  # noqa: ANN001
+        repositories,
         user_id: str,
         *,
         reason: str,

@@ -12,7 +12,6 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from app.application.services.context import RequestContext
 from app.application.services.recorder import ActivityRecorder
 from app.domain.authorization.context import (
     ActorContext,
@@ -41,7 +40,7 @@ class AuthorizationService:
 
     async def resolve(
         self,
-        repositories,  # noqa: ANN001 - TransactionalRepositories protocol
+        repositories,
         account: UserAccount,
         *,
         session: Session | None = None,
@@ -115,7 +114,7 @@ class AuthorizationService:
 
     async def ensure_project_scope(
         self,
-        repositories,  # noqa: ANN001
+        repositories,
         actor: ActorContext,
         project_id: str,
     ) -> ActorContext:

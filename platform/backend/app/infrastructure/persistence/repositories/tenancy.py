@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import replace
-from datetime import datetime
 from typing import Any
 
 from sqlalchemy import insert, or_, select
