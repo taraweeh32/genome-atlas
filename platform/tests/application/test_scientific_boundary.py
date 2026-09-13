@@ -102,23 +102,62 @@ def test_factory_selects_the_configured_adapter() -> None:
     assert not isinstance(http, DevelopmentScientificAdapter)
 
 
+#: Modules allowed to *name* scientific concepts without computing them:
+#: ``app/scientific`` is the integration boundary itself, the domain vocabulary
+#: declares the controlled value sets a scientific engine reports back, and the
+#: persistence models declare the columns those values are stored in. Storing
+#: and naming a result is a persistence concern; deriving one is not.
+VOCABULARY_ONLY_PATHS = (
+    "scientific",
+    "domain/value_objects/enums.py",
+    "infrastructure/persistence/models",
+)
+
+#: Constructs that would mean a scientific decision is being *derived* here.
+ALGORITHM_CONSTRUCTS = (
+    "def classify",
+    "def evaluate",
+    "def score",
+    "def annotate",
+    "def normalize_variant",
+    "def apply_criterion",
+    "def compute_frequency",
+)
+
+
+def _is_vocabulary_only(path: pathlib.Path) -> bool:
+    relative = path.relative_to(BACKEND_ROOT).as_posix()
+    return any(relative.startswith(allowed) for allowed in VOCABULARY_ONLY_PATHS)
+
+
 def test_no_scientific_algorithm_terms_exist_in_the_application_tree() -> None:
     """Architectural guard: scientific computation stays out of the application.
 
-    ``app/scientific`` is the integration boundary itself, so it may *name*
-    scientific concepts (for example an ACMG ruleset version carried as engine
-    identity) without computing them. Every other layer — api, application,
-    domain, infrastructure, workers — must not mention them at all.
+    Layers that neither integrate with nor persist scientific results — api,
+    application, workers, the rest of domain and infrastructure — must not
+    mention scientific concepts at all.
     """
-    boundary = BACKEND_ROOT / "scientific"
     offenders: list[str] = []
     for path in BACKEND_ROOT.rglob("*.py"):
-        if boundary in path.parents:
+        if _is_vocabulary_only(path):
             continue
         lowered = path.read_text(encoding="utf-8").lower()
         for term in FORBIDDEN_SCIENTIFIC_TERMS:
             if term in lowered:
                 offenders.append(f"{path.name}:{term}")
+    assert offenders == []
+
+
+def test_vocabulary_modules_declare_scientific_concepts_without_deriving_them() -> None:
+    """The allowlisted modules may name concepts, never evaluate them."""
+    offenders: list[str] = []
+    for path in BACKEND_ROOT.rglob("*.py"):
+        if not _is_vocabulary_only(path):
+            continue
+        lowered = path.read_text(encoding="utf-8").lower()
+        for construct in ALGORITHM_CONSTRUCTS:
+            if construct in lowered:
+                offenders.append(f"{path.relative_to(BACKEND_ROOT)}:{construct}")
     assert offenders == []
 
 
