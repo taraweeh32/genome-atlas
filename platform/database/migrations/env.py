@@ -23,23 +23,42 @@ if config.config_file_name is not None:
 
 config.set_main_option("sqlalchemy.url", get_environment_settings().database.url)
 
-# Package 2 introduces the declarative domain metadata and autogenerate support.
-target_metadata = None
+# Importing the model package registers every table on Base.metadata, which is
+# what autogenerate compares the live database against.
+from app.infrastructure.persistence.models import Base  # noqa: E402
+
+target_metadata = Base.metadata
+
+
+def _include_object(obj, name, type_, reflected, compare_to) -> bool:  # noqa: ANN001
+    """Restrict autogenerate to the schemas this application owns."""
+    if type_ == "table":
+        return (obj.schema or "app") in {"app", "platform"}
+    return True
+
+
+_CONFIGURE_OPTIONS = {
+    "target_metadata": target_metadata,
+    "include_schemas": True,
+    "include_object": _include_object,
+    "compare_type": True,
+    "compare_server_default": True,
+}
 
 
 def run_migrations_offline() -> None:
     context.configure(
         url=config.get_main_option("sqlalchemy.url"),
-        target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        **_CONFIGURE_OPTIONS,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def _run(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(connection=connection, **_CONFIGURE_OPTIONS)
     with context.begin_transaction():
         context.run_migrations()
 

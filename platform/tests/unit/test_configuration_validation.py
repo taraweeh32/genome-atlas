@@ -113,5 +113,5 @@ class TestSettingsSeparation:
     def test_scientific_settings_carry_no_connection_strings(
         self, clear_settings_cache: None
     ) -> None:
-        fields = set(get_scientific_settings().model_fields)
+        fields = set(type(get_scientific_settings()).model_fields)
         assert not fields & {"database", "redis", "object_storage"}
