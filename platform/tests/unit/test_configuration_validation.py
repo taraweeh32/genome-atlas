@@ -58,6 +58,9 @@ class TestProductionSafety:
         settings = _settings(transport=TransportSettings(cors_allowed_origins=""))
         settings.object_storage.access_key_id = "key"
         settings.object_storage.secret_access_key = "secret"
+        # Every other production requirement is satisfied, so the assertion below
+        # is about CORS and not about whichever check happens to run first.
+        settings.authentication.token_pepper = "a-long-enough-production-pepper"
         with pytest.raises(ConfigurationError) as excinfo:
             settings.assert_production_safe()
         assert excinfo.value.key == "API_CORS_ALLOWED_ORIGINS"

@@ -221,6 +221,10 @@ UPLOAD_SESSION_TRANSITIONS: Mapping[UploadSessionState, frozenset[UploadSessionS
     UploadSessionState.CREATED: frozenset(
         {
             UploadSessionState.UPLOADING,
+            # A grant can fail before a single byte arrives — no object was
+            # stored, for instance. That is a recorded failure, not a silent
+            # cancellation.
+            UploadSessionState.FAILED,
             UploadSessionState.CANCELLED,
             UploadSessionState.EXPIRED,
         }

@@ -52,7 +52,7 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     href: "/datasets",
     namespace: "application",
     requiredPermission: "dataset.read",
-    available: false,
+    available: true,
   },
   {
     id: "analyses",

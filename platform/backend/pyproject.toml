@@ -17,6 +17,9 @@ dependencies = [
   "duckdb>=1.0",
   "pyarrow>=17.0",
   "python-json-logger>=2.0",
+  # Password hashing. Declared explicitly: the application refuses to start
+  # without a real hasher rather than falling back to a weaker one.
+  "argon2-cffi>=23.1",
 ]
 
 [project.optional-dependencies]

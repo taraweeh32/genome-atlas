@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from app.application.ports import HealthProbe
 from app.application.services.authorization import AuthorizationService
 from app.application.services.sessions import SessionService
+from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
 )
@@ -37,7 +38,10 @@ from app.infrastructure.redis.rate_limiter import RedisRateLimiter
 from app.infrastructure.security.clock import SystemClock
 from app.infrastructure.security.passwords import Argon2PasswordHasher
 from app.infrastructure.security.tokens import TokenHasher
+from app.infrastructure.storage.checksums import StreamingChecksumService
+from app.infrastructure.storage.inspection import StreamingFileInspector
 from app.infrastructure.storage.object_storage import S3ObjectStorage
+from app.infrastructure.storage.scanner import build_scanner
 from app.scientific.adapters.factory import build_scientific_gateway
 from app.scientific.contracts import ScientificEngineGateway
 
@@ -181,6 +185,33 @@ class Container:
             policy=self.application.security,
             expose_development_tokens=self.environment.environment.exposes_diagnostics,
         )
+
+    def data_services(self) -> DataServices:
+        """Dataset/upload/import/validation dependencies.
+
+        The scanner is chosen by environment: a stand-in is never selected in a
+        production-like deployment, so a missing real scanner surfaces as
+        "unavailable" — which blocks acceptance — instead of silently passing.
+        """
+        return DataServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            authorization=self.authorization,
+            storage=self.object_storage,
+            scanner=build_scanner(
+                environment=self.environment.environment,
+                storage=self.object_storage,
+                enabled=self.application.feature_development_file_scanner,
+            ),
+            inspector=StreamingFileInspector(self.object_storage),
+            checksums=StreamingChecksumService(self.object_storage),
+            config=self.application,
+            storage_provider="s3",
+            storage_bucket=self.environment.object_storage.bucket,
+            upload_url_ttl_seconds=self.application.upload_url_ttl_seconds,
+            download_url_ttl_seconds=self.application.download_url_ttl_seconds,
+        )
+
 
     def get_readiness(self) -> GetReadiness:
         return GetReadiness(self.health_probes())

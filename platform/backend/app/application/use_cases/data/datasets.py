@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import timedelta
+from typing import ClassVar
 
 from app.application.repositories import Page, Paged
 from app.application.services.context import RequestContext
@@ -399,7 +400,7 @@ class ChangeDatasetState:
     frontend can only ever *request* a move.
     """
 
-    _EVENTS = {
+    _EVENTS: ClassVar[dict[DatasetState, EventType]] = {
         DatasetState.ARCHIVED: EventType.DATASET_ARCHIVED,
         DatasetState.READY: EventType.DATASET_RESTORED,
         DatasetState.DRAFT: EventType.DATASET_RESTORED,

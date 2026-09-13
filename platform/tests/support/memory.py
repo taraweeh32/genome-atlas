@@ -43,6 +43,17 @@ from app.domain.value_objects.enums import (
     SessionState,
 )
 from app.domain.workspace.entities import Workspace
+from tests.support.data_memory import (
+    MemoryColumnMappings,
+    MemoryDatasets,
+    MemoryDatasetVersions,
+    MemoryFileArtifacts,
+    MemoryImportSessions,
+    MemoryJobs,
+    MemoryUploadSessions,
+    MemoryValidationIssues,
+    MemoryValidationRuns,
+)
 
 
 def _paged(items: list, page: Page) -> Paged:
@@ -570,6 +581,17 @@ class MemoryRepositories:
     security_events: MemorySecurityEvents = field(default_factory=MemorySecurityEvents)
     outbox: MemoryOutbox = field(default_factory=MemoryOutbox)
     notifications: MemoryNotifications = field(default_factory=MemoryNotifications)
+    # Dataset-side repositories live in their own module to keep this one
+    # readable; they belong to the same transaction.
+    datasets: MemoryDatasets = field(default_factory=MemoryDatasets)
+    dataset_versions: MemoryDatasetVersions = field(default_factory=MemoryDatasetVersions)
+    file_artifacts: MemoryFileArtifacts = field(default_factory=MemoryFileArtifacts)
+    upload_sessions: MemoryUploadSessions = field(default_factory=MemoryUploadSessions)
+    import_sessions: MemoryImportSessions = field(default_factory=MemoryImportSessions)
+    column_mappings: MemoryColumnMappings = field(default_factory=MemoryColumnMappings)
+    validation_runs: MemoryValidationRuns = field(default_factory=MemoryValidationRuns)
+    validation_issues: MemoryValidationIssues = field(default_factory=MemoryValidationIssues)
+    jobs: MemoryJobs = field(default_factory=MemoryJobs)
 
     def __post_init__(self) -> None:
         self.organizations.memberships = self.organization_memberships
