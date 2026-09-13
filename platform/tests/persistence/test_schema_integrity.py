@@ -71,7 +71,11 @@ def _revision_module(filename: str):  # noqa: ANN202
 
 #: Every revision that owns tables, newest last. A new table must be added to a
 #: revision here, otherwise the drift test below fails.
-TABLE_OWNING_REVISIONS = ("0002_domain_schema.py", "0003_identity_sessions.py")
+TABLE_OWNING_REVISIONS = (
+    "0002_domain_schema.py",
+    "0003_identity_sessions.py",
+    "0004_dataset_ingest.py",
+)
 
 
 def test_metadata_matches_the_migration_table_set() -> None:
