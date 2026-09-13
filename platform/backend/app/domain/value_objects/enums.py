@@ -400,12 +400,35 @@ class CriterionOutcome(StrEnum):
     NOT_EVALUATED = "not_evaluated"
 
 
+class CriterionStrength(StrEnum):
+    """Strength assigned to an applied criterion, independent of its family.
+
+    A reviewer may apply a criterion at a strength other than its default, so the
+    strength is stored per evaluation rather than derived from the criterion key.
+    """
+
+    STANDALONE = "standalone"
+    VERY_STRONG = "very_strong"
+    STRONG = "strong"
+    MODERATE = "moderate"
+    SUPPORTING = "supporting"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class CriterionDirection(StrEnum):
+    PATHOGENIC = "pathogenic"
+    BENIGN = "benign"
+    NEUTRAL = "neutral"
+
+
 class Classification(StrEnum):
     PATHOGENIC = "pathogenic"
     LIKELY_PATHOGENIC = "likely_pathogenic"
     UNCERTAIN_SIGNIFICANCE = "uncertain_significance"
     LIKELY_BENIGN = "likely_benign"
     BENIGN = "benign"
+    #: Explicitly *not* a classification: distinguishes "no value yet" from VUS.
+    NOT_CLASSIFIED = "not_classified"
 
 
 class InterpretationState(StrEnum):
@@ -420,6 +443,7 @@ class InterpretationState(StrEnum):
 
 
 class ReviewState(StrEnum):
+    NOT_STARTED = "not_started"
     ASSIGNED = "assigned"
     IN_PROGRESS = "in_progress"
     SUBMITTED = "submitted"
@@ -433,8 +457,11 @@ class ReviewDecision(StrEnum):
     ACCEPT = "accept"
     REJECT = "reject"
     MODIFY = "modify"
+    ADD_CRITERION = "add_criterion"
+    REMOVE_CRITERION = "remove_criterion"
     OVERRIDE = "override"
     ABSTAIN = "abstain"
+    ADJUDICATE = "adjudicate"
 
 
 # --------------------------------------------------------------------------- #
@@ -443,6 +470,7 @@ class ReviewDecision(StrEnum):
 
 
 class ResultSetState(StrEnum):
+    PENDING = "pending"
     GENERATING = "generating"
     AVAILABLE = "available"
     INVALIDATED = "invalidated"
