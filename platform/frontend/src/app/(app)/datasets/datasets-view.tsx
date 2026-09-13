@@ -57,8 +57,8 @@ export function DatasetsView() {
   );
 
   const [name, setName] = useState("");
-  const [kind, setKind] = useState(DATASET_KINDS[0].value);
-  const [build, setBuild] = useState(REFERENCE_BUILDS[0].value);
+  const [kind, setKind] = useState<string>("variant_calls");
+  const [build, setBuild] = useState<string>("grch38");
   const [isBusy, setBusy] = useState(false);
 
   async function create(event: React.FormEvent) {
