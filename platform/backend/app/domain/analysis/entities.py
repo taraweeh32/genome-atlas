@@ -265,6 +265,11 @@ class AnalysisExecutionRecord:
             compute_node_id=node_id or self.compute_node_id,
         )
 
+    def assigned_to_node(self, node_id: str) -> AnalysisExecutionRecord:
+        """Record which node will run the work. Not a state change: the
+        execution is still queued until the subsystem accepts it."""
+        return replace(self, compute_node_id=node_id)
+
     def submitted_to_engine(
         self, *, scientific_execution_id: str, node_id: str | None = None
     ) -> AnalysisExecutionRecord:

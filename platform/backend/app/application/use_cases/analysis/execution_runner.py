@@ -147,8 +147,11 @@ class RunAnalysisExecution:
                 )
             node = selection.node
             assert node is not None
+            # The execution stays queued until the subsystem has accepted it:
+            # ``submitted`` then ``running`` is the order the lifecycle allows,
+            # and it is also the truth — the application does not run the work.
             running = await repositories.analysis_executions.save(
-                execution.started(at=now, node_id=node.id)
+                execution.assigned_to_node(node.id)
             )
             await ActivityRecorder(repositories, command.request).event(
                 event_type=EventType.ANALYSIS_EXECUTION_STARTED,
@@ -214,9 +217,10 @@ class RunAnalysisExecution:
             )
         )
         async with self._services.unit_of_work.begin() as repositories:
-            await repositories.analysis_executions.save(
-                execution.submitted_to_engine(scientific_execution_id=record.id)
-            )
+            submitted = execution.submitted_to_engine(scientific_execution_id=record.id)
+            if response.status is ExecutionStatus.RUNNING:
+                submitted = submitted.started(at=now)
+            await repositories.analysis_executions.save(submitted)
             await repositories.scientific_executions.record_outcome(
                 self._merge(record, response, now=now)
             )
