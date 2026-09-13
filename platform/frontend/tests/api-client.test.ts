@@ -4,7 +4,7 @@ import type { FrontendConfig } from "@/lib/config";
 
 const config: FrontendConfig = {
   apiBaseUrl: "http://backend.test",
-  apiPrefix: "/api/v1",
+  apiVersion: "v1",
   environment: "test",
 };
 
