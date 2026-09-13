@@ -111,7 +111,7 @@ class VariantSourceRepresentation(Base, TimestampMixin):
     dataset_version_id: Mapped[str] = fk_column("app.dataset_versions.id")
     #: Stable locator within the source file (e.g. line/record identity).
     source_record_key: Mapped[str] = mapped_column(String(255), nullable=False)
-    source_reference_genome_resource_id: Mapped[str | None] = fk_column(
+    source_genome_resource_id: Mapped[str | None] = fk_column(
         "app.scientific_resources.id", nullable=True
     )
     source_contig: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -137,7 +137,7 @@ class VariantExternalIdentifier(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint(
             "variant_id", "namespace", "external_identifier", "source_resource_id",
-            name="uq_variant_external_identifiers_variant_namespace_identifier_source",
+            name="uq_variant_external_identifiers_identity",
         ),
         state_check("origin", DataOrigin, "origin_valid"),
         Index("ix_variant_external_identifiers_namespace_external_identifier",
@@ -207,7 +207,7 @@ class VariantTranscriptConsequence(Base, TimestampMixin):
     __tablename__ = "variant_transcript_consequences"
     __table_args__ = (
         UniqueConstraint(
-            "variant_id", "transcript_id", "consequence_source_resource_id", "consequence_term",
+            "variant_id", "transcript_id", "source_resource_id", "consequence_term",
             name="uq_variant_transcript_consequences_identity",
         ),
         state_check("origin", DataOrigin, "origin_valid"),
@@ -227,10 +227,10 @@ class VariantTranscriptConsequence(Base, TimestampMixin):
     exon: Mapped[str | None] = mapped_column(String(32), nullable=True)
     intron: Mapped[str | None] = mapped_column(String(32), nullable=True)
     #: Which annotation resource/engine produced this consequence.
-    consequence_source_resource_id: Mapped[str | None] = fk_column(
+    source_resource_id: Mapped[str | None] = fk_column(
         "app.scientific_resources.id", nullable=True
     )
-    annotation_engine_resource_id: Mapped[str | None] = fk_column(
+    engine_resource_id: Mapped[str | None] = fk_column(
         "app.scientific_resources.id", nullable=True
     )
     scientific_execution_id: Mapped[str | None] = fk_column(

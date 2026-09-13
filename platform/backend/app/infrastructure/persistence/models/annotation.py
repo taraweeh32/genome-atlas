@@ -121,7 +121,7 @@ class PopulationFrequencyObservation(Base, TimestampMixin):
     population_id: Mapped[str] = fk_column("app.populations.id")
     population_resource_id: Mapped[str] = fk_column("app.scientific_resources.id")
     resource_version: Mapped[str] = mapped_column(String(128), nullable=False)
-    reference_genome_resource_id: Mapped[str | None] = fk_column(
+    genome_resource_id: Mapped[str | None] = fk_column(
         "app.scientific_resources.id", nullable=True
     )
     allele_count: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
@@ -165,7 +165,7 @@ class ClinicalAssertion(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint(
             "source_id", "external_record_identifier", "variant_id",
-            name="uq_clinical_assertions_source_id_external_record_identifier_variant",
+            name="uq_clinical_assertions_identity",
         ),
         state_check("origin", DataOrigin, "origin_valid"),
         Index("ix_clinical_assertions_variant_id", "variant_id"),
