@@ -143,6 +143,12 @@ ALLOWED_CASCADES = {
     ("configuration_setting_versions", "configuration_setting_id"),
     ("notification_deliveries", "notification_id"),
     ("notification_preferences", "user_id"),
+    ("organization_invitations", "organization_id"),
+    ("organization_settings", "organization_id"),
+    ("platform_role_assignments", "user_id"),
+    ("project_invitations", "project_id"),
+    ("user_preferences", "user_id"),
+    ("validation_issues", "validation_run_id"),
     ("scientific_resource_compatibility", "resource_id"),
 }
 
