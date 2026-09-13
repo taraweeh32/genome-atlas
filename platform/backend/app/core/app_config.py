@@ -18,6 +18,56 @@ API_VERSION = "v1"
 API_PREFIX = f"/api/{API_VERSION}"
 
 
+class SecurityPolicySettings(BaseSettings):
+    """Security *policy* — application configuration, not secrets.
+
+    Every value here is enforced by the backend. Nothing in this class is sent to
+    the frontend as a security decision; the frontend may only render hints such
+    as a minimum password length.
+    """
+
+    model_config = SettingsConfigDict(env_prefix="SECURITY_", extra="ignore")
+
+    # --- sessions ------------------------------------------------------- #
+    session_cookie_name: str = "gp_session"
+    csrf_cookie_name: str = "gp_csrf"
+    csrf_header_name: str = "X-CSRF-Token"
+    #: Idle timeout; refreshed by activity but never beyond the absolute limit.
+    session_idle_minutes: int = Field(default=60, ge=5, le=24 * 60)
+    #: Hard ceiling on session lifetime.
+    session_absolute_hours: int = Field(default=12, ge=1, le=24 * 30)
+    #: Re-authentication window for sensitive operations.
+    reauthentication_window_minutes: int = Field(default=15, ge=1, le=240)
+    max_active_sessions_per_user: int = Field(default=10, ge=1, le=100)
+
+    # --- credentials ---------------------------------------------------- #
+    password_min_length: int = Field(default=12, ge=12, le=128)
+    password_require_symbol: bool = False
+    max_failed_authentication_attempts: int = Field(default=5, ge=3, le=50)
+    account_lockout_minutes: int = Field(default=15, ge=1, le=24 * 60)
+    email_verification_ttl_hours: int = Field(default=48, ge=1, le=24 * 14)
+    password_reset_ttl_minutes: int = Field(default=60, ge=5, le=24 * 60)
+    invitation_ttl_hours: int = Field(default=168, ge=1, le=24 * 60)
+
+    # --- policy --------------------------------------------------------- #
+    #: An unverified account may not hold a normal session.
+    require_email_verification_for_login: bool = True
+    #: Privileged platform operations require a verified second factor. The MFA
+    #: package supplies the factor; until then privileged operations are refused
+    #: rather than silently allowed.
+    require_mfa_for_platform_administration: bool = False
+    #: Organization creation is a request that a platform administrator decides.
+    organizations_require_platform_approval: bool = True
+
+    # --- rate limiting -------------------------------------------------- #
+    authentication_rate_limit_attempts: int = Field(default=10, ge=1, le=1000)
+    authentication_rate_limit_window_seconds: int = Field(default=300, ge=10, le=3600)
+    registration_rate_limit_attempts: int = Field(default=5, ge=1, le=1000)
+    registration_rate_limit_window_seconds: int = Field(default=3600, ge=10, le=86400)
+    #: Fail closed when the rate-limit backend is unavailable.
+    rate_limit_fail_open: bool = False
+
+
 class ApplicationSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="PLATFORM_", extra="ignore")
 
@@ -37,6 +87,8 @@ class ApplicationSettings(BaseSettings):
     # Feature configuration.
     feature_openapi_docs: bool = True
 
+    security: SecurityPolicySettings = Field(default_factory=SecurityPolicySettings)
+
 
 @lru_cache(maxsize=1)
 def get_application_settings() -> ApplicationSettings:
@@ -44,6 +96,11 @@ def get_application_settings() -> ApplicationSettings:
         settings = ApplicationSettings()
     except ValidationError as exc:  # pragma: no cover
         raise ConfigurationError(f"invalid application configuration: {exc}") from exc
+    if settings.security.session_idle_minutes > settings.security.session_absolute_hours * 60:
+        raise ConfigurationError(
+            "session idle timeout cannot exceed the absolute session lifetime",
+            key="SECURITY_SESSION_IDLE_MINUTES",
+        )
     if settings.default_page_size > settings.max_page_size:
         raise ConfigurationError(
             "default page size cannot exceed max page size", key="PLATFORM_DEFAULT_PAGE_SIZE"

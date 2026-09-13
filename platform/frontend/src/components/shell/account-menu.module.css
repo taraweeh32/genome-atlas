@@ -1,0 +1,37 @@
+.menu {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.account {
+  display: none;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+@media (min-width: 700px) {
+  .account {
+    display: flex;
+  }
+}
+
+.name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.email {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.pending,
+.signIn {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.signIn {
+  color: var(--color-accent);
+}

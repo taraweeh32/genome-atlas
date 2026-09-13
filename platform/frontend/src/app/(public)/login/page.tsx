@@ -1,23 +1,24 @@
 import type { Metadata } from "next";
-import styles from "../public.module.css";
+import { Suspense } from "react";
+import { SignInForm } from "@/components/auth/sign-in-form";
+import { LoadingState } from "@/components/ui/states";
 
 export const metadata: Metadata = { title: "Sign in" };
 
 /**
- * Sign-in route foundation.
+ * Sign-in route.
  *
- * Package 1 deliberately renders no credential form: authentication, sessions,
- * password hashing and MFA are implemented server-side in a later package. A
- * temporary client-side login would violate the security invariants.
+ * Credentials are verified by the backend, which issues an opaque server-side
+ * session as an HttpOnly cookie plus a CSRF cookie. No token, password or
+ * permission is ever stored in the browser by this page.
  */
 export default function LoginPage() {
   return (
     <>
       <h1>Sign in</h1>
-      <p className={styles.notice}>
-        Authentication is not implemented yet. This route reserves the public sign-in namespace so
-        the real, backend-owned flow can be added without restructuring the shell.
-      </p>
+      <Suspense fallback={<LoadingState label="Preparing sign-in" />}>
+        <SignInForm />
+      </Suspense>
     </>
   );
 }

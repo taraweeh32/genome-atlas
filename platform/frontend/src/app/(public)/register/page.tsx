@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import styles from "../public.module.css";
+import { RegisterForm } from "@/components/auth/register-form";
 
 export const metadata: Metadata = { title: "Create an account" };
 
-/** Registration route foundation. Account creation is backend-owned (later package). */
+/**
+ * Registration route. Account creation, email verification and personal
+ * workspace provisioning are backend-owned; registration never signs anyone in.
+ */
 export default function RegisterPage() {
   return (
     <>
       <h1>Create an account</h1>
-      <p className={styles.notice}>
-        Registration is not implemented yet. Account lifecycle, email verification and personal
-        workspace provisioning are owned by the backend.
-      </p>
+      <RegisterForm />
     </>
   );
 }

@@ -573,3 +573,33 @@ class ConfigurationState(StrEnum):
     ACTIVE = "active"
     SUPERSEDED = "superseded"
     RETIRED = "retired"
+
+
+# --------------------------------------------------------------------------- #
+# Sessions / credential tokens (Package 3)                                    #
+# --------------------------------------------------------------------------- #
+
+
+class SessionState(StrEnum):
+    """Server-authoritative session lifecycle.
+
+    A session is never "deleted" on sign-out: it is revoked, so the record
+    remains available to security review.
+    """
+
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+    SUPERSEDED = "superseded"
+
+
+class CredentialTokenKind(StrEnum):
+    EMAIL_VERIFICATION = "email_verification"
+    PASSWORD_RESET = "password_reset"
+
+
+class CredentialTokenState(StrEnum):
+    ACTIVE = "active"
+    CONSUMED = "consumed"
+    EXPIRED = "expired"
+    INVALIDATED = "invalidated"

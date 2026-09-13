@@ -82,6 +82,24 @@ class AnalyticsSettings(BaseSettings):
     duckdb_threads: int = Field(default=2, ge=1)
 
 
+class AuthenticationSecretSettings(BaseSettings):
+    """Authentication *secrets* — deployment-supplied, never committed.
+
+    ``token_pepper`` is a server-side secret mixed into session and credential
+    token hashes, so a database disclosure alone cannot be used to forge or
+    recognise a token. It is required outside development; development falls back
+    to a clearly-labelled non-secret value so a fresh checkout runs.
+    """
+
+    model_config = SettingsConfigDict(env_prefix="AUTH_", extra="ignore")
+
+    token_pepper: str | None = None
+    #: Argon2id parameters. Raising them is a deployment decision, not a code change.
+    password_hash_time_cost: int = Field(default=3, ge=1, le=10)
+    password_hash_memory_kib: int = Field(default=65536, ge=8192)
+    password_hash_parallelism: int = Field(default=1, ge=1, le=16)
+
+
 class TransportSettings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="API_", extra="ignore")
 
@@ -105,6 +123,9 @@ class EnvironmentSettings(BaseSettings):
     object_storage: ObjectStorageSettings = Field(default_factory=ObjectStorageSettings)  # type: ignore[arg-type]
     analytics: AnalyticsSettings = Field(default_factory=AnalyticsSettings)  # type: ignore[arg-type]
     transport: TransportSettings = Field(default_factory=TransportSettings)
+    authentication: AuthenticationSecretSettings = Field(
+        default_factory=AuthenticationSecretSettings
+    )
 
     def assert_production_safe(self) -> None:
         """Reject configurations that are unsafe outside development."""
@@ -114,6 +135,11 @@ class EnvironmentSettings(BaseSettings):
             raise ConfigurationError(
                 "object storage credentials are required outside development",
                 key="OBJECT_STORAGE_ACCESS_KEY_ID",
+            )
+        if not self.authentication.token_pepper:
+            raise ConfigurationError(
+                "an authentication token pepper is required outside development",
+                key="AUTH_TOKEN_PEPPER",
             )
         if not self.transport.cors_origin_list:
             raise ConfigurationError(

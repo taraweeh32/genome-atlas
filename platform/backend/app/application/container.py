@@ -9,6 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.application.ports import HealthProbe
+from app.application.services.authorization import AuthorizationService
+from app.application.services.sessions import SessionService
+from app.application.use_cases.identity.dependencies import IdentityServices
+from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
 )
@@ -24,7 +28,14 @@ from app.infrastructure.observability.health import (
     RedisHealthProbe,
     ScientificHealthProbe,
 )
+from app.domain.authorization.policy import AuthorizationPolicy
+from app.domain.identity.passwords import PasswordPolicy
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.unit_of_work import SqlUnitOfWorkFactory
+from app.infrastructure.redis.rate_limiter import RedisRateLimiter
+from app.infrastructure.security.clock import SystemClock
+from app.infrastructure.security.passwords import Argon2PasswordHasher
+from app.infrastructure.security.tokens import TokenHasher
 from app.infrastructure.redis.cache import RedisCache
 from app.infrastructure.storage.object_storage import S3ObjectStorage
 from app.scientific.adapters.factory import build_scientific_gateway
@@ -47,21 +58,54 @@ class Container:
     analytics: AnalyticsGateway
     scientific: ScientificEngineGateway
 
+    #: Security services. Constructed once: hashing parameters and the token
+    #: pepper are deployment configuration, not per-request state.
+    clock: SystemClock
+    passwords: Argon2PasswordHasher
+    tokens: TokenHasher
+    unit_of_work: SqlUnitOfWorkFactory
+    authorization: AuthorizationService
+    sessions: SessionService
+
     @classmethod
     def build(cls) -> Container:
         environment = get_environment_settings()
         application = get_application_settings()
         scientific_settings = get_scientific_settings()
 
+        authentication = environment.authentication
+        if authentication.token_pepper:
+            pepper = authentication.token_pepper
+        else:
+            # Development-only fallback so a fresh checkout runs; production-like
+            # environments are rejected by ``assert_production_safe``.
+            pepper = "development-only-token-pepper"
+        database = Database(environment.database)
+        security_policy = application.security
+
         return cls(
             environment=environment,
             application=application,
             scientific_settings=scientific_settings,
-            database=Database(environment.database),
+            database=database,
             cache=RedisCache(environment.redis),
             object_storage=S3ObjectStorage(environment.object_storage),
             analytics=AnalyticsGateway(environment.analytics),
             scientific=build_scientific_gateway(scientific_settings, environment.environment),
+            clock=SystemClock(),
+            passwords=Argon2PasswordHasher(
+                time_cost=authentication.password_hash_time_cost,
+                memory_cost_kib=authentication.password_hash_memory_kib,
+                parallelism=authentication.password_hash_parallelism,
+            ),
+            tokens=TokenHasher(pepper),
+            unit_of_work=SqlUnitOfWorkFactory(database),
+            authorization=AuthorizationService(AuthorizationPolicy()),
+            sessions=SessionService(
+                token_hasher=TokenHasher(pepper),
+                clock=SystemClock(),
+                policy=security_policy,
+            ),
         )
 
     # -- lifecycle ---------------------------------------------------------
@@ -96,6 +140,46 @@ class Container:
             ScientificHealthProbe(
                 self.scientific, required=self.scientific_settings.required_for_readiness
             ),
+        )
+
+    # -- security / identity wiring ---------------------------------------
+
+    def rate_limiter(self) -> RedisRateLimiter:
+        """Built per call: it borrows the live Redis client owned by the cache."""
+        return RedisRateLimiter(
+            self.cache.raw_client(),
+            fail_open=self.application.security.rate_limit_fail_open,
+        )
+
+    def _password_policy(self) -> PasswordPolicy:
+        policy = self.application.security
+        return PasswordPolicy(
+            min_length=policy.password_min_length,
+            require_symbol=policy.password_require_symbol,
+        )
+
+    def identity_services(self) -> IdentityServices:
+        return IdentityServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            passwords=self.passwords,
+            tokens=self.tokens,
+            sessions=self.sessions,
+            authorization=self.authorization,
+            rate_limiter=self.rate_limiter(),
+            policy=self.application.security,
+            password_policy=self._password_policy(),
+            expose_development_tokens=self.environment.environment.exposes_diagnostics,
+        )
+
+    def tenancy_services(self) -> TenancyServices:
+        return TenancyServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            tokens=self.tokens,
+            authorization=self.authorization,
+            policy=self.application.security,
+            expose_development_tokens=self.environment.environment.exposes_diagnostics,
         )
 
     def get_readiness(self) -> GetReadiness:
