@@ -37,19 +37,29 @@ def _include_object(obj, name, type_, reflected, compare_to) -> bool:  # noqa: A
     return True
 
 
+_CONFIGURE_OPTIONS = {
+    "target_metadata": target_metadata,
+    "include_schemas": True,
+    "include_object": _include_object,
+    "compare_type": True,
+    "compare_server_default": True,
+    "version_table_schema": "platform",
+}
+
+
 def run_migrations_offline() -> None:
     context.configure(
         url=config.get_main_option("sqlalchemy.url"),
-        target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        **_CONFIGURE_OPTIONS,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def _run(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(connection=connection, **_CONFIGURE_OPTIONS)
     with context.begin_transaction():
         context.run_migrations()
 
