@@ -37,7 +37,7 @@ from app.domain.value_objects.enums import (
     EvidenceCategory,
     EvidenceStrength,
     InterpretationState,
-    ReviewDecision,
+    ReviewDecision as ReviewDecisionVocabulary,
     ReviewState,
 )
 from app.infrastructure.persistence.base import (
@@ -274,7 +274,7 @@ class ReviewDecision(Base, TimestampMixin):
 
     __tablename__ = "review_decisions"
     __table_args__ = (
-        state_check("decision", ReviewDecision, "decision_valid"),
+        state_check("decision", ReviewDecisionVocabulary, "decision_valid"),
         Index("ix_review_decisions_interpretation_version_id", "interpretation_version_id"),
         Index("ix_review_decisions_reviewer_user_id", "reviewer_user_id"),
     )
