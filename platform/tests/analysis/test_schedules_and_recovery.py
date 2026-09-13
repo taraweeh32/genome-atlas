@@ -28,6 +28,7 @@ from app.application.use_cases.analysis.schedules import (
 )
 from app.domain.errors import NotFoundError, ValidationError
 from app.domain.value_objects.enums import (
+    JobKind,
     JobState,
     NodeClass,
     NodeHealthState,
@@ -218,7 +219,7 @@ async def test_a_job_whose_worker_vanished_is_recovered() -> None:
         worker_id="ghost-worker",
         queues=("default",),
         node_class=NodeClass.APPLICATION_WORKER,
-        kinds=(),
+        kinds=(JobKind.ANALYSIS_EXECUTION,),
         now=now,
         lease_expires_at=now + timedelta(seconds=60),
     )

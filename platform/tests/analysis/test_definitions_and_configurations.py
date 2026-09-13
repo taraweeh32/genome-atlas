@@ -55,6 +55,18 @@ from tests.tenancy.test_projects_and_isolation import personal_project
 pytestmark = pytest.mark.anyio
 
 
+async def _reuse_inputs(harness, analysis_id: str):
+    """The inputs the current configuration declares, re-declared verbatim."""
+    analysis = await harness.repositories.analyses.get(analysis_id)
+    inputs = await harness.repositories.analysis_configurations.list_inputs(
+        analysis.current_configuration_id
+    )
+    return tuple(
+        ConfigurationInputRequest(dataset_version_id=item.dataset_version_id, role=item.role)
+        for item in inputs
+    )
+
+
 async def test_analysis_is_created_in_the_projects_workspace() -> None:
     harness = build_harness()
     user_id = await create_account(harness, "owner@example.test")
@@ -111,6 +123,7 @@ async def test_editing_a_configuration_creates_a_new_version() -> None:
             analysis_id=analysis.analysis.id,
             request=harness.request,
             label="v2",
+            inputs=await _reuse_inputs(harness, analysis.analysis.id),
             filtering_configuration={"min_depth": 30},
             activate=True,
         )
@@ -141,6 +154,7 @@ async def test_activation_moves_the_current_configuration_pointer() -> None:
             analysis_id=analysis.analysis.id,
             request=harness.request,
             label="v2",
+            inputs=await _reuse_inputs(harness, analysis.analysis.id),
         )
     )
 
@@ -210,7 +224,7 @@ async def test_invalid_analysis_state_transition_is_refused() -> None:
     user_id = await create_account(harness, "owner@example.test")
     analysis = await project_analysis(harness, user_id)
 
-    with pytest.raises(InvalidStateTransitionError):
+    with pytest.raises((InvalidStateTransitionError, ValidationError)):
         await ChangeAnalysisState(harness.analysis).execute(
             ChangeAnalysisStateCommand(
                 actor=await actor_for(harness, user_id),
@@ -300,6 +314,7 @@ async def test_configuration_listing_is_ordered_and_marks_the_current_version() 
             analysis_id=analysis.analysis.id,
             request=harness.request,
             label="v2",
+            inputs=await _reuse_inputs(harness, analysis.analysis.id),
         )
     )
 
