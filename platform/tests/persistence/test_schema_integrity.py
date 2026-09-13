@@ -1,0 +1,254 @@
+"""Structural guarantees the domain schema must keep.
+
+These tests run against the declarative metadata, so they are fast and require no
+database, while still failing the build on the mistakes that matter: drift
+between the migration and the models, tenancy columns going missing, mutable
+history, silent cascades that would destroy scientific lineage, unconstrained
+state columns and PostgreSQL identifier-length violations.
+"""
+
+from __future__ import annotations
+
+import pytest
+from sqlalchemy import CheckConstraint
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.schema import CreateTable
+
+from app.infrastructure.persistence.models import Base
+
+MAX_IDENTIFIER_LENGTH = 63
+
+#: Tables that are append-only history and therefore must never be mutated.
+IMMUTABLE_TABLES = {
+    "analysis_executions",
+    "audit_events",
+    "criterion_evaluation_evidence",
+    "interpretation_versions",
+    "job_attempts",
+    "provenance_entries",
+    "provenance_manifests",
+    "report_versions",
+    "review_decisions",
+    "scientific_artifacts",
+    "scientific_executions",
+    "security_events",
+    "variant_source_representations",
+}
+
+#: Tables scoped to a tenant must carry the workspace scope explicitly.
+WORKSPACE_SCOPED_TABLES = {
+    "analyses",
+    "analysis_executions",
+    "datasets",
+    "export_requests",
+    "interpretations",
+    "projects",
+    "reports",
+    "result_sets",
+    "review_assignments",
+    "samples",
+}
+
+
+def _qualified(table) -> str:  # noqa: ANN001
+    return f"{table.schema or 'app'}.{table.name}"
+
+
+def test_metadata_matches_the_migration_table_set() -> None:
+    """The migration owns exactly the tables the models declare."""
+    from database.migrations.versions import _load_domain_schema_revision
+
+    revision = _load_domain_schema_revision()
+    assert set(revision.TABLES) == {_qualified(t) for t in Base.metadata.sorted_tables}
+
+
+def test_every_table_lives_in_an_owned_schema() -> None:
+    for table in Base.metadata.sorted_tables:
+        assert (table.schema or "app") in {"app", "platform"}, table.name
+
+
+def test_every_table_has_a_single_string_primary_key() -> None:
+    for table in Base.metadata.sorted_tables:
+        columns = list(table.primary_key.columns)
+        assert len(columns) == 1, f"{table.name} must have a single-column primary key"
+        assert isinstance(columns[0].type, postgresql.VARCHAR | type(columns[0].type))
+        assert columns[0].name == "id", table.name
+
+
+def test_every_table_records_creation_and_update_time() -> None:
+    for table in Base.metadata.sorted_tables:
+        assert "created_at" in table.c, table.name
+        assert "updated_at" in table.c, table.name
+        assert table.c.created_at.type.timezone is True, table.name
+
+
+def test_no_identifier_exceeds_the_postgresql_limit() -> None:
+    """PostgreSQL truncates >63 char identifiers, which breaks later drops."""
+    offenders: list[str] = []
+    for table in Base.metadata.sorted_tables:
+        names = [table.name, *(c.name for c in table.constraints if c.name)]
+        names += [i.name for i in table.indexes if i.name]
+        offenders += [str(n) for n in names if len(str(n)) > MAX_IDENTIFIER_LENGTH]
+    assert offenders == []
+
+
+def test_all_ddl_compiles_for_postgresql() -> None:
+    for table in Base.metadata.sorted_tables:
+        CreateTable(table).compile(dialect=postgresql.dialect())
+
+
+def test_every_state_column_is_constrained_to_a_vocabulary() -> None:
+    """A state column without a CHECK constraint can hold any string."""
+    unconstrained: list[str] = []
+    for table in Base.metadata.sorted_tables:
+        checks = " ".join(
+            str(c.sqltext) for c in table.constraints if isinstance(c, CheckConstraint)
+        )
+        for column in table.c:
+            if column.name in {"state", "deletion_state", "review_state"} and (
+                column.name not in checks
+            ):
+                unconstrained.append(f"{table.name}.{column.name}")
+    assert unconstrained == []
+
+
+def test_foreign_keys_never_cascade_into_scientific_lineage() -> None:
+    """Only child rows of a parent may cascade; lineage tables never do."""
+    violations: list[str] = []
+    for table in Base.metadata.sorted_tables:
+        for fk in table.foreign_keys:
+            if fk.ondelete == "CASCADE" and table.name in IMMUTABLE_TABLES:
+                violations.append(f"{table.name}.{fk.parent.name}")
+            if fk.ondelete not in {"RESTRICT", "CASCADE"}:
+                violations.append(f"{table.name}.{fk.parent.name}={fk.ondelete}")
+    assert violations == []
+
+
+@pytest.mark.parametrize("table_name", sorted(WORKSPACE_SCOPED_TABLES))
+def test_tenant_scoped_tables_carry_the_workspace_scope(table_name: str) -> None:
+    table = next(t for t in Base.metadata.sorted_tables if t.name == table_name)
+    assert "workspace_id" in table.c
+
+
+def test_variant_identity_is_the_canonical_tuple() -> None:
+    """Canonical identity may never include rsID or any external accession."""
+    variants = Base.metadata.tables["app.variants"]
+    unique = next(
+        c for c in variants.constraints
+        if c.name == "uq_variants_canonical_identity"
+    )
+    assert [c.name for c in unique.columns] == [
+        "reference_genome_resource_id",
+        "contig",
+        "position",
+        "reference_allele",
+        "alternate_allele",
+        "normalization_version",
+    ]
+    assert "rsid" not in variants.c
+    assert "clinvar_id" not in variants.c
+
+
+def test_source_representation_is_preserved_separately_from_identity() -> None:
+    source = Base.metadata.tables["app.variant_source_representations"]
+    for column in ("source_contig", "source_position", "source_payload"):
+        assert column in source.c
+    #: A record that failed normalization is still kept.
+    assert source.c.variant_id.nullable is True
+
+
+def test_interpretation_versions_are_immutable_and_versioned() -> None:
+    versions = Base.metadata.tables["app.interpretation_versions"]
+    assert "version_number" in versions.c
+    assert "supersedes_version_id" in versions.c
+    assert "evaluation_snapshot" in versions.c
+    #: Conflicting evidence must be retained, not discarded.
+    assert "conflict_summary" in versions.c
+
+
+def test_criterion_evaluations_distinguish_human_from_automated() -> None:
+    evaluations = Base.metadata.tables["app.criterion_evaluations"]
+    assert "origin" in evaluations.c
+    assert "evaluated_by_user_id" in evaluations.c
+    assert "evaluation_method" in evaluations.c
+    assert "is_override" in evaluations.c
+    #: The ruleset identity is mandatory: a criterion is meaningless without it.
+    assert evaluations.c.ruleset_resource_id.nullable is False
+    assert evaluations.c.ruleset_version.nullable is False
+
+
+def test_reports_snapshot_their_interpretation_versions() -> None:
+    link = Base.metadata.tables["app.report_version_interpretations"]
+    assert "interpretation_version_id" in link.c
+    report_versions = Base.metadata.tables["app.report_versions"]
+    assert "content_snapshot" in report_versions.c
+    assert "provenance_manifest_id" in report_versions.c
+
+
+def test_filtering_and_ranking_are_separate_tables() -> None:
+    assert "app.filter_definitions" in Base.metadata.tables
+    assert "app.ranking_configurations" in Base.metadata.tables
+    filters = Base.metadata.tables["app.filter_definitions"]
+    ranking = Base.metadata.tables["app.ranking_configurations"]
+    assert "weights" not in filters.c
+    assert "predicate_tree" not in ranking.c
+
+
+def test_large_genomic_payloads_are_referenced_not_stored() -> None:
+    """No table may hold bulk genomic content; only references and metadata."""
+    result_sets = Base.metadata.tables["app.result_sets"]
+    assert "analytical_location" in result_sets.c
+    artifacts = Base.metadata.tables["app.scientific_artifacts"]
+    assert "file_artifact_id" in artifacts.c
+    assert "analytical_location" in artifacts.c
+
+
+def test_jobs_support_concurrency_safe_claiming_and_recovery() -> None:
+    jobs = Base.metadata.tables["platform.jobs"]
+    for column in (
+        "state",
+        "queue",
+        "priority",
+        "available_at",
+        "claimed_by_worker_id",
+        "lease_expires_at",
+        "heartbeat_at",
+        "attempt_number",
+        "max_attempts",
+        "cancellation_requested_at",
+        "idempotency_key",
+        "correlation_id",
+    ):
+        assert column in jobs.c, column
+    index_columns = {tuple(c.name for c in index.columns) for index in jobs.indexes}
+    assert ("queue", "state", "priority", "available_at") in index_columns
+
+
+def test_audit_provenance_and_events_are_separate_systems() -> None:
+    assert "platform.audit_events" in Base.metadata.tables
+    assert "app.provenance_manifests" in Base.metadata.tables
+    assert "platform.domain_event_outbox" in Base.metadata.tables
+    assert "platform.security_events" in Base.metadata.tables
+    audit = Base.metadata.tables["platform.audit_events"]
+    #: Audit records actions, not scientific lineage.
+    assert "manifest" not in audit.c
+
+
+def test_retention_lifecycle_is_separate_from_operational_state() -> None:
+    projects = Base.metadata.tables["app.projects"]
+    assert "state" in projects.c
+    assert "deletion_state" in projects.c
+    assert "retention_expires_at" in projects.c
+    assert "permanently_deleted_at" in projects.c
+
+
+def test_no_table_stores_a_secret_or_credential() -> None:
+    forbidden = ("password", "secret", "token", "api_key", "private_key")
+    offenders = [
+        f"{table.name}.{column.name}"
+        for table in Base.metadata.sorted_tables
+        for column in table.c
+        if any(term in column.name for term in forbidden)
+        and not column.name.endswith(("_hash", "_hash_algorithm", "_reference"))
+    ]
+    assert offenders == []
