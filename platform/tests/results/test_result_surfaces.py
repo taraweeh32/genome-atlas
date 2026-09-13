@@ -215,7 +215,7 @@ async def test_an_unattributed_payload_is_refused_and_the_refusal_is_recorded(ha
     assert ingestions[0].rejection_code is not None
     # A refused delivery never produced a surface.
     sets = await harness.repositories.result_sets.list_all(page=PAGE)
-    assert sets.items == []
+    assert sets.items == ()
 
 
 async def test_an_unsupported_contract_version_is_refused(harness):
