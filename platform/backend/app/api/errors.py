@@ -66,7 +66,7 @@ def register_exception_handlers(app: FastAPI, environment: Environment) -> None:
     async def _domain_error(_: Request, exc: DomainError) -> JSONResponse:
         status = status_for(exc)
         if status >= 500:
-            logger.error("domain error", extra={"error_code": exc.code}, exc_info=True)
+            logger.error("domain error", extra={"error_code": exc.code}, exc_info=exc)
         return error_response(
             status=status, code=exc.code, message=exc.message, details=exc.details
         )
