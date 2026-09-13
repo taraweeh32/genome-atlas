@@ -266,12 +266,12 @@ async def test_absent_zero_false_and_unknown_values_stay_distinguishable(harness
     assert observation.read_depth == 0
 
     annotations = {item.field_key: item for item in detail.annotations.items}
-    assert annotations["absent_field"].value_semantics is ValueSemantics.MISSING
-    assert annotations["absent_field"].value_number is None
-    assert annotations["false_field"].value_boolean is False
-    assert annotations["false_field"].value_semantics is ValueSemantics.PRESENT
-    assert annotations["zero_field"].value_number == 0.0
-    assert annotations["zero_field"].value_semantics is ValueSemantics.PRESENT
+    assert annotations["absent_field"].value.semantics is ValueSemantics.MISSING
+    assert annotations["absent_field"].value.value_number is None
+    assert annotations["false_field"].value.value_boolean is False
+    assert annotations["false_field"].value.semantics is ValueSemantics.PRESENT
+    assert annotations["zero_field"].value.value_number == 0.0
+    assert annotations["zero_field"].value.semantics is ValueSemantics.PRESENT
 
     frequency = detail.frequencies.items[0]
     assert frequency.value_semantics is ValueSemantics.NA
