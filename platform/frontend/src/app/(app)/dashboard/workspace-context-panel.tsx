@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, DefinitionList } from "@/components/ui/card";
-import { EmptyState, ErrorState } from "@/components/ui/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useWorkspace } from "@/context/workspace-context";
 
 /**
