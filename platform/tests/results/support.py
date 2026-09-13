@@ -20,6 +20,8 @@ from app.application.use_cases.results.variants import (
     IngestVariantPayload,
     IngestVariantPayloadCommand,
 )
+from app.domain.variant.entities import SampleRecord
+from app.infrastructure.persistence.repositories.base import new_id
 from app.scientific.results import (
     RESULT_CONTRACT_VERSION,
     AnnotationClaim,
@@ -225,6 +227,23 @@ async def available_result(harness, user_id: str, execution_id: str, **kwargs):
     )
 
 
+async def declare_sample(harness, dataset_version_id: str, sample_key: str = "S1"):
+    """A manifest-declared sample. Subject rows are tenant-scoped, so the dataset
+    version supplies the workspace: the payload never gets to assert it."""
+    version = await harness.repositories.dataset_versions.get(dataset_version_id)
+    dataset = await harness.repositories.datasets.get(version.dataset_id)
+    sample, _ = await harness.repositories.samples.get_or_add(
+        SampleRecord(
+            id=new_id("smp"),
+            workspace_id=dataset.workspace_id,
+            dataset_id=dataset.id,
+            dataset_version_id=dataset_version_id,
+            sample_key=sample_key,
+        )
+    )
+    return sample
+
+
 async def ingest_variants(
     harness,
     user_id: str,
@@ -252,6 +271,7 @@ __all__ = [
     "PAGE",
     "TABLE",
     "attribution",
+    "declare_sample",
     "available_result",
     "execution_for",
     "ingest_variants",
