@@ -241,8 +241,8 @@ def resolve_missed(
 
 __all__ = [
     "MIN_INTERVAL_MINUTES",
-    "SCHEDULE_KINDS",
     "ON_TIME_GRACE_SECONDS",
+    "SCHEDULE_KINDS",
     "MissedFirings",
     "ScheduleExpression",
     "resolve_missed",

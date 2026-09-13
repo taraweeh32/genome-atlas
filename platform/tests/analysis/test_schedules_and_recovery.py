@@ -11,22 +11,22 @@ from datetime import timedelta
 
 import pytest
 
-from app.application.use_cases.analysis.maintenance import RecoverAbandonedWork
-from app.application.use_cases.analysis.nodes import MarkSilentNodesUnhealthy
 from app.application.use_cases.analysis.executions import (
     RequestExecution,
     RequestExecutionCommand,
 )
+from app.application.use_cases.analysis.maintenance import RecoverAbandonedWork
+from app.application.use_cases.analysis.nodes import MarkSilentNodesUnhealthy
 from app.application.use_cases.analysis.scheduler import TriggerDueSchedules
 from app.application.use_cases.analysis.schedules import (
     ChangeScheduleState,
     ChangeScheduleStateCommand,
     CreateSchedule,
     CreateScheduleCommand,
-    ListScheduleTriggers,
-    ListScheduleTriggersQuery,
     ListSchedules,
     ListSchedulesQuery,
+    ListScheduleTriggers,
+    ListScheduleTriggersQuery,
     UpdateSchedule,
     UpdateScheduleCommand,
 )
