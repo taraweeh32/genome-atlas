@@ -50,6 +50,33 @@ class EventType:
     PROJECT_MEMBER_REMOVED = "project.member_removed"
     PROJECT_ROLE_CHANGED = "project.role_changed"
 
+    DATASET_CREATED = "dataset.created"
+    DATASET_UPDATED = "dataset.updated"
+    DATASET_ARCHIVED = "dataset.archived"
+    DATASET_RESTORED = "dataset.restored"
+    DATASET_SOFT_DELETED = "dataset.soft_deleted"
+    DATASET_VERSION_CREATED = "dataset_version.created"
+    DATASET_VERSION_ACCEPTED = "dataset_version.accepted"
+    DATASET_VERSION_REJECTED = "dataset_version.rejected"
+    DATASET_VERSION_SUPERSEDED = "dataset_version.superseded"
+
+    UPLOAD_SESSION_CREATED = "upload_session.created"
+    UPLOAD_SESSION_COMPLETED = "upload_session.completed"
+    UPLOAD_SESSION_REJECTED = "upload_session.rejected"
+    UPLOAD_SESSION_CANCELLED = "upload_session.cancelled"
+    FILE_ARTIFACT_QUARANTINED = "file_artifact.quarantined"
+    FILE_ARTIFACT_DOWNLOAD_AUTHORIZED = "file_artifact.download_authorized"
+
+    IMPORT_SESSION_OPENED = "import_session.opened"
+    IMPORT_SESSION_MAPPING_CONFIRMED = "import_session.mapping_confirmed"
+    IMPORT_SESSION_SUBMITTED = "import_session.submitted"
+    IMPORT_SESSION_ACCEPTED = "import_session.accepted"
+    IMPORT_SESSION_REJECTED = "import_session.rejected"
+    IMPORT_SESSION_ABANDONED = "import_session.abandoned"
+
+    VALIDATION_RUN_STARTED = "validation_run.started"
+    VALIDATION_RUN_COMPLETED = "validation_run.completed"
+
 
 @dataclass(frozen=True, slots=True)
 class DomainEvent:
