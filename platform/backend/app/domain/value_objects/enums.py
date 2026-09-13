@@ -211,6 +211,12 @@ class ValueSemantics(StrEnum):
 
     PRESENT = "present"
     MISSING = "missing"
+    #: An explicit null marker in the source, distinct from an absent field.
+    NULL = "null"
+    #: Present but empty (e.g. ``""``), distinct from absent and from null.
+    EMPTY = "empty"
+    #: A literal ``NA``/``N/A`` marker, which is not the same as "unknown".
+    NA = "na"
     UNKNOWN = "unknown"
     NOT_APPLICABLE = "not_applicable"
     ZERO = "zero"

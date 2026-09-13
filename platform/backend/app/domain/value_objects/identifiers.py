@@ -60,3 +60,33 @@ class ProjectId(EntityId):
 @dataclass(frozen=True, slots=True)
 class UserId(EntityId):
     prefix: ClassVar[str] = "usr"
+
+
+@dataclass(frozen=True, slots=True)
+class DatasetId(EntityId):
+    prefix: ClassVar[str] = "dst"
+
+
+@dataclass(frozen=True, slots=True)
+class DatasetVersionId(EntityId):
+    prefix: ClassVar[str] = "dsv"
+
+
+@dataclass(frozen=True, slots=True)
+class FileArtifactId(EntityId):
+    prefix: ClassVar[str] = "fil"
+
+
+@dataclass(frozen=True, slots=True)
+class UploadSessionId(EntityId):
+    prefix: ClassVar[str] = "upl"
+
+
+@dataclass(frozen=True, slots=True)
+class ImportSessionId(EntityId):
+    prefix: ClassVar[str] = "imp"
+
+
+@dataclass(frozen=True, slots=True)
+class ValidationRunId(EntityId):
+    prefix: ClassVar[str] = "vrn"
