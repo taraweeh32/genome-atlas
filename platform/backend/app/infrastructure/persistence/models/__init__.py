@@ -100,6 +100,10 @@ from app.infrastructure.persistence.models.results import (
     ResultSet,
     SavedView,
 )
+from app.infrastructure.persistence.models.session import (
+    UserCredentialToken,
+    UserSession,
+)
 from app.infrastructure.persistence.models.scientific import (
     ScientificArtifact,
     ScientificExecution,
@@ -187,6 +191,8 @@ __all__ = [
     "Transcript",
     "User",
     "UserAuthenticationMetadata",
+    "UserCredentialToken",
+    "UserSession",
     "UserPreference",
     "ValidationIssue",
     "ValidationRule",

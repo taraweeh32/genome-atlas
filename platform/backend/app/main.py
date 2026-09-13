@@ -87,7 +87,14 @@ def create_app() -> FastAPI:
         allow_origins=environment.transport.cors_origin_list,
         allow_credentials=True,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-        allow_headers=["Authorization", "Content-Type", "X-Correlation-ID"],
+        # The CSRF header must be allowed, or the browser blocks every unsafe
+        # request before it reaches the server.
+        allow_headers=[
+            "Authorization",
+            "Content-Type",
+            "X-Correlation-ID",
+            application.security.csrf_header_name,
+        ],
     )
 
     register_exception_handlers(app, environment.environment)

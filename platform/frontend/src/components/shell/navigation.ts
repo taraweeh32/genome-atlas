@@ -31,12 +31,20 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     available: true,
   },
   {
+    id: "organizations",
+    label: "Organizations",
+    href: "/organizations",
+    namespace: "application",
+    requiredPermission: null,
+    available: true,
+  },
+  {
     id: "projects",
     label: "Projects",
     href: "/projects",
     namespace: "application",
     requiredPermission: "project.read",
-    available: false,
+    available: true,
   },
   {
     id: "datasets",

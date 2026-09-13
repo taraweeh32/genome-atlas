@@ -23,6 +23,7 @@ from app.domain.errors import (
     InfrastructureError,
     InvalidStateTransitionError,
     NotFoundError,
+    RateLimitedError,
     ScientificIntegrationError,
     ValidationError,
 )
@@ -34,6 +35,7 @@ _STATUS_BY_ERROR: tuple[tuple[type[DomainError], int], ...] = (
     (AuthenticationError, 401),
     (AuthorizationError, 403),
     (NotFoundError, 404),
+    (RateLimitedError, 429),
     (InvalidStateTransitionError, 409),
     (ConflictError, 409),
     (ScientificIntegrationError, 502),

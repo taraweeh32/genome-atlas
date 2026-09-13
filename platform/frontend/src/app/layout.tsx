@@ -1,12 +1,14 @@
 /**
  * Root layout: the single html/body wrapper for every namespace.
  *
- * Providers established here are foundations only — workspace context and
- * transient notifications. No authentication, no permissions, no domain data.
+ * Providers established here are the session (mirroring the backend's answer to
+ * `GET /me`), the workspace context and transient notifications. No permission
+ * is decided here and no identity is invented.
  */
 
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
+import { SessionProvider } from "@/context/session-context";
 import { WorkspaceProvider } from "@/context/workspace-context";
 import { ToastProvider } from "@/components/ui/toast";
 import "@/styles/globals.css";
@@ -30,9 +32,11 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <WorkspaceProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </WorkspaceProvider>
+        <SessionProvider>
+          <WorkspaceProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </WorkspaceProvider>
+        </SessionProvider>
       </body>
     </html>
   );

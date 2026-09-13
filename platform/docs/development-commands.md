@@ -34,3 +34,16 @@
 | Lint | `npm run lint` |
 | Type check | `npm run typecheck` |
 | Production build | `npm run build` |
+
+## Identity and tenancy (Package 3)
+
+| Task | Command |
+| --- | --- |
+| Apply the identity/session migration | `uv run alembic upgrade head` |
+| Identity, session and authorization tests | `uv run pytest ../tests/identity ../tests/tenancy` |
+| Grant the first platform administrator | `uv run python -m app.workers.worker --help` is *not* used for this; use `POST /admin/users/{id}/platform-roles` from an existing platform administrator, or insert the role row directly in a fresh environment |
+
+`AUTH_TOKEN_PEPPER` must be set for every environment (see
+`configuration/.env.example`). In development, verification, password-reset and
+invitation tokens are returned in API responses because no mail transport is
+configured; this never happens in any other environment.

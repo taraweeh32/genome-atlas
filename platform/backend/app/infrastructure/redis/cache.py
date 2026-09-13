@@ -64,6 +64,14 @@ class RedisCache:
         except RedisError as exc:
             raise InfrastructureError("redis delete failed") from exc
 
+    def raw_client(self) -> redis.Redis:
+        """Direct client access for coordination primitives (rate limiting).
+
+        Exposed deliberately and narrowly: counters and locks need pipelines and
+        TTL semantics that a generic get/set cache interface cannot express.
+        """
+        return self._require()
+
     async def ping(self) -> None:
         try:
             await self._require().ping()

@@ -54,29 +54,35 @@ def _qualified(table) -> str:  # noqa: ANN001
     return f"{table.schema or 'app'}.{table.name}"
 
 
-def _domain_schema_revision():  # noqa: ANN202
-    """Load the domain-schema revision module directly from its file."""
+def _revision_module(filename: str):  # noqa: ANN202
+    """Load a migration revision module directly from its file."""
     import importlib.util
     from pathlib import Path
 
     path = (
-        Path(__file__).resolve().parents[2]
-        / "database"
-        / "migrations"
-        / "versions"
-        / "0002_domain_schema.py"
+        Path(__file__).resolve().parents[2] / "database" / "migrations" / "versions" / filename
     )
-    specification = importlib.util.spec_from_file_location("domain_schema_revision", path)
+    specification = importlib.util.spec_from_file_location(f"revision_{filename}", path)
     assert specification is not None and specification.loader is not None
     module = importlib.util.module_from_spec(specification)
     specification.loader.exec_module(module)
     return module
 
 
+#: Every revision that owns tables, newest last. A new table must be added to a
+#: revision here, otherwise the drift test below fails.
+TABLE_OWNING_REVISIONS = ("0002_domain_schema.py", "0003_identity_sessions.py")
+
+
 def test_metadata_matches_the_migration_table_set() -> None:
-    """The migration owns exactly the tables the models declare."""
-    revision = _domain_schema_revision()
-    assert set(revision.TABLES) == {_qualified(t) for t in Base.metadata.sorted_tables}
+    """The migrations own exactly the tables the models declare."""
+    owned: set[str] = set()
+    for filename in TABLE_OWNING_REVISIONS:
+        revision_tables = set(_revision_module(filename).TABLES)
+        # No table may be created twice across the revision chain.
+        assert not (owned & revision_tables), owned & revision_tables
+        owned |= revision_tables
+    assert owned == {_qualified(t) for t in Base.metadata.sorted_tables}
 
 
 def test_every_table_lives_in_an_owned_schema() -> None:

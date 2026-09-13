@@ -82,3 +82,28 @@ class ScientificIntegrationError(DomainError):
     """
 
     code = "scientific_integration_failure"
+
+
+class ConcurrencyConflictError(ConflictError):
+    """A concurrent modification was detected via the optimistic version column.
+
+    Raised instead of silently overwriting another actor's change; the caller is
+    expected to re-read and retry rather than to force the write.
+    """
+
+    code = "concurrency_conflict"
+
+
+class RateLimitedError(DomainError):
+    """Too many attempts for this identity/address within the policy window."""
+
+    code = "rate_limited"
+
+    def __init__(self, retry_after_seconds: int | None = None) -> None:
+        super().__init__(
+            "too many attempts; please retry later",
+            details={"retry_after_seconds": retry_after_seconds}
+            if retry_after_seconds is not None
+            else None,
+        )
+        self.retry_after_seconds = retry_after_seconds

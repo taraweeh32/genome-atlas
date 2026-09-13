@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, DefinitionList } from "@/components/ui/card";
-import { EmptyState, ErrorState } from "@/components/ui/states";
+import { EmptyState, ErrorState, LoadingState } from "@/components/ui/states";
 import { useWorkspace } from "@/context/workspace-context";
 
 /**
@@ -23,12 +23,20 @@ export function WorkspaceContextPanel() {
     );
   }
 
-  if (resolution !== "resolved") {
+  if (resolution === "loading" || resolution === "unresolved") {
+    return (
+      <Card title="Workspace context">
+        <LoadingState label="Resolving the workspaces you may reach" />
+      </Card>
+    );
+  }
+
+  if (workspaces.length === 0) {
     return (
       <Card title="Workspace context">
         <EmptyState
-          title="No workspace context yet"
-          description="Workspace membership is owned by the backend and is delivered by a later package. Until then the frontend holds no workspace, organization or project."
+          title="No workspace is available to you"
+          description="The backend reported no reachable workspace. Nothing is assumed on your behalf."
         />
       </Card>
     );

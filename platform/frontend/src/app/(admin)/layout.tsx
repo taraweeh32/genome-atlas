@@ -1,14 +1,16 @@
 /**
  * ADMINISTRATION namespace layout.
  *
- * The namespace exists so the control plane can be built without restructuring
- * the shell. It grants nothing: Package 1 implements no administrator role and no
- * privileged access. Every administration route will be authorized server-side,
- * with platform-administrator and organization-administrator scopes kept
- * distinct, and stronger controls for privileged actions.
+ * Platform administration and organization administration are separate
+ * authorities. The session gate below only avoids rendering the shell to an
+ * anonymous visitor: whether the caller may perform any administrative action is
+ * decided by the backend on every request, and an unauthorized call is refused
+ * there even if this shell rendered.
  */
 
 import type { ReactNode } from "react";
+import { RequireSession } from "@/components/auth/require-session";
+import { AccountMenu } from "@/components/shell/account-menu";
 import { AppShell } from "@/components/shell/app-shell";
 import { ADMINISTRATION_NAVIGATION } from "@/components/shell/navigation";
 
@@ -18,8 +20,9 @@ export default function AdministrationLayout({ children }: { children: ReactNode
       navigation={ADMINISTRATION_NAVIGATION}
       navigationLabel="Administration"
       namespaceLabel="Administration"
+      accountSlot={<AccountMenu />}
     >
-      {children}
+      <RequireSession>{children}</RequireSession>
     </AppShell>
   );
 }

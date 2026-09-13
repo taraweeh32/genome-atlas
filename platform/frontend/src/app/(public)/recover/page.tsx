@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import styles from "../public.module.css";
+import { RecoverForm } from "@/components/auth/recover-form";
 
 export const metadata: Metadata = { title: "Account recovery" };
 
-/** Account-recovery route foundation. */
+/**
+ * Account recovery route. Reset tokens, rate limiting, single use and session
+ * revocation are all enforced by the backend.
+ */
 export default function RecoverPage() {
   return (
     <>
       <h1>Account recovery</h1>
-      <p className={styles.notice}>
-        Account recovery is not implemented yet. Recovery tokens, rate limiting and notification
-        delivery are backend responsibilities.
-      </p>
+      <RecoverForm />
     </>
   );
 }

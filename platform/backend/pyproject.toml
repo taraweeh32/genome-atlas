@@ -36,6 +36,8 @@ packages = ["app"]
 
 [tool.pytest.ini_options]
 testpaths = ["../tests"]
+# Import test support packages as ``tests.support.*``.
+pythonpath = [".", ".."]
 asyncio_mode = "auto"
 markers = [
   "integration: requires live PostgreSQL/Redis/object storage",
