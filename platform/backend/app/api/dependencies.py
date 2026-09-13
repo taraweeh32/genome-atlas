@@ -21,7 +21,7 @@ from app.domain.workspace.context import AuthorizationContext
 
 
 def get_container(request: Request) -> Container:
-    container = getattr(request.app.state, "container", None)
+    container: Container | None = getattr(request.app.state, "container", None)
     if container is None:
         raise InfrastructureError("application container is not initialized")
     return container

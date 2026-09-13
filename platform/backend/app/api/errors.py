@@ -99,7 +99,7 @@ def register_exception_handlers(app: FastAPI, environment: Environment) -> None:
     async def _unexpected(_: Request, exc: Exception) -> JSONResponse:
         # Full traceback goes to the log only; the response body stays opaque.
         logger.error("unhandled internal error", exc_info=exc)
-        details = (
+        details: dict[str, object] | None = (
             {"exception": type(exc).__name__, "diagnostic": str(exc)}
             if environment.exposes_diagnostics
             else None
