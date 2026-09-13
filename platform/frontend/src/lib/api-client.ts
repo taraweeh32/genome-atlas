@@ -59,6 +59,14 @@ import type {
   ValidationRunResponse,
 } from "./data-types";
 import type {
+  ArtifactDownloadResponse,
+  ResultContentResponse,
+  ResultSetCollection,
+  ResultSetResponse,
+  VariantCollection,
+  VariantDetailResponse,
+} from "./result-types";
+import type {
   ApiErrorBody,
   HealthResponse,
   MetaResponse,
@@ -772,5 +780,111 @@ export class ApiClient {
         "The file could not be transferred to storage. Nothing was accepted.",
       );
     }
+  }
+
+  // -- result surfaces and variant records ----------------------------------
+
+  resultSets(params?: {
+    workspace_id?: string;
+    project_id?: string;
+    analysis_execution_id?: string;
+    state?: readonly string[];
+  }): Promise<ResultSetCollection> {
+    const search = new URLSearchParams();
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    if (params?.analysis_execution_id) {
+      search.set("analysis_execution_id", params.analysis_execution_id);
+    }
+    for (const state of params?.state ?? []) search.append("state", state);
+    const query = search.toString();
+    return this.request<ResultSetCollection>(`/result-sets${query ? `?${query}` : ""}`);
+  }
+
+  resultSet(resultSetId: string): Promise<ResultSetResponse> {
+    return this.request<ResultSetResponse>(
+      `/result-sets/${encodeURIComponent(resultSetId)}`,
+    );
+  }
+
+  /**
+   * Reads a bounded window of a materialized surface. The server clamps the
+   * window and decides whether the surface is readable at all; the browser
+   * never loads a full result set and never derives values from it.
+   */
+  resultContent(
+    resultSetId: string,
+    params: { offset?: number; limit?: number } = {},
+  ): Promise<ResultContentResponse> {
+    const search = new URLSearchParams();
+    if (params.offset !== undefined) search.set("offset", String(params.offset));
+    if (params.limit !== undefined) search.set("limit", String(params.limit));
+    const query = search.toString();
+    return this.request<ResultContentResponse>(
+      `/result-sets/${encodeURIComponent(resultSetId)}/content${query ? `?${query}` : ""}`,
+    );
+  }
+
+  /** Asks the server for a short-lived grant. Bytes never pass through the app. */
+  requestArtifactDownload(
+    resultSetId: string,
+    artifactId: string,
+  ): Promise<ArtifactDownloadResponse> {
+    return this.request<ArtifactDownloadResponse>(
+      `/result-sets/${encodeURIComponent(resultSetId)}/artifacts/${encodeURIComponent(
+        artifactId,
+      )}/download`,
+      { method: "POST", body: {} },
+    );
+  }
+
+  supersedeResultSet(
+    resultSetId: string,
+    body: { superseded_by_result_set_id: string },
+  ): Promise<ResultSetResponse> {
+    return this.request<ResultSetResponse>(
+      `/result-sets/${encodeURIComponent(resultSetId)}/supersede`,
+      { method: "POST", body },
+    );
+  }
+
+  /** Platform-administrative withdrawal. Content is untouched by design. */
+  adminInvalidateResultSet(
+    resultSetId: string,
+    body: { reason: string },
+  ): Promise<ResultSetResponse> {
+    return this.request<ResultSetResponse>(
+      `/administration/result-sets/${encodeURIComponent(resultSetId)}/invalidate`,
+      { method: "POST", body },
+    );
+  }
+
+  /** Variants are always read through one authorized dataset version. */
+  variants(params: {
+    dataset_version_id: string;
+    contig?: string;
+    position_from?: number;
+    position_to?: number;
+    query?: string;
+  }): Promise<VariantCollection> {
+    const search = new URLSearchParams({
+      dataset_version_id: params.dataset_version_id,
+    });
+    if (params.contig) search.set("contig", params.contig);
+    if (params.position_from !== undefined) {
+      search.set("position_from", String(params.position_from));
+    }
+    if (params.position_to !== undefined) {
+      search.set("position_to", String(params.position_to));
+    }
+    if (params.query) search.set("query", params.query);
+    return this.request<VariantCollection>(`/variants?${search.toString()}`);
+  }
+
+  variant(variantId: string, datasetVersionId: string): Promise<VariantDetailResponse> {
+    const search = new URLSearchParams({ dataset_version_id: datasetVersionId });
+    return this.request<VariantDetailResponse>(
+      `/variants/${encodeURIComponent(variantId)}?${search.toString()}`,
+    );
   }
 }
