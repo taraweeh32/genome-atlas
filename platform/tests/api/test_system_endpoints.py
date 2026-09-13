@@ -124,9 +124,7 @@ class TestReadiness:
             "scientific",
         }
 
-    def test_optional_dependency_does_not_block_readiness(
-        self, clear_settings_cache: None
-    ) -> None:
+    def test_optional_dependency_does_not_block_readiness(self, clear_settings_cache: None) -> None:
         client = build_client(
             (
                 StubProbe("postgresql", DependencyStatus.UP),
@@ -251,9 +249,7 @@ class TestSecurityHeaders:
 
 
 class TestOpenApi:
-    def test_openapi_document_describes_the_versioned_api(
-        self, healthy_client: TestClient
-    ) -> None:
+    def test_openapi_document_describes_the_versioned_api(self, healthy_client: TestClient) -> None:
         document = healthy_client.get("/api/v1/openapi.json").json()
         assert "/api/v1/health" in document["paths"]
         assert "/api/v1/ready" in document["paths"]

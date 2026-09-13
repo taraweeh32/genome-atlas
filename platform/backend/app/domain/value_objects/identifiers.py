@@ -28,9 +28,7 @@ class EntityId:
         if not self.value.startswith(expected) or not _SUFFIX_PATTERN.match(
             self.value[len(expected) :]
         ):
-            raise ValidationError(
-                "malformed identifier", details={"expected_prefix": self.prefix}
-            )
+            raise ValidationError("malformed identifier", details={"expected_prefix": self.prefix})
 
     @classmethod
     def generate(cls) -> Self:

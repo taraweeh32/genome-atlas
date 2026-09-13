@@ -134,7 +134,13 @@ def test_scientific_boundary_names_concepts_without_computing_them() -> None:
 
 def test_domain_does_not_import_infrastructure_or_frameworks() -> None:
     """Architectural guard: the dependency rule points inward."""
-    forbidden = ("import fastapi", "import sqlalchemy", "import redis", "import boto3", "import duckdb")
+    forbidden = (
+        "import fastapi",
+        "import sqlalchemy",
+        "import redis",
+        "import boto3",
+        "import duckdb",
+    )
     offenders: list[str] = []
     for path in (BACKEND_ROOT / "domain").rglob("*.py"):
         content = path.read_text(encoding="utf-8")

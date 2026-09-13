@@ -13,7 +13,9 @@ from app.infrastructure.storage.object_storage import S3ObjectStorage
 from app.scientific.contracts import ScientificEngineGateway
 
 
-async def _timed(name: str, required: bool, action: Callable[[], Awaitable[None]]) -> DependencyProbe:
+async def _timed(
+    name: str, required: bool, action: Callable[[], Awaitable[None]]
+) -> DependencyProbe:
     started = time.perf_counter()
     try:
         await action()

@@ -43,9 +43,7 @@ def test_health_probes_cover_the_declared_dependencies(container: Container) -> 
 
 def test_use_cases_are_resolvable(container: Container) -> None:
     assert isinstance(container.get_readiness(), GetReadiness)
-    assert isinstance(
-        container.describe_scientific_capabilities(), DescribeScientificCapabilities
-    )
+    assert isinstance(container.describe_scientific_capabilities(), DescribeScientificCapabilities)
 
 
 @pytest.mark.asyncio
