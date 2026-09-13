@@ -23,8 +23,8 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
-    DeletionState,
     ChecksumAlgorithm,
+    DeletionState,
     ExportFormat,
     ExportState,
     ReportState,

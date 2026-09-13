@@ -11,16 +11,18 @@ from dataclasses import dataclass
 from app.application.ports import HealthProbe
 from app.application.services.authorization import AuthorizationService
 from app.application.services.sessions import SessionService
-from app.application.use_cases.identity.dependencies import IdentityServices
-from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
 )
 from app.application.use_cases.get_readiness import GetReadiness
+from app.application.use_cases.identity.dependencies import IdentityServices
+from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.core.app_config import ApplicationSettings, get_application_settings
 from app.core.environment import EnvironmentSettings, get_environment_settings
 from app.core.logging import get_logger
 from app.core.scientific_config import ScientificSettings, get_scientific_settings
+from app.domain.authorization.policy import AuthorizationPolicy
+from app.domain.identity.passwords import PasswordPolicy
 from app.infrastructure.analytics.duckdb_gateway import AnalyticsGateway
 from app.infrastructure.observability.health import (
     ObjectStorageHealthProbe,
@@ -28,15 +30,13 @@ from app.infrastructure.observability.health import (
     RedisHealthProbe,
     ScientificHealthProbe,
 )
-from app.domain.authorization.policy import AuthorizationPolicy
-from app.domain.identity.passwords import PasswordPolicy
 from app.infrastructure.persistence.database import Database
 from app.infrastructure.persistence.unit_of_work import SqlUnitOfWorkFactory
+from app.infrastructure.redis.cache import RedisCache
 from app.infrastructure.redis.rate_limiter import RedisRateLimiter
 from app.infrastructure.security.clock import SystemClock
 from app.infrastructure.security.passwords import Argon2PasswordHasher
 from app.infrastructure.security.tokens import TokenHasher
-from app.infrastructure.redis.cache import RedisCache
 from app.infrastructure.storage.object_storage import S3ObjectStorage
 from app.scientific.adapters.factory import build_scientific_gateway
 from app.scientific.contracts import ScientificEngineGateway

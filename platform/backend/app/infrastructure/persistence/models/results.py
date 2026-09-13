@@ -12,8 +12,8 @@ from sqlalchemy import BigInteger, Boolean, Index, Integer, String, Text, Unique
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
-    DeletionState,
     ConfigurationScope,
+    DeletionState,
     ResultSetState,
 )
 from app.infrastructure.persistence.base import (

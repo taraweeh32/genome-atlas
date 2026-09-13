@@ -24,7 +24,7 @@ from app.application.use_cases.identity.dependencies import IdentityServices
 from app.domain.errors import RateLimitedError, ValidationError
 from app.domain.events import EventType
 from app.domain.identity.email import clean_email
-from app.domain.identity.entities import CredentialToken, Credentials, UserAccount
+from app.domain.identity.entities import Credentials, CredentialToken, UserAccount
 from app.domain.lifecycle import require_transition
 from app.domain.value_objects.enums import (
     AccountState,

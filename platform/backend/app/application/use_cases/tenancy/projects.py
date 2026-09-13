@@ -360,7 +360,7 @@ class ChangeProjectLifecycle:
 
 
 async def _assert_not_last_project_owner(
-    repositories,  # noqa: ANN001
+    repositories,
     membership: ProjectMembership,
     *,
     operation: str,

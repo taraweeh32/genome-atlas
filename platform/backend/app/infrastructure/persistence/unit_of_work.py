@@ -27,18 +27,18 @@ from app.infrastructure.persistence.repositories.governance import (
     SqlOutboxRepository,
     SqlSecurityEventRepository,
 )
-from app.infrastructure.persistence.repositories.ingest import (
-    SqlColumnMappingRepository,
-    SqlImportSessionRepository,
-    SqlValidationIssueRepository,
-    SqlValidationRunRepository,
-)
 from app.infrastructure.persistence.repositories.identity import (
     SqlCredentialsRepository,
     SqlCredentialTokenRepository,
     SqlPlatformRoleRepository,
     SqlSessionRepository,
     SqlUserRepository,
+)
+from app.infrastructure.persistence.repositories.ingest import (
+    SqlColumnMappingRepository,
+    SqlImportSessionRepository,
+    SqlValidationIssueRepository,
+    SqlValidationRunRepository,
 )
 from app.infrastructure.persistence.repositories.jobs import SqlJobRepository
 from app.infrastructure.persistence.repositories.projects import (

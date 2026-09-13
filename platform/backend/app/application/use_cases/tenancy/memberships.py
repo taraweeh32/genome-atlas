@@ -44,7 +44,7 @@ _OWNER_ROLE = OrganizationRole.OWNER
 
 
 async def _assert_not_last_owner(
-    repositories,  # noqa: ANN001
+    repositories,
     membership: OrganizationMembership,
     *,
     operation: str,

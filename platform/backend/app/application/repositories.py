@@ -18,18 +18,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
-from app.domain.events import DomainEvent
-from app.domain.identity.entities import (
-    CredentialToken,
-    Credentials,
-    Session,
-    UserAccount,
-)
-from app.domain.organization.entities import (
-    Organization,
-    OrganizationInvitation,
-    OrganizationMembership,
-)
 from app.domain.data.entities import (
     ColumnMapping,
     Dataset,
@@ -39,6 +27,18 @@ from app.domain.data.entities import (
     UploadSession,
     ValidationIssue,
     ValidationRun,
+)
+from app.domain.events import DomainEvent
+from app.domain.identity.entities import (
+    Credentials,
+    CredentialToken,
+    Session,
+    UserAccount,
+)
+from app.domain.organization.entities import (
+    Organization,
+    OrganizationInvitation,
+    OrganizationMembership,
 )
 from app.domain.project.entities import Project, ProjectMembership
 from app.domain.value_objects.enums import (
@@ -456,8 +456,8 @@ class UnitOfWorkFactory(Protocol):
 __all__ = [
     "AuditRecord",
     "AuditRepository",
-    "CredentialTokenRepository",
     "ColumnMappingRepository",
+    "CredentialTokenRepository",
     "CredentialsRepository",
     "DatasetRepository",
     "DatasetVersionRepository",

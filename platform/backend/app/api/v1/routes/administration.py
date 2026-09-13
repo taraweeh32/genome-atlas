@@ -30,10 +30,10 @@ from app.api.v1.schemas.identity import (
 )
 from app.api.v1.schemas.tenancy import (
     OrganizationDecisionPayload,
-    PageMeta,
     OrganizationLifecyclePayload,
     OrganizationResponse,
     OrganizationReviewCollection,
+    PageMeta,
 )
 from app.application.use_cases.identity.administration import (
     ChangeAccountLifecycle,
