@@ -75,6 +75,7 @@ TABLE_OWNING_REVISIONS = (
     "0002_domain_schema.py",
     "0003_identity_sessions.py",
     "0004_dataset_ingest.py",
+    "0005_analysis_jobs.py",
 )
 
 
@@ -145,6 +146,7 @@ def test_every_state_column_is_constrained_to_a_vocabulary() -> None:
 #: silently destroying dependent records or scientific lineage.
 ALLOWED_CASCADES = {
     ("job_attempts", "job_id"),
+    ("schedule_triggers", "scheduled_job_id"),
     ("criterion_evaluation_evidence", "criterion_evaluation_id"),
     ("provenance_entries", "provenance_manifest_id"),
     ("analysis_configuration_inputs", "analysis_configuration_id"),

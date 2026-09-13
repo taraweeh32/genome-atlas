@@ -18,6 +18,20 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
+from app.domain.analysis.entities import (
+    AnalysisConfigurationVersion,
+    AnalysisDefinition,
+    AnalysisExecutionRecord,
+    AnalysisSchedule,
+    ComputeNode,
+    ConfigurationInput,
+    ExecutionInput,
+    JobAttemptRecord,
+    JobRecord,
+    ScheduleTrigger,
+    ScientificArtifactRecord,
+    ScientificExecutionRecord,
+)
 from app.domain.data.entities import (
     ColumnMapping,
     Dataset,
@@ -43,15 +57,22 @@ from app.domain.organization.entities import (
 from app.domain.project.entities import Project, ProjectMembership
 from app.domain.value_objects.enums import (
     ActorType,
+    AnalysisState,
     AuditChannel,
     AuditOutcome,
     CredentialTokenKind,
     DatasetState,
+    ExecutionState,
     InvitationState,
+    JobErrorClass,
     JobKind,
+    JobState,
     MembershipState,
+    NodeClass,
     OrganizationState,
     PlatformRole,
+    ScheduleState,
+    ScheduleTriggerOutcome,
 )
 from app.domain.workspace.entities import Workspace
 
@@ -384,13 +405,16 @@ class ValidationIssueRepository(Protocol):
 
 @runtime_checkable
 class JobRepository(Protocol):
-    """Transactional enqueue of durable work.
+    """Durable work: transactional enqueue, then concurrency-safe execution.
 
     Enqueueing happens inside the business transaction that requested the work,
     so a job can never reference state that was rolled back, and a committed
-    state change can never lose its follow-up work. Claiming, leasing, retrying
-    and executing jobs is the job-subsystem package; this port only records the
-    intent durably.
+    state change can never lose its follow-up work.
+
+    The execution half of the port is deliberately narrow and explicit. Claiming
+    is a single atomic statement that also writes the lease; a worker that stops
+    heartbeating loses its claim when the lease expires, and recovery re-queues
+    that job instead of leaving it "running" forever.
     """
 
     async def enqueue(
@@ -407,8 +431,227 @@ class JobRepository(Protocol):
         idempotency_key: str | None = None,
         available_at: datetime | None = None,
         max_attempts: int = 3,
+        analysis_execution_id: str | None = None,
+        scheduled_job_id: str | None = None,
+        node_class: NodeClass = NodeClass.APPLICATION_WORKER,
+        resource_requirements: dict[str, Any] | None = None,
+        required_capabilities: tuple[str, ...] = (),
+        lease_duration_seconds: int = 60,
+        execution_context_ref: str | None = None,
     ) -> str: ...
     async def get(self, job_id: str) -> dict[str, Any] | None: ...
+    async def find(self, job_id: str) -> JobRecord | None: ...
+    async def claim_next(
+        self,
+        *,
+        worker_id: str,
+        queues: tuple[str, ...],
+        node_class: NodeClass,
+        kinds: tuple[JobKind, ...] = (),
+        now: datetime,
+        lease_expires_at: datetime,
+        node_id: str | None = None,
+    ) -> JobRecord | None:
+        """Atomically take the highest-priority available job, or return None."""
+        ...
+
+    async def heartbeat(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        now: datetime,
+        lease_expires_at: datetime,
+        progress_percent: int | None = None,
+        progress_message: str | None = None,
+    ) -> JobRecord | None:
+        """Extend the lease *only* while this worker still holds the claim."""
+        ...
+
+    async def mark_running(
+        self, *, job_id: str, worker_id: str, now: datetime
+    ) -> JobRecord | None: ...
+    async def complete(self, *, job_id: str, worker_id: str, now: datetime) -> None: ...
+    async def fail(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        now: datetime,
+        error_class: JobErrorClass,
+        code: str,
+        message: str,
+        details: dict[str, Any] | None = None,
+        retry_at: datetime | None = None,
+        dead_letter: bool = False,
+    ) -> JobRecord | None:
+        """Record the failure and either schedule a retry or dead-letter it."""
+        ...
+
+    async def request_cancellation(
+        self, *, job_id: str, requested_by: str | None, now: datetime
+    ) -> JobRecord | None: ...
+    async def mark_cancelled(self, *, job_id: str, now: datetime) -> JobRecord | None: ...
+    async def recover_stale(
+        self, *, before: datetime, now: datetime, limit: int = 50
+    ) -> tuple[JobRecord, ...]:
+        """Re-queue or dead-letter jobs whose lease expired without a heartbeat."""
+        ...
+
+    async def add_attempt(self, attempt: JobAttemptRecord) -> JobAttemptRecord: ...
+    async def list_attempts(self, job_id: str) -> tuple[JobAttemptRecord, ...]: ...
+    async def list_for_scope(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        project_id: str | None = None,
+        states: tuple[JobState, ...] = (),
+        kinds: tuple[JobKind, ...] = (),
+        queue: str | None = None,
+    ) -> Paged[JobRecord]: ...
+    async def list_all(
+        self,
+        *,
+        page: Page,
+        states: tuple[JobState, ...] = (),
+        kinds: tuple[JobKind, ...] = (),
+        queue: str | None = None,
+    ) -> Paged[JobRecord]:
+        """Platform-administrative listing across every tenant."""
+        ...
+
+    async def queue_statistics(self) -> tuple[dict[str, Any], ...]: ...
+
+
+@runtime_checkable
+class AnalysisRepository(Protocol):
+    async def add(self, analysis: AnalysisDefinition) -> AnalysisDefinition: ...
+    async def get(self, analysis_id: str) -> AnalysisDefinition | None: ...
+    async def save(self, analysis: AnalysisDefinition) -> AnalysisDefinition: ...
+    async def name_exists(self, *, project_id: str, name: str) -> bool: ...
+    async def list_for_scope(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        project_id: str | None = None,
+        states: tuple[AnalysisState, ...] = (),
+        query: str | None = None,
+    ) -> Paged[AnalysisDefinition]: ...
+
+
+@runtime_checkable
+class AnalysisConfigurationRepository(Protocol):
+    """Configuration versions are immutable; there is no ``save`` for content."""
+
+    async def add(
+        self, configuration: AnalysisConfigurationVersion
+    ) -> AnalysisConfigurationVersion: ...
+    async def get(self, configuration_id: str) -> AnalysisConfigurationVersion | None: ...
+    async def record_validation(
+        self, configuration: AnalysisConfigurationVersion
+    ) -> AnalysisConfigurationVersion: ...
+    async def next_version_number(self, analysis_id: str) -> int: ...
+    async def list_for_analysis(
+        self, analysis_id: str, *, page: Page
+    ) -> Paged[AnalysisConfigurationVersion]: ...
+    async def add_inputs(self, inputs: tuple[ConfigurationInput, ...]) -> None: ...
+    async def list_inputs(self, configuration_id: str) -> tuple[ConfigurationInput, ...]: ...
+
+
+@runtime_checkable
+class AnalysisExecutionRepository(Protocol):
+    async def add(self, execution: AnalysisExecutionRecord) -> AnalysisExecutionRecord: ...
+    async def get(self, execution_id: str) -> AnalysisExecutionRecord | None: ...
+    async def save(self, execution: AnalysisExecutionRecord) -> AnalysisExecutionRecord: ...
+    async def find_by_idempotency_key(self, key: str) -> AnalysisExecutionRecord | None: ...
+    async def next_attempt_sequence(self, analysis_id: str) -> int: ...
+    async def count_active_for_analysis(self, analysis_id: str) -> int: ...
+    async def list_for_scope(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        analysis_id: str | None = None,
+        project_id: str | None = None,
+        states: tuple[ExecutionState, ...] = (),
+    ) -> Paged[AnalysisExecutionRecord]: ...
+    async def add_inputs(self, inputs: tuple[ExecutionInput, ...]) -> None: ...
+    async def list_inputs(self, execution_id: str) -> tuple[ExecutionInput, ...]: ...
+
+
+@runtime_checkable
+class ScheduleRepository(Protocol):
+    async def add(self, schedule: AnalysisSchedule) -> AnalysisSchedule: ...
+    async def get(self, schedule_id: str) -> AnalysisSchedule | None: ...
+    async def save(self, schedule: AnalysisSchedule) -> AnalysisSchedule: ...
+    async def name_exists(self, *, owner_scope: str, owner_id: str | None, name: str) -> bool: ...
+    async def list_for_scope(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        project_id: str | None = None,
+        states: tuple[ScheduleState, ...] = (),
+    ) -> Paged[AnalysisSchedule]: ...
+    async def list_due(self, *, now: datetime, limit: int = 25) -> tuple[AnalysisSchedule, ...]: ...
+    async def record_trigger(self, trigger: ScheduleTrigger) -> ScheduleTrigger | None:
+        """Return ``None`` when this slot was already claimed by another run."""
+        ...
+
+    async def finalize_trigger(
+        self,
+        *,
+        schedule_id: str,
+        scheduled_for: datetime,
+        outcome: ScheduleTriggerOutcome,
+        analysis_execution_id: str | None = None,
+        job_id: str | None = None,
+        detail: dict | None = None,
+    ) -> None:
+        """Complete a claimed slot in place once its real outcome is known."""
+        ...
+
+    async def list_triggers(
+        self, schedule_id: str, *, page: Page
+    ) -> Paged[ScheduleTrigger]: ...
+
+
+@runtime_checkable
+class ComputeNodeRepository(Protocol):
+    async def upsert(self, node: ComputeNode) -> ComputeNode: ...
+    async def get_by_key(self, node_key: str) -> ComputeNode | None: ...
+    async def get(self, node_id: str) -> ComputeNode | None: ...
+    async def save(self, node: ComputeNode) -> ComputeNode: ...
+    async def list_nodes(
+        self, *, node_class: NodeClass | None = None, page: Page | None = None
+    ) -> tuple[ComputeNode, ...]: ...
+    async def mark_unhealthy_before(self, *, threshold: datetime) -> int:
+        """Nodes that stopped heartbeating are not silently kept schedulable."""
+        ...
+
+
+@runtime_checkable
+class ScientificExecutionRepository(Protocol):
+    """Append-only mirror of the scientific subsystem's runs, for provenance."""
+
+    async def add(self, record: ScientificExecutionRecord) -> ScientificExecutionRecord: ...
+    async def get(self, record_id: str) -> ScientificExecutionRecord | None: ...
+    async def record_outcome(
+        self, record: ScientificExecutionRecord
+    ) -> ScientificExecutionRecord: ...
+    async def record_artifacts(
+        self, artifacts: tuple[ScientificArtifactRecord, ...]
+    ) -> tuple[ScientificArtifactRecord, ...]: ...
+
+    async def list_artifacts(
+        self, scientific_execution_id: str
+    ) -> tuple[ScientificArtifactRecord, ...]: ...
+
+    async def list_for_execution(
+        self, analysis_execution_id: str
+    ) -> tuple[ScientificExecutionRecord, ...]: ...
 
 
 @runtime_checkable
@@ -439,6 +682,12 @@ class TransactionalRepositories(Protocol):
     column_mappings: ColumnMappingRepository
     validation_runs: ValidationRunRepository
     validation_issues: ValidationIssueRepository
+    analyses: AnalysisRepository
+    analysis_configurations: AnalysisConfigurationRepository
+    analysis_executions: AnalysisExecutionRepository
+    schedules: ScheduleRepository
+    compute_nodes: ComputeNodeRepository
+    scientific_executions: ScientificExecutionRepository
     jobs: JobRepository
     audit: AuditRepository
     security_events: SecurityEventRepository
@@ -454,9 +703,13 @@ class UnitOfWorkFactory(Protocol):
 
 
 __all__ = [
+    "AnalysisConfigurationRepository",
+    "AnalysisExecutionRepository",
+    "AnalysisRepository",
     "AuditRecord",
     "AuditRepository",
     "ColumnMappingRepository",
+    "ComputeNodeRepository",
     "CredentialTokenRepository",
     "CredentialsRepository",
     "DatasetRepository",
@@ -474,6 +727,8 @@ __all__ = [
     "PlatformRoleRepository",
     "ProjectMembershipRepository",
     "ProjectRepository",
+    "ScheduleRepository",
+    "ScientificExecutionRepository",
     "SecurityEventRepository",
     "SecurityRecord",
     "SessionRepository",

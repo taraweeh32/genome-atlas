@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from app.application.ports import HealthProbe
 from app.application.services.authorization import AuthorizationService
 from app.application.services.sessions import SessionService
+from app.application.use_cases.analysis.dependencies import AnalysisServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
@@ -22,8 +23,10 @@ from app.core.app_config import ApplicationSettings, get_application_settings
 from app.core.environment import EnvironmentSettings, get_environment_settings
 from app.core.logging import get_logger
 from app.core.scientific_config import ScientificSettings, get_scientific_settings
+from app.domain.analysis.policies import LeasePolicy, RetryPolicy, TimeoutPolicy
 from app.domain.authorization.policy import AuthorizationPolicy
 from app.domain.identity.passwords import PasswordPolicy
+from app.domain.value_objects.enums import JobKind
 from app.infrastructure.analytics.duckdb_gateway import AnalyticsGateway
 from app.infrastructure.observability.health import (
     ObjectStorageHealthProbe,
@@ -212,6 +215,43 @@ class Container:
             download_url_ttl_seconds=self.application.download_url_ttl_seconds,
         )
 
+    def analysis_services(self) -> AnalysisServices:
+        """Analysis/execution/job/schedule dependencies.
+
+        The retry, lease and timeout policies come from configuration rather than
+        from each call site, so operational behaviour is tunable per deployment
+        and identical for every job kind.
+        """
+        return AnalysisServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            authorization=self.authorization,
+            config=self.application,
+            scientific=self.scientific,
+            retry=RetryPolicy(
+                max_attempts=self.application.job_max_attempts,
+                initial_backoff_seconds=self.application.job_initial_backoff_seconds,
+                backoff_multiplier=self.application.job_backoff_multiplier,
+                max_backoff_seconds=self.application.job_max_backoff_seconds,
+            ),
+            lease=LeasePolicy(
+                lease_seconds=self.application.job_lease_seconds,
+                heartbeat_interval_seconds=self.application.job_heartbeat_interval_seconds,
+                stale_grace_seconds=self.application.job_stale_grace_seconds,
+            ),
+            timeouts=TimeoutPolicy(
+                default_seconds=self.application.job_timeout_seconds,
+                per_kind_seconds={
+                    JobKind.SCIENTIFIC_EXECUTION.value: (
+                        self.application.job_scientific_timeout_seconds
+                    ),
+                    JobKind.ANALYSIS_EXECUTION.value: (
+                        self.application.job_scientific_timeout_seconds
+                    ),
+                },
+            ),
+            retention_days=self.application.analysis_retention_days,
+        )
 
     def get_readiness(self) -> GetReadiness:
         return GetReadiness(self.health_probes())

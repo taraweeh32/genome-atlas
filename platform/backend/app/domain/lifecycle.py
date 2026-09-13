@@ -17,18 +17,24 @@ from collections.abc import Mapping
 from app.domain.errors import InvalidStateTransitionError
 from app.domain.value_objects.enums import (
     AccountState,
+    AnalysisState,
     DatasetState,
     DatasetVersionState,
     DeletionState,
     EmailVerificationState,
+    ExecutionState,
     FileUploadState,
     FileValidationState,
     ImportSessionState,
     InvitationState,
+    JobState,
     MalwareScanState,
     MembershipState,
+    NodeLifecycleState,
     OrganizationState,
     ProjectState,
+    ScheduleState,
+    ScientificExecutionState,
     StrEnum,
     UploadSessionState,
     ValidationRunState,
@@ -329,6 +335,240 @@ VALIDATION_RUN_TRANSITIONS: Mapping[ValidationRunState, frozenset[ValidationRunS
 }
 
 
+# --------------------------------------------------------------------------- #
+# Analyses, executions, jobs, schedules, compute nodes (Package 5)            #
+# --------------------------------------------------------------------------- #
+
+#: The analysis *definition*. It never carries run state: a running execution
+#: does not move its definition, and archiving a definition never rewrites the
+#: executions that already happened.
+ANALYSIS_TRANSITIONS: Mapping[AnalysisState, frozenset[AnalysisState]] = {
+    AnalysisState.DRAFT: frozenset({AnalysisState.READY, AnalysisState.ARCHIVED}),
+    AnalysisState.READY: frozenset(
+        {AnalysisState.ACTIVE, AnalysisState.DRAFT, AnalysisState.ARCHIVED}
+    ),
+    AnalysisState.ACTIVE: frozenset({AnalysisState.READY, AnalysisState.ARCHIVED}),
+    AnalysisState.ARCHIVED: frozenset({AnalysisState.READY}),
+}
+
+#: One execution attempt. Append-only in spirit: every terminal state is final,
+#: and a re-run is always a *new* execution row with a new attempt sequence.
+#: ``cancel_requested`` exists because asking a running execution to stop is a
+#: distinct fact from it having stopped.
+ANALYSIS_EXECUTION_TRANSITIONS: Mapping[ExecutionState, frozenset[ExecutionState]] = {
+    ExecutionState.DRAFT: frozenset({ExecutionState.VALIDATING, ExecutionState.CANCELLED}),
+    ExecutionState.VALIDATING: frozenset(
+        {ExecutionState.VALIDATED, ExecutionState.FAILED, ExecutionState.CANCELLED}
+    ),
+    ExecutionState.VALIDATED: frozenset(
+        {ExecutionState.REQUESTED, ExecutionState.FAILED, ExecutionState.CANCELLED}
+    ),
+    ExecutionState.REQUESTED: frozenset(
+        {
+            ExecutionState.QUEUED,
+            ExecutionState.FAILED,
+            ExecutionState.CANCEL_REQUESTED,
+            ExecutionState.CANCELLED,
+        }
+    ),
+    ExecutionState.QUEUED: frozenset(
+        {
+            ExecutionState.SUBMITTED,
+            ExecutionState.RUNNING,
+            ExecutionState.FAILED,
+            ExecutionState.CANCEL_REQUESTED,
+            ExecutionState.CANCELLED,
+            ExecutionState.TIMED_OUT,
+        }
+    ),
+    #: Handed to the scientific subsystem; the application is now an observer.
+    ExecutionState.SUBMITTED: frozenset(
+        {
+            ExecutionState.RUNNING,
+            ExecutionState.SUCCEEDED,
+            ExecutionState.FAILED,
+            ExecutionState.CANCEL_REQUESTED,
+            ExecutionState.TIMED_OUT,
+        }
+    ),
+    ExecutionState.RUNNING: frozenset(
+        {
+            ExecutionState.SUCCEEDED,
+            ExecutionState.FAILED,
+            ExecutionState.CANCEL_REQUESTED,
+            ExecutionState.TIMED_OUT,
+            # A retryable failure re-queues the *same* execution; the attempt
+            # itself is recorded on the job, never overwritten here.
+            ExecutionState.QUEUED,
+        }
+    ),
+    ExecutionState.CANCEL_REQUESTED: frozenset(
+        {
+            ExecutionState.CANCELLED,
+            # A cancellation can lose the race against completion. The real
+            # outcome wins; the request stays visible in the audit trail.
+            ExecutionState.SUCCEEDED,
+            ExecutionState.FAILED,
+            ExecutionState.TIMED_OUT,
+        }
+    ),
+    ExecutionState.SUCCEEDED: frozenset(),
+    ExecutionState.FAILED: frozenset(),
+    ExecutionState.CANCELLED: frozenset(),
+    ExecutionState.TIMED_OUT: frozenset(),
+}
+
+#: Durable job lifecycle. Claiming, leasing, retry backoff, stale recovery and
+#: cancellation are all explicit states rather than implicit side effects.
+JOB_TRANSITIONS: Mapping[JobState, frozenset[JobState]] = {
+    JobState.PENDING: frozenset({JobState.QUEUED, JobState.CANCELLED}),
+    JobState.QUEUED: frozenset(
+        {JobState.CLAIMED, JobState.CANCEL_REQUESTED, JobState.CANCELLED, JobState.DEAD_LETTER}
+    ),
+    JobState.CLAIMED: frozenset(
+        {
+            JobState.RUNNING,
+            JobState.FAILED,
+            JobState.RETRY_WAITING,
+            JobState.STALE,
+            JobState.CANCEL_REQUESTED,
+            JobState.CANCELLING,
+        }
+    ),
+    JobState.RUNNING: frozenset(
+        {
+            JobState.SUCCEEDED,
+            JobState.FAILED,
+            JobState.RETRY_WAITING,
+            JobState.STALE,
+            JobState.CANCEL_REQUESTED,
+            JobState.CANCELLING,
+        }
+    ),
+    JobState.RETRY_WAITING: frozenset(
+        {JobState.QUEUED, JobState.CANCEL_REQUESTED, JobState.CANCELLED, JobState.DEAD_LETTER}
+    ),
+    #: A stale job is recovered back into the queue, or dead-lettered when its
+    #: attempt budget is spent. It is never silently resurrected as "running".
+    JobState.STALE: frozenset({JobState.QUEUED, JobState.DEAD_LETTER, JobState.CANCELLED}),
+    JobState.CANCEL_REQUESTED: frozenset(
+        {
+            JobState.CANCELLING,
+            JobState.CANCELLED,
+            # The worker may finish before it observes the request.
+            JobState.SUCCEEDED,
+            JobState.FAILED,
+        }
+    ),
+    JobState.CANCELLING: frozenset({JobState.CANCELLED, JobState.SUCCEEDED, JobState.FAILED}),
+    JobState.SUCCEEDED: frozenset(),
+    JobState.FAILED: frozenset({JobState.QUEUED}),
+    JobState.CANCELLED: frozenset(),
+    JobState.DEAD_LETTER: frozenset({JobState.QUEUED}),
+}
+
+#: A schedule is administratively enabled or disabled; archiving is terminal for
+#: scheduling, and it never deletes the executions the schedule already produced.
+SCHEDULE_TRANSITIONS: Mapping[ScheduleState, frozenset[ScheduleState]] = {
+    ScheduleState.ENABLED: frozenset({ScheduleState.DISABLED, ScheduleState.ARCHIVED}),
+    ScheduleState.DISABLED: frozenset({ScheduleState.ENABLED, ScheduleState.ARCHIVED}),
+    ScheduleState.ARCHIVED: frozenset(),
+}
+
+#: The scientific subsystem's own run, mirrored locally for provenance. The
+#: application only *records* what the adapter reports; it never invents a
+#: scientific outcome.
+SCIENTIFIC_EXECUTION_TRANSITIONS: Mapping[
+    ScientificExecutionState, frozenset[ScientificExecutionState]
+] = {
+    ScientificExecutionState.SUBMITTED: frozenset(
+        {
+            ScientificExecutionState.ACCEPTED,
+            ScientificExecutionState.REJECTED,
+            ScientificExecutionState.FAILED,
+            ScientificExecutionState.CANCELLED,
+        }
+    ),
+    ScientificExecutionState.ACCEPTED: frozenset(
+        {
+            ScientificExecutionState.RUNNING,
+            ScientificExecutionState.SUCCEEDED,
+            ScientificExecutionState.FAILED,
+            ScientificExecutionState.CANCELLED,
+        }
+    ),
+    ScientificExecutionState.RUNNING: frozenset(
+        {
+            ScientificExecutionState.SUCCEEDED,
+            ScientificExecutionState.FAILED,
+            ScientificExecutionState.CANCELLED,
+        }
+    ),
+    ScientificExecutionState.SUCCEEDED: frozenset(),
+    ScientificExecutionState.FAILED: frozenset(),
+    ScientificExecutionState.REJECTED: frozenset(),
+    ScientificExecutionState.CANCELLED: frozenset(),
+}
+
+#: Administrative intent for a compute/worker node, separate from its observed
+#: health: draining a node must not be expressible as "it became unhealthy".
+NODE_LIFECYCLE_TRANSITIONS: Mapping[NodeLifecycleState, frozenset[NodeLifecycleState]] = {
+    NodeLifecycleState.ACTIVE: frozenset(
+        {
+            NodeLifecycleState.DRAINING,
+            NodeLifecycleState.MAINTENANCE,
+            NodeLifecycleState.UNAVAILABLE,
+        }
+    ),
+    NodeLifecycleState.DRAINING: frozenset(
+        {
+            NodeLifecycleState.ACTIVE,
+            NodeLifecycleState.MAINTENANCE,
+            NodeLifecycleState.UNAVAILABLE,
+        }
+    ),
+    NodeLifecycleState.MAINTENANCE: frozenset(
+        {NodeLifecycleState.ACTIVE, NodeLifecycleState.UNAVAILABLE}
+    ),
+    NodeLifecycleState.UNAVAILABLE: frozenset(
+        {NodeLifecycleState.ACTIVE, NodeLifecycleState.MAINTENANCE}
+    ),
+}
+
+#: States in which an execution still occupies scheduling capacity. Used by the
+#: schedule concurrency policy and by administrative monitoring.
+ACTIVE_EXECUTION_STATES: frozenset[ExecutionState] = frozenset(
+    {
+        ExecutionState.DRAFT,
+        ExecutionState.VALIDATING,
+        ExecutionState.VALIDATED,
+        ExecutionState.REQUESTED,
+        ExecutionState.QUEUED,
+        ExecutionState.SUBMITTED,
+        ExecutionState.RUNNING,
+        ExecutionState.CANCEL_REQUESTED,
+    }
+)
+
+TERMINAL_EXECUTION_STATES: frozenset[ExecutionState] = frozenset(
+    {
+        ExecutionState.SUCCEEDED,
+        ExecutionState.FAILED,
+        ExecutionState.CANCELLED,
+        ExecutionState.TIMED_OUT,
+    }
+)
+
+#: States in which a job is held by a worker and therefore needs a live lease.
+LEASED_JOB_STATES: frozenset[JobState] = frozenset(
+    {JobState.CLAIMED, JobState.RUNNING, JobState.CANCELLING}
+)
+
+TERMINAL_JOB_STATES: frozenset[JobState] = frozenset(
+    {JobState.SUCCEEDED, JobState.FAILED, JobState.CANCELLED, JobState.DEAD_LETTER}
+)
+
+
 _TABLES: dict[str, Mapping[StrEnum, frozenset[StrEnum]]] = {
     "account": ACCOUNT_TRANSITIONS,  # type: ignore[dict-item]
     "email_verification": EMAIL_VERIFICATION_TRANSITIONS,  # type: ignore[dict-item]
@@ -345,6 +585,12 @@ _TABLES: dict[str, Mapping[StrEnum, frozenset[StrEnum]]] = {
     "malware_scan": MALWARE_SCAN_TRANSITIONS,  # type: ignore[dict-item]
     "import_session": IMPORT_SESSION_TRANSITIONS,  # type: ignore[dict-item]
     "validation_run": VALIDATION_RUN_TRANSITIONS,  # type: ignore[dict-item]
+    "analysis": ANALYSIS_TRANSITIONS,  # type: ignore[dict-item]
+    "analysis_execution": ANALYSIS_EXECUTION_TRANSITIONS,  # type: ignore[dict-item]
+    "job": JOB_TRANSITIONS,  # type: ignore[dict-item]
+    "schedule": SCHEDULE_TRANSITIONS,  # type: ignore[dict-item]
+    "scientific_execution": SCIENTIFIC_EXECUTION_TRANSITIONS,  # type: ignore[dict-item]
+    "compute_node": NODE_LIFECYCLE_TRANSITIONS,  # type: ignore[dict-item]
 }
 
 
@@ -370,6 +616,9 @@ def transition_targets(entity: str, current: StrEnum) -> frozenset[StrEnum]:
 
 __all__ = [
     "ACCOUNT_TRANSITIONS",
+    "ACTIVE_EXECUTION_STATES",
+    "ANALYSIS_EXECUTION_TRANSITIONS",
+    "ANALYSIS_TRANSITIONS",
     "DATASET_TRANSITIONS",
     "DATASET_VERSION_TRANSITIONS",
     "DELETION_TRANSITIONS",
@@ -378,10 +627,17 @@ __all__ = [
     "FILE_VALIDATION_TRANSITIONS",
     "IMPORT_SESSION_TRANSITIONS",
     "INVITATION_TRANSITIONS",
+    "JOB_TRANSITIONS",
+    "LEASED_JOB_STATES",
     "MALWARE_SCAN_TRANSITIONS",
     "MEMBERSHIP_TRANSITIONS",
+    "NODE_LIFECYCLE_TRANSITIONS",
     "ORGANIZATION_TRANSITIONS",
     "PROJECT_TRANSITIONS",
+    "SCHEDULE_TRANSITIONS",
+    "SCIENTIFIC_EXECUTION_TRANSITIONS",
+    "TERMINAL_EXECUTION_STATES",
+    "TERMINAL_JOB_STATES",
     "UPLOAD_SESSION_TRANSITIONS",
     "VALIDATION_RUN_TRANSITIONS",
     "can_transition",

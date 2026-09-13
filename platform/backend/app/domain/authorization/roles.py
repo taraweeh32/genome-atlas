@@ -30,6 +30,11 @@ _PLATFORM_ADMINISTRATOR = frozenset(
         Permission.PLATFORM_AUDIT_READ,
         Permission.PLATFORM_SECURITY_POLICY_MANAGE,
         Permission.PLATFORM_STORAGE_ADMINISTER,
+        Permission.PLATFORM_JOB_ADMINISTER,
+        Permission.PLATFORM_JOB_READ,
+        Permission.PLATFORM_COMPUTE_ADMINISTER,
+        Permission.PLATFORM_COMPUTE_READ,
+        Permission.PLATFORM_SCHEDULE_ADMINISTER,
     }
 )
 
@@ -41,6 +46,9 @@ _PLATFORM_OPERATOR = frozenset(
         Permission.PLATFORM_ORGANIZATION_READ_ANY,
         Permission.PLATFORM_USER_READ,
         Permission.PLATFORM_AUDIT_READ,
+        # An operator watches the control plane; it does not steer it.
+        Permission.PLATFORM_JOB_READ,
+        Permission.PLATFORM_COMPUTE_READ,
     }
 )
 
@@ -61,6 +69,13 @@ _ORGANIZATION_MEMBER = _ORGANIZATION_GUEST | {
     Permission.WORKSPACE_DATA_WRITE,
     Permission.WORKSPACE_DATA_IMPORT,
     Permission.WORKSPACE_DATA_DOWNLOAD,
+    Permission.WORKSPACE_ANALYSIS_READ,
+    Permission.WORKSPACE_ANALYSIS_CREATE,
+    Permission.WORKSPACE_ANALYSIS_UPDATE,
+    Permission.WORKSPACE_ANALYSIS_EXECUTE,
+    Permission.WORKSPACE_ANALYSIS_CANCEL,
+    Permission.WORKSPACE_SCHEDULE_MANAGE,
+    Permission.WORKSPACE_JOB_READ,
 }
 _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_UPDATE,
@@ -72,6 +87,7 @@ _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_INVITATION_REVOKE,
     Permission.ORGANIZATION_AUDIT_READ,
     Permission.WORKSPACE_DATA_DELETE,
+    Permission.WORKSPACE_ANALYSIS_DELETE,
 }
 
 ORGANIZATION_ROLE_PERMISSIONS: Mapping[OrganizationRole, frozenset[Permission]] = {
@@ -116,7 +132,12 @@ ORGANIZATION_ROLE_PROJECT_PERMISSIONS: Mapping[OrganizationRole, frozenset[Permi
 }
 
 _PROJECT_VIEWER = frozenset(
-    {Permission.PROJECT_READ, Permission.PROJECT_MEMBER_READ, Permission.PROJECT_DATA_READ}
+    {
+        Permission.PROJECT_READ,
+        Permission.PROJECT_MEMBER_READ,
+        Permission.PROJECT_DATA_READ,
+        Permission.PROJECT_ANALYSIS_READ,
+    }
 )
 #: An analyst produces and imports data; deletion stays with project management.
 _PROJECT_ANALYST = _PROJECT_VIEWER | {
@@ -124,7 +145,12 @@ _PROJECT_ANALYST = _PROJECT_VIEWER | {
     Permission.PROJECT_DATASET_CREATE,
     Permission.PROJECT_DATA_IMPORT,
     Permission.PROJECT_DATA_DOWNLOAD,
+    Permission.PROJECT_ANALYSIS_CREATE,
+    Permission.PROJECT_ANALYSIS_UPDATE,
     Permission.PROJECT_ANALYSIS_EXECUTE,
+    Permission.PROJECT_ANALYSIS_CANCEL,
+    Permission.PROJECT_SCHEDULE_MANAGE,
+    Permission.PROJECT_JOB_READ,
 }
 #: A reviewer is a scientific/clinical responsibility, not an administrator: it
 #: reviews and finalizes, it does not manage membership.
@@ -135,6 +161,7 @@ _PROJECT_REVIEWER = _PROJECT_VIEWER | {
 }
 _PROJECT_MANAGER = _PROJECT_ANALYST | {
     Permission.PROJECT_DATA_DELETE,
+    Permission.PROJECT_ANALYSIS_DELETE,
     Permission.PROJECT_UPDATE,
     Permission.PROJECT_ARCHIVE,
     Permission.PROJECT_REOPEN,
@@ -161,6 +188,14 @@ PERSONAL_WORKSPACE_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.WORKSPACE_DATA_IMPORT,
         Permission.WORKSPACE_DATA_DOWNLOAD,
         Permission.WORKSPACE_DATA_DELETE,
+        Permission.WORKSPACE_ANALYSIS_READ,
+        Permission.WORKSPACE_ANALYSIS_CREATE,
+        Permission.WORKSPACE_ANALYSIS_UPDATE,
+        Permission.WORKSPACE_ANALYSIS_EXECUTE,
+        Permission.WORKSPACE_ANALYSIS_CANCEL,
+        Permission.WORKSPACE_ANALYSIS_DELETE,
+        Permission.WORKSPACE_SCHEDULE_MANAGE,
+        Permission.WORKSPACE_JOB_READ,
     }
 )
 

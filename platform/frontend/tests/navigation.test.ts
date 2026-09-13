@@ -22,12 +22,15 @@ describe("navigation model", () => {
     const available = [...APPLICATION_NAVIGATION, ...ADMINISTRATION_NAVIGATION].filter(
       (item) => item.available,
     );
-    // Only the identity/tenancy surfaces implemented so far are reachable; the
-    // scientific modules stay unavailable rather than linking to empty pages.
+    // Identity/tenancy, dataset, analysis and job surfaces are implemented and
+    // reachable; the remaining scientific modules stay unavailable rather than
+    // linking to empty pages.
     expect(available.map((item) => item.href).sort()).toEqual([
       "/admin",
+      "/analyses",
       "/dashboard",
       "/datasets",
+      "/jobs",
       "/organizations",
       "/projects",
     ]);

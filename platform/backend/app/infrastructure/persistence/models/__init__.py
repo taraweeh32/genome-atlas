@@ -65,6 +65,7 @@ from app.infrastructure.persistence.models.jobs import (
     Job,
     JobAttempt,
     ScheduledJob,
+    ScheduleTrigger,
     WorkerNode,
 )
 from app.infrastructure.persistence.models.notification import (
@@ -186,6 +187,7 @@ __all__ = [
     "ReviewDecision",
     "Sample",
     "SavedView",
+    "ScheduleTrigger",
     "ScheduledJob",
     "ScientificArtifact",
     "ScientificExecution",

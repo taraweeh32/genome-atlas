@@ -32,6 +32,19 @@ import type {
   WorkspaceResponse,
 } from "./identity-types";
 import type {
+  AnalysisCollection,
+  AnalysisResponse,
+  ConfigurationCollection,
+  ConfigurationResponse,
+  ExecutionCollection,
+  ExecutionProvenanceResponse,
+  ExecutionResponse,
+  JobCollection,
+  JobResponse,
+  ScheduleCollection,
+  ScheduleResponse,
+} from "./analysis-types";
+import type {
   ColumnMappingDecision,
   DatasetCollection,
   DatasetResponse,
@@ -383,6 +396,194 @@ export class ApiClient {
   ): Promise<OrganizationResponse> {
     return this.request<OrganizationResponse>(
       `/admin/organization-requests/${encodeURIComponent(organizationId)}/decision`,
+      { method: "POST", body },
+    );
+  }
+
+
+  // -- analyses, executions, jobs and schedules -----------------------------
+
+  analyses(params?: {
+    workspace_id?: string;
+    project_id?: string;
+    query?: string;
+    state?: readonly string[];
+  }): Promise<AnalysisCollection> {
+    const search = new URLSearchParams();
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    if (params?.query) search.set("query", params.query);
+    for (const state of params?.state ?? []) search.append("state", state);
+    const query = search.toString();
+    return this.request<AnalysisCollection>(`/analyses${query ? `?${query}` : ""}`);
+  }
+
+  analysis(analysisId: string): Promise<AnalysisResponse> {
+    return this.request<AnalysisResponse>(`/analyses/${encodeURIComponent(analysisId)}`);
+  }
+
+  createAnalysis(body: {
+    project_id: string;
+    name: string;
+    kind: string;
+    description?: string | null;
+    capability_key?: string | null;
+  }): Promise<AnalysisResponse> {
+    return this.request<AnalysisResponse>("/analyses", { method: "POST", body });
+  }
+
+  changeAnalysisState(analysisId: string, body: { target: string }): Promise<AnalysisResponse> {
+    return this.request<AnalysisResponse>(
+      `/analyses/${encodeURIComponent(analysisId)}/state`,
+      { method: "POST", body },
+    );
+  }
+
+  analysisConfigurations(analysisId: string): Promise<ConfigurationCollection> {
+    return this.request<ConfigurationCollection>(
+      `/analyses/${encodeURIComponent(analysisId)}/configurations`,
+    );
+  }
+
+  createAnalysisConfiguration(
+    analysisId: string,
+    body: {
+      label?: string | null;
+      inputs?: readonly { dataset_version_id: string; role: string }[];
+      filtering_configuration?: Record<string, unknown> | null;
+      ranking_configuration?: Record<string, unknown> | null;
+      execution_parameters?: Record<string, unknown> | null;
+      activate?: boolean;
+    },
+  ): Promise<ConfigurationResponse> {
+    return this.request<ConfigurationResponse>(
+      `/analyses/${encodeURIComponent(analysisId)}/configurations`,
+      { method: "POST", body },
+    );
+  }
+
+  activateAnalysisConfiguration(
+    analysisId: string,
+    configurationId: string,
+  ): Promise<ConfigurationResponse> {
+    return this.request<ConfigurationResponse>(
+      `/analyses/${encodeURIComponent(analysisId)}/configurations/${encodeURIComponent(
+        configurationId,
+      )}/activation`,
+      { method: "POST", body: {} },
+    );
+  }
+
+  /** Requests an execution. The server queues durable work; nothing runs here. */
+  requestExecution(
+    analysisId: string,
+    body: {
+      configuration_id?: string | null;
+      queue?: string | null;
+      priority?: number | null;
+      idempotency_key?: string | null;
+    } = {},
+  ): Promise<ExecutionResponse> {
+    return this.request<ExecutionResponse>(
+      `/analyses/${encodeURIComponent(analysisId)}/executions`,
+      { method: "POST", body },
+    );
+  }
+
+  executions(params?: {
+    analysis_id?: string;
+    workspace_id?: string;
+    project_id?: string;
+    state?: readonly string[];
+  }): Promise<ExecutionCollection> {
+    const search = new URLSearchParams();
+    if (params?.analysis_id) search.set("analysis_id", params.analysis_id);
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    for (const state of params?.state ?? []) search.append("state", state);
+    const query = search.toString();
+    return this.request<ExecutionCollection>(`/analysis-executions${query ? `?${query}` : ""}`);
+  }
+
+  execution(executionId: string): Promise<ExecutionResponse> {
+    return this.request<ExecutionResponse>(
+      `/analysis-executions/${encodeURIComponent(executionId)}`,
+    );
+  }
+
+  executionProvenance(executionId: string): Promise<ExecutionProvenanceResponse> {
+    return this.request<ExecutionProvenanceResponse>(
+      `/analysis-executions/${encodeURIComponent(executionId)}/provenance`,
+    );
+  }
+
+  cancelExecution(
+    executionId: string,
+    body: { reason?: string | null } = {},
+  ): Promise<ExecutionResponse> {
+    return this.request<ExecutionResponse>(
+      `/analysis-executions/${encodeURIComponent(executionId)}/cancellation`,
+      { method: "POST", body },
+    );
+  }
+
+  jobs(params?: {
+    workspace_id?: string;
+    project_id?: string;
+    state?: readonly string[];
+    kind?: readonly string[];
+    queue?: string;
+  }): Promise<JobCollection> {
+    const search = new URLSearchParams();
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    if (params?.queue) search.set("queue", params.queue);
+    for (const state of params?.state ?? []) search.append("state", state);
+    for (const kind of params?.kind ?? []) search.append("kind", kind);
+    const query = search.toString();
+    return this.request<JobCollection>(`/jobs${query ? `?${query}` : ""}`);
+  }
+
+  job(jobId: string): Promise<JobResponse> {
+    return this.request<JobResponse>(`/jobs/${encodeURIComponent(jobId)}`);
+  }
+
+  analysisSchedules(params?: {
+    workspace_id?: string;
+    project_id?: string;
+    state?: readonly string[];
+  }): Promise<ScheduleCollection> {
+    const search = new URLSearchParams();
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    for (const state of params?.state ?? []) search.append("state", state);
+    const query = search.toString();
+    return this.request<ScheduleCollection>(`/analysis-schedules${query ? `?${query}` : ""}`);
+  }
+
+  createAnalysisSchedule(body: {
+    analysis_id: string;
+    name: string;
+    schedule_expression: string;
+    timezone_name?: string;
+    description?: string | null;
+    configuration_id?: string | null;
+    concurrency_policy?: string | null;
+    missed_policy?: string | null;
+    queue?: string | null;
+    priority?: number | null;
+    catch_up_limit?: number;
+    enabled?: boolean;
+  }): Promise<ScheduleResponse> {
+    return this.request<ScheduleResponse>("/analysis-schedules", { method: "POST", body });
+  }
+
+  changeAnalysisScheduleState(
+    scheduleId: string,
+    body: { target: string },
+  ): Promise<ScheduleResponse> {
+    return this.request<ScheduleResponse>(
+      `/analysis-schedules/${encodeURIComponent(scheduleId)}/state`,
       { method: "POST", body },
     );
   }

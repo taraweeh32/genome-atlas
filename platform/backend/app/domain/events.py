@@ -77,6 +77,38 @@ class EventType:
     VALIDATION_RUN_STARTED = "validation_run.started"
     VALIDATION_RUN_COMPLETED = "validation_run.completed"
 
+    ANALYSIS_CREATED = "analysis.created"
+    ANALYSIS_UPDATED = "analysis.updated"
+    ANALYSIS_ARCHIVED = "analysis.archived"
+    ANALYSIS_SOFT_DELETED = "analysis.soft_deleted"
+    ANALYSIS_CONFIGURATION_CREATED = "analysis_configuration.created"
+    ANALYSIS_CONFIGURATION_ACTIVATED = "analysis_configuration.activated"
+
+    ANALYSIS_EXECUTION_REQUESTED = "analysis_execution.requested"
+    ANALYSIS_EXECUTION_QUEUED = "analysis_execution.queued"
+    ANALYSIS_EXECUTION_STARTED = "analysis_execution.started"
+    ANALYSIS_EXECUTION_SUBMITTED = "analysis_execution.submitted"
+    ANALYSIS_EXECUTION_SUCCEEDED = "analysis_execution.succeeded"
+    ANALYSIS_EXECUTION_FAILED = "analysis_execution.failed"
+    ANALYSIS_EXECUTION_CANCEL_REQUESTED = "analysis_execution.cancel_requested"
+    ANALYSIS_EXECUTION_CANCELLED = "analysis_execution.cancelled"
+
+    JOB_ENQUEUED = "job.enqueued"
+    JOB_CANCEL_REQUESTED = "job.cancel_requested"
+    JOB_RECOVERED = "job.recovered"
+    JOB_DEAD_LETTERED = "job.dead_lettered"
+
+    SCHEDULE_CREATED = "schedule.created"
+    SCHEDULE_UPDATED = "schedule.updated"
+    SCHEDULE_ENABLED = "schedule.enabled"
+    SCHEDULE_DISABLED = "schedule.disabled"
+    SCHEDULE_ARCHIVED = "schedule.archived"
+    SCHEDULE_TRIGGERED = "schedule.triggered"
+
+    COMPUTE_NODE_REGISTERED = "compute_node.registered"
+    COMPUTE_NODE_DRAINED = "compute_node.drained"
+    COMPUTE_NODE_UNHEALTHY = "compute_node.unhealthy"
+
 
 @dataclass(frozen=True, slots=True)
 class DomainEvent:

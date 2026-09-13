@@ -18,6 +18,9 @@ from app.core.app_config import ApplicationSettings, SecurityPolicySettings
 from app.application.use_cases.identity.dependencies import IdentityServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.tenancy.dependencies import TenancyServices
+from app.application.use_cases.analysis.dependencies import AnalysisServices
+from app.core.environment import Environment
+from app.scientific.adapters.development import DevelopmentScientificAdapter
 from app.domain.identity.passwords import PasswordPolicy
 from app.infrastructure.security.clock import FixedClock
 from app.infrastructure.security.passwords import Argon2PasswordHasher
@@ -56,6 +59,8 @@ class Harness:
     data: DataServices
     storage: MemoryObjectStorage
     scanner: StubScanner
+    analysis: AnalysisServices
+    scientific: DevelopmentScientificAdapter
 
     def advance_to(self, moment: datetime) -> None:
         self.clock._moment = moment  # noqa: SLF001 - test clock
@@ -110,7 +115,17 @@ def build_harness(
         storage_provider="s3",
         storage_bucket="test-bucket",
     )
+    scientific = DevelopmentScientificAdapter(Environment.TEST)
+    analysis = AnalysisServices(
+        unit_of_work=unit_of_work,
+        clock=clock,
+        authorization=authorization,
+        config=ApplicationSettings(),
+        scientific=scientific,
+    )
     return Harness(
+        analysis=analysis,
+        scientific=scientific,
         data=data,
         storage=storage,
         scanner=scanner,

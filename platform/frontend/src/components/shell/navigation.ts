@@ -60,8 +60,17 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     href: "/analyses",
     namespace: "application",
     requiredPermission: "analysis.read",
-    available: false,
+    available: true,
   },
+  {
+    id: "jobs",
+    label: "Jobs",
+    href: "/jobs",
+    namespace: "application",
+    requiredPermission: "job.read",
+    available: true,
+  },
+
   {
     id: "variants",
     label: "Variant review",

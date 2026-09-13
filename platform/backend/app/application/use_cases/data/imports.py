@@ -43,12 +43,12 @@ from app.domain.data.entities import (
     outcome_for,
 )
 from app.domain.data.formats import TABULAR_FORMATS
-from app.domain.data.semantics import classify, is_absent
 from app.domain.data.mapping import (
     MappingDecision,
     suggest_mapping,
     validate_mapping,
 )
+from app.domain.data.semantics import classify, is_absent
 from app.domain.errors import (
     AuthorizationError,
     ConflictError,
