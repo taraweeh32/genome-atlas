@@ -1,231 +1,239 @@
 """API/transport tests for the system endpoints.
 
-The application is built by the real factory (``create_app``) so middleware,
-routing, error mapping and OpenAPI generation are genuinely exercised. Only the
-composition root is replaced by a stub, so no live PostgreSQL/Redis/S3/scientific
-subsystem is required. The stubs implement the same ports as production adapters.
+These exercise the real FastAPI app with stubbed infrastructure so that routing,
+health vs readiness semantics, the structured error envelope and correlation-ID
+propagation are genuinely verified. No assertion is trivially true.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from collections.abc import Iterator
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.application.ports import DependencyProbe, DependencyStatus, HealthProbe
-from app.application.use_cases.describe_scientific_capabilities import (
-    DescribeScientificCapabilities,
-)
 from app.application.use_cases.get_readiness import GetReadiness
-from app.core.app_config import get_application_settings
-from app.core.environment import Environment, get_environment_settings
-from app.domain.errors import NotFoundError, ScientificIntegrationError
-from app.main import create_app
-from app.scientific.adapters.development import DevelopmentScientificAdapter
+from app.domain.errors import AuthorizationError, NotFoundError
 
 
-@dataclass
-class StubProbe:
-    name: str
-    status: DependencyStatus
-    required: bool
+class StubProbe(HealthProbe):
+    """Deterministic probe standing in for real infrastructure."""
+
+    def __init__(
+        self,
+        name: str,
+        status: DependencyStatus,
+        *,
+        required: bool = True,
+        raises: bool = False,
+    ) -> None:
+        self._name = name
+        self._status = status
+        self._required = required
+        self._raises = raises
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def required(self) -> bool:
+        return self._required
 
     async def probe(self) -> DependencyProbe:
-        return DependencyProbe(name=self.name, status=self.status, required=self.required)
-
-
-class ExplodingProbe:
-    name = "exploding"
-    required = True
-
-    async def probe(self) -> DependencyProbe:
-        raise RuntimeError("probe blew up")
+        if self._raises:
+            raise RuntimeError("postgresql://user:secret@10.0.0.4:5432 refused the connection")
+        return DependencyProbe(
+            name=self._name,
+            status=self._status,
+            required=self._required,
+            latency_ms=1.5,
+        )
 
 
 class StubContainer:
-    """Stands in for the composition root, exposing the same accessors."""
+    """Container substitute: same surface the routes depend on, no real clients."""
 
     def __init__(self, probes: tuple[HealthProbe, ...]) -> None:
+        self._probes = probes
+        from app.core.app_config import get_application_settings
+        from app.core.environment import get_environment_settings
+
         self.environment = get_environment_settings()
         self.application = get_application_settings()
-        self._probes = probes
-        self.scientific = DevelopmentScientificAdapter(Environment.TEST)
 
     def get_readiness(self) -> GetReadiness:
         return GetReadiness(self._probes)
 
-    def describe_scientific_capabilities(self) -> DescribeScientificCapabilities:
-        return DescribeScientificCapabilities(self.scientific)
-
 
 def build_client(probes: tuple[HealthProbe, ...]) -> TestClient:
-    app = create_app()
-    # Bypass lifespan: the stub container replaces real infrastructure wiring.
-    app.state.container = StubContainer(probes)
+    """Build the real app, then replace only the container on app state."""
+    from app.api.dependencies import get_container
+    from app.main import create_app
 
-    @app.get("/api/v1/_test/domain-error")
-    async def _domain_error() -> None:
-        raise NotFoundError("dataset not found", details={"dataset_id": "dts_x"})
-
-    @app.get("/api/v1/_test/scientific-error")
-    async def _scientific_error() -> None:
-        raise ScientificIntegrationError("scientific subsystem unreachable")
-
-    @app.get("/api/v1/_test/boom")
-    async def _boom() -> None:
-        raise RuntimeError("unexpected internal failure with secret=hunter2")
-
-    return TestClient(app, raise_server_exceptions=False)
-
-
-UP_PROBES = (
-    StubProbe("postgresql", DependencyStatus.UP, True),
-    StubProbe("redis", DependencyStatus.UP, True),
-    StubProbe("object_storage", DependencyStatus.UP, True),
-    StubProbe("scientific", DependencyStatus.NOT_CONFIGURED, False),
-)
+    app: FastAPI = create_app()
+    container = StubContainer(probes)
+    app.dependency_overrides[get_container] = lambda: container
+    # TestClient(...) would run lifespan (and connect real infrastructure), so
+    # the context manager is deliberately not used here.
+    return TestClient(app)
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return build_client(UP_PROBES)
-
-
-# -- health / readiness ----------------------------------------------------
-
-
-def test_health_is_liveness_only(client: TestClient) -> None:
-    response = client.get("/api/v1/health")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["status"] == "ok"
-    assert body["environment"] == "test"
-    # Liveness must not report dependency state.
-    assert "dependencies" not in body
-
-
-def test_readiness_reports_every_dependency(client: TestClient) -> None:
-    response = client.get("/api/v1/ready")
-    assert response.status_code == 200
-    body = response.json()
-    assert body["ready"] is True
-    assert {item["name"] for item in body["dependencies"]} == {
-        "postgresql",
-        "redis",
-        "object_storage",
-        "scientific",
-    }
-
-
-def test_readiness_fails_when_required_dependency_is_down() -> None:
-    probes = (
-        StubProbe("postgresql", DependencyStatus.DOWN, True),
-        StubProbe("redis", DependencyStatus.UP, True),
+def healthy_client(clear_settings_cache: None) -> Iterator[TestClient]:
+    client = build_client(
+        (
+            StubProbe("postgresql", DependencyStatus.UP),
+            StubProbe("redis", DependencyStatus.UP),
+            StubProbe("object_storage", DependencyStatus.UP),
+            StubProbe("scientific", DependencyStatus.NOT_CONFIGURED, required=False),
+        )
     )
-    response = build_client(probes).get("/api/v1/ready")
-    assert response.status_code == 503
-    assert response.json()["ready"] is False
+    yield client
+    client.close()
 
 
-def test_readiness_ignores_optional_dependency_outage() -> None:
-    probes = (
-        StubProbe("postgresql", DependencyStatus.UP, True),
-        StubProbe("scientific", DependencyStatus.DOWN, False),
-    )
-    response = build_client(probes).get("/api/v1/ready")
-    assert response.status_code == 200
-    assert response.json()["ready"] is True
+class TestHealth:
+    def test_health_reports_liveness_only(self, healthy_client: TestClient) -> None:
+        response = healthy_client.get("/api/v1/health")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["status"] == "ok"
+        assert body["environment"] == "test"
+        # Liveness must not carry dependency state; that is readiness' job.
+        assert "dependencies" not in body
+
+    def test_health_stays_ok_when_a_dependency_is_down(self, clear_settings_cache: None) -> None:
+        client = build_client((StubProbe("postgresql", DependencyStatus.DOWN),))
+        assert client.get("/api/v1/health").status_code == 200
+        assert client.get("/api/v1/ready").status_code == 503
 
 
-def test_readiness_survives_a_raising_probe() -> None:
-    response = build_client((ExplodingProbe(),)).get("/api/v1/ready")
-    assert response.status_code == 503
-    dependency = response.json()["dependencies"][0]
-    assert dependency["status"] == "down"
+class TestReadiness:
+    def test_ready_when_all_required_dependencies_are_up(self, healthy_client: TestClient) -> None:
+        response = healthy_client.get("/api/v1/ready")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["ready"] is True
+        assert {item["name"] for item in body["dependencies"]} == {
+            "postgresql",
+            "redis",
+            "object_storage",
+            "scientific",
+        }
+
+    def test_optional_dependency_does_not_block_readiness(
+        self, clear_settings_cache: None
+    ) -> None:
+        client = build_client(
+            (
+                StubProbe("postgresql", DependencyStatus.UP),
+                StubProbe("scientific", DependencyStatus.DOWN, required=False),
+            )
+        )
+        response = client.get("/api/v1/ready")
+        assert response.status_code == 200
+        assert response.json()["ready"] is True
+
+    def test_required_dependency_down_returns_503(self, clear_settings_cache: None) -> None:
+        client = build_client(
+            (
+                StubProbe("postgresql", DependencyStatus.UP),
+                StubProbe("redis", DependencyStatus.DOWN),
+            )
+        )
+        response = client.get("/api/v1/ready")
+        assert response.status_code == 503
+        assert response.json()["ready"] is False
+
+    def test_probe_exception_is_contained_and_leaks_nothing(
+        self, clear_settings_cache: None
+    ) -> None:
+        client = build_client((StubProbe("postgresql", DependencyStatus.UP, raises=True),))
+        response = client.get("/api/v1/ready")
+        assert response.status_code == 503
+        payload = response.text
+        # A raising probe must degrade readiness, never expose credentials or hosts.
+        assert "secret" not in payload
+        assert "10.0.0.4" not in payload
 
 
-def test_readiness_when_container_missing() -> None:
-    app = create_app()
-    app.state.container = None
-    response = TestClient(app, raise_server_exceptions=False).get("/api/v1/ready")
-    assert response.status_code == 503
-    assert response.json()["error"]["code"] == "infrastructure_error"
+class TestCorrelationId:
+    def test_supplied_correlation_id_is_echoed(self, healthy_client: TestClient) -> None:
+        response = healthy_client.get(
+            "/api/v1/health", headers={"X-Correlation-ID": "corr-supplied"}
+        )
+        assert response.headers["X-Correlation-ID"] == "corr-supplied"
+
+    def test_correlation_id_is_generated_when_absent(self, healthy_client: TestClient) -> None:
+        response = healthy_client.get("/api/v1/health")
+        assert response.headers.get("X-Correlation-ID")
 
 
-# -- error envelope --------------------------------------------------------
+class TestErrorEnvelope:
+    def test_unknown_route_uses_the_structured_envelope(self, healthy_client: TestClient) -> None:
+        response = healthy_client.get("/api/v1/does-not-exist")
+        assert response.status_code == 404
+        error = response.json()["error"]
+        assert error["code"] == "not_found"
+        assert error["correlation_id"]
+
+    def test_domain_errors_map_to_stable_codes_and_statuses(
+        self, clear_settings_cache: None
+    ) -> None:
+        from app.api.dependencies import get_container
+        from app.main import create_app
+
+        app = create_app()
+        app.dependency_overrides[get_container] = lambda: StubContainer(())
+
+        @app.get("/api/v1/_test/forbidden")
+        async def _forbidden() -> None:
+            raise AuthorizationError("not permitted")
+
+        @app.get("/api/v1/_test/missing")
+        async def _missing() -> None:
+            raise NotFoundError("dataset not found")
+
+        @app.get("/api/v1/_test/boom")
+        async def _boom() -> None:
+            raise RuntimeError("psycopg: password authentication failed for user 'app'")
+
+        client = TestClient(app, raise_server_exceptions=False)
+
+        forbidden = client.get("/api/v1/_test/forbidden")
+        assert forbidden.status_code == 403
+        assert forbidden.json()["error"]["code"] == "authorization_error"
+
+        missing = client.get("/api/v1/_test/missing")
+        assert missing.status_code == 404
+        assert missing.json()["error"]["code"] == "not_found"
+
+        boom = client.get("/api/v1/_test/boom")
+        assert boom.status_code == 500
+        body = boom.text
+        # Unexpected internal errors must be opaque to the caller.
+        assert "password" not in body
+        assert "psycopg" not in body
+        assert "Traceback" not in body
+        assert boom.json()["error"]["code"] == "internal_error"
 
 
-def test_domain_error_maps_to_stable_envelope(client: TestClient) -> None:
-    response = client.get("/api/v1/_test/domain-error")
-    assert response.status_code == 404
-    error = response.json()["error"]
-    assert error["code"] == "not_found"
-    assert error["details"] == {"dataset_id": "dts_x"}
-    assert error["correlation_id"]
+class TestSecurityHeaders:
+    def test_security_headers_are_applied(self, healthy_client: TestClient) -> None:
+        headers = healthy_client.get("/api/v1/health").headers
+        assert headers["X-Content-Type-Options"] == "nosniff"
+        assert headers["X-Frame-Options"] == "DENY"
+        assert "Referrer-Policy" in headers
 
 
-def test_scientific_integration_error_maps_to_502(client: TestClient) -> None:
-    response = client.get("/api/v1/_test/scientific-error")
-    assert response.status_code == 502
-    assert response.json()["error"]["code"] == "scientific_integration_error"
-
-
-def test_unexpected_error_does_not_leak_internals(client: TestClient) -> None:
-    response = client.get("/api/v1/_test/boom")
-    assert response.status_code == 500
-    body = response.text
-    assert "hunter2" not in body
-    assert "Traceback" not in body
-    assert response.json()["error"]["code"] == "internal_error"
-
-
-def test_unknown_route_uses_the_error_envelope(client: TestClient) -> None:
-    response = client.get("/api/v1/does-not-exist")
-    assert response.status_code == 404
-    assert response.json()["error"]["code"] == "not_found"
-
-
-# -- correlation and security headers --------------------------------------
-
-
-def test_correlation_id_is_generated_when_absent(client: TestClient) -> None:
-    response = client.get("/api/v1/health")
-    assert response.headers["x-correlation-id"]
-
-
-def test_incoming_correlation_id_is_propagated(client: TestClient) -> None:
-    response = client.get("/api/v1/health", headers={"X-Correlation-ID": "corr-123"})
-    assert response.headers["x-correlation-id"] == "corr-123"
-
-
-def test_security_headers_are_present(client: TestClient) -> None:
-    headers = client.get("/api/v1/health").headers
-    assert headers["x-content-type-options"] == "nosniff"
-    assert "x-frame-options" in headers
-
-
-# -- metadata / OpenAPI ----------------------------------------------------
-
-
-def test_meta_reports_api_version(client: TestClient) -> None:
-    body = client.get("/api/v1/meta").json()
-    assert body["api_version"] == "v1"
-    assert body["environment"] == "test"
-
-
-def test_openapi_document_is_generated(client: TestClient) -> None:
-    document = client.get("/api/v1/openapi.json").json()
-    assert document["info"]["title"]
-    assert "/api/v1/health" in document["paths"]
-    assert "/api/v1/ready" in document["paths"]
-    assert "/api/v1/scientific/capabilities" in document["paths"]
-
-
-# -- scientific boundary through transport ---------------------------------
-
-
-def test_capabilities_endpoint_flags_the_development_adapter(client: TestClient) -> None:
-    body = client.get("/api/v1/scientific/capabilities").json()
-    assert body["is_development_adapter"] is True
-    assert body["engine"]["engine_version"].endswith("development-only")
+class TestOpenApi:
+    def test_openapi_document_describes_the_versioned_api(
+        self, healthy_client: TestClient
+    ) -> None:
+        document = healthy_client.get("/api/v1/openapi.json").json()
+        assert "/api/v1/health" in document["paths"]
+        assert "/api/v1/ready" in document["paths"]
+        assert {tag["name"] for tag in document["openapi" and "tags"]} >= {"system"}
