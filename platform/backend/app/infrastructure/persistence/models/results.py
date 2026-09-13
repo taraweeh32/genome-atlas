@@ -8,12 +8,25 @@ themselves are never copied into PostgreSQL.
 
 from __future__ import annotations
 
-from sqlalchemy import BigInteger, Boolean, Index, Integer, String, Text, UniqueConstraint
+from datetime import datetime
+
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    DateTime,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
     ConfigurationScope,
+    DataOrigin,
     DeletionState,
+    ResultCompleteness,
     ResultSetState,
 )
 from app.infrastructure.persistence.base import (
@@ -37,7 +50,10 @@ class ResultSet(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         UniqueConstraint("analysis_execution_id", "result_key",
                          name="uq_result_sets_analysis_execution_id_result_key"),
         state_check("state", ResultSetState, "state_valid"),
+        state_check("completeness", ResultCompleteness, "completeness_valid"),
+        state_check("origin", DataOrigin, "origin_valid"),
         Index("ix_result_sets_workspace_id_state", "workspace_id", "state"),
+        Index("ix_result_sets_project_id", "project_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -59,6 +75,45 @@ class ResultSet(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
     #: Denormalized provenance so a result set can be read on its own.
     provenance_manifest_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     metadata_json: Mapped[dict | None] = json_column()
+
+    # --- Package 6: provenance, completeness and withdrawal -----------------
+    #: The engine's own statement about its output. Never inferred from
+    #: ``row_count``: zero rows can be a complete answer.
+    completeness: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=ResultCompleteness.UNKNOWN.value
+    )
+    origin: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=DataOrigin.GENERATED.value
+    )
+    scientific_execution_id: Mapped[str | None] = fk_column(
+        "app.scientific_executions.id", nullable=True
+    )
+    analysis_configuration_id: Mapped[str | None] = fk_column(
+        "app.analysis_configurations.id", nullable=True
+    )
+    engine_resource_id: Mapped[str | None] = fk_column(
+        "app.scientific_resources.id", nullable=True
+    )
+    engine_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    environment_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    container_image_digest: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    node_identity: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    reference_genome_resource_id: Mapped[str | None] = fk_column(
+        "app.scientific_resources.id", nullable=True
+    )
+    resource_identities: Mapped[dict | None] = json_column()
+    parameters_digest: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: Self-reference: the newer surface that replaced this one. The replaced rows
+    #: are never edited or deleted, so a historical report still resolves.
+    superseded_by_result_set_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    invalidation_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+    failure_code: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    failure_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    available_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class FilterDefinition(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):

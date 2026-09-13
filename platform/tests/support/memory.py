@@ -52,6 +52,19 @@ from tests.support.analysis_memory import (
     MemorySchedules,
     MemoryScientificExecutions,
 )
+from tests.support.variant_memory import (
+    MemoryDatasetVersionVariants,
+    MemoryGenesTranscripts,
+    MemoryResultArtifacts,
+    MemoryResultIngestions,
+    MemoryResultSets,
+    MemorySamples,
+    MemoryVariantContexts,
+    MemoryVariantIdentifiers,
+    MemoryVariantRepresentations,
+    MemoryVariants,
+    MemoryVariantSourceRepresentations,
+)
 from tests.support.data_memory import (
     MemoryColumnMappings,
     MemoryDatasets,
@@ -613,10 +626,33 @@ class MemoryRepositories:
         default_factory=MemoryScientificExecutions
     )
     jobs: MemoryJobQueue = field(default_factory=MemoryJobQueue)
+    # Package 6: the scientific data layer, same transaction. Canonical variants
+    # are deliberately not tenant-scoped; the membership table is what ties a
+    # variant to a workspace.
+    variants: MemoryVariants = field(default_factory=MemoryVariants)
+    variant_representations: MemoryVariantRepresentations = field(
+        default_factory=MemoryVariantRepresentations
+    )
+    variant_source_representations: MemoryVariantSourceRepresentations = field(
+        default_factory=MemoryVariantSourceRepresentations
+    )
+    variant_identifiers: MemoryVariantIdentifiers = field(
+        default_factory=MemoryVariantIdentifiers
+    )
+    variant_contexts: MemoryVariantContexts = field(default_factory=MemoryVariantContexts)
+    dataset_version_variants: MemoryDatasetVersionVariants = field(
+        default_factory=MemoryDatasetVersionVariants
+    )
+    samples: MemorySamples = field(default_factory=MemorySamples)
+    genes_transcripts: MemoryGenesTranscripts = field(default_factory=MemoryGenesTranscripts)
+    result_sets: MemoryResultSets = field(default_factory=MemoryResultSets)
+    result_artifacts: MemoryResultArtifacts = field(default_factory=MemoryResultArtifacts)
+    result_ingestions: MemoryResultIngestions = field(default_factory=MemoryResultIngestions)
 
     def __post_init__(self) -> None:
         self.organizations.memberships = self.organization_memberships
         self.workspaces.memberships = self.organization_memberships
+        self.variants.memberships = self.dataset_version_variants
 
 
 class MemoryUnitOfWorkFactory:

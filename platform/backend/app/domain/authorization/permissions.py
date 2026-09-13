@@ -53,6 +53,12 @@ class Permission(str, enum.Enum):
     PLATFORM_COMPUTE_READ = "platform.compute.read"
     #: Platform-wide schedule oversight, distinct from owning one schedule.
     PLATFORM_SCHEDULE_ADMINISTER = "platform.schedule.administer"
+    #: The scientific data layer's control plane: inspect result sets, artifacts
+    #: and ingestion requests across tenants, and invalidate a result surface
+    #: whose scientific inputs were withdrawn. It never grants the right to edit
+    #: scientific content.
+    PLATFORM_RESULT_ADMINISTER = "platform.result.administer"
+    PLATFORM_RESULT_READ = "platform.result.read"
 
     # --- organization scope ---------------------------------------------- #
     ORGANIZATION_READ = "organization.read"
@@ -90,6 +96,18 @@ class Permission(str, enum.Enum):
     WORKSPACE_ANALYSIS_DELETE = "workspace.analysis.delete"
     WORKSPACE_SCHEDULE_MANAGE = "workspace.schedule.manage"
     WORKSPACE_JOB_READ = "workspace.job.read"
+    #: Reading variant records, observations, annotations and evidence held in
+    #: the scientific data layer. Separate from dataset read: a dataset's
+    #: metadata says nothing about the genomic content derived from it.
+    WORKSPACE_VARIANT_READ = "workspace.variant.read"
+    #: Reading result sets and their filtered slices.
+    WORKSPACE_RESULT_READ = "workspace.result.read"
+    #: Accepting a scientific payload into the durable data layer. Held by the
+    #: platform's own execution path; a tenant role grants it only where the
+    #: tenant may run analyses at all.
+    WORKSPACE_RESULT_INGEST = "workspace.result.ingest"
+    #: Retrieving result artifact bytes, separate from reading result metadata.
+    WORKSPACE_RESULT_DOWNLOAD = "workspace.result.download"
 
     # --- project scope --------------------------------------------------- #
     PROJECT_READ = "project.read"
@@ -123,6 +141,11 @@ class Permission(str, enum.Enum):
     PROJECT_JOB_READ = "project.job.read"
     PROJECT_INTERPRETATION_REVIEW = "project.interpretation.review"
     PROJECT_REPORT_FINALIZE = "project.report.finalize"
+    #: Project-scoped equivalents of the scientific data-layer capabilities.
+    PROJECT_VARIANT_READ = "project.variant.read"
+    PROJECT_RESULT_READ = "project.result.read"
+    PROJECT_RESULT_INGEST = "project.result.ingest"
+    PROJECT_RESULT_DOWNLOAD = "project.result.download"
 
     @property
     def scope(self) -> Scope:

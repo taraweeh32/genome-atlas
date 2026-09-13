@@ -114,7 +114,31 @@ VOCABULARY_ONLY_PATHS = (
     "scientific",
     "domain/value_objects/enums.py",
     "domain/data/mapping.py",
+    # Package 6's scientific *data layer*: entities, canonical identity and the
+    # structural validation of an engine's payload. They name every scientific
+    # concept the platform stores and derive none of them — the test below is
+    # what holds that line.
+    "domain/variant",
     "infrastructure/persistence/models",
+    # The repositories that read and write those columns. They name the concepts
+    # their tables hold — a frequency column is still called a frequency — and
+    # contain no expression that produces one; every value they write arrives
+    # from the engine's payload. The test below enforces exactly that.
+    "infrastructure/persistence/repositories/variants.py",
+    "infrastructure/persistence/repositories/results.py",
+    # The recording layer. Writing down an engine's claim about a frequency or a
+    # consequence means naming it; refusing to name it would only push the same
+    # concepts into untyped dictionaries, which is worse. The guard that matters
+    # is the one below: not one of these modules may contain a construct that
+    # *derives* such a value, and every value they store arrives from a payload
+    # that crossed the versioned scientific contract.
+    "application/use_cases/results",
+    # The transport surface for that same data. Schemas and mapping name the
+    # concepts they carry and compute nothing; the routes hand a command to a use
+    # case. The derivation guard below applies to all three.
+    "api/v1/schemas/results.py",
+    "api/v1/result_mapping.py",
+    "api/v1/routes/results.py",
 )
 
 #: Constructs that would mean a scientific decision is being *derived* here.

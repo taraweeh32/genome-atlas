@@ -140,6 +140,14 @@ class PopulationFrequencyObservation(Base, TimestampMixin):
     retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     provenance: Mapped[dict | None] = json_column()
 
+    # --- Package 6 ---------------------------------------------------------
+    #: The stratum the numbers apply to, as labelled by the resource. Subsets are
+    #: never combined by the application to synthesise another subset.
+    subset_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    scientific_execution_id: Mapped[str | None] = fk_column(
+        "app.scientific_executions.id", nullable=True
+    )
+
 
 class ExternalAssertionSource(Base, TimestampMixin):
     """A versioned external clinical/evidence source."""
@@ -168,6 +176,7 @@ class ClinicalAssertion(Base, TimestampMixin):
             name="uq_clinical_assertions_identity",
         ),
         state_check("origin", DataOrigin, "origin_valid"),
+        state_check("value_semantics", ValueSemantics, "value_semantics_valid"),
         Index("ix_clinical_assertions_variant_id", "variant_id"),
         Index("ix_clinical_assertions_external_record_identifier",
               "external_record_identifier"),
@@ -193,3 +202,19 @@ class ClinicalAssertion(Base, TimestampMixin):
     retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     provenance: Mapped[dict | None] = json_column()
     record_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # --- Package 6 ---------------------------------------------------------
+    condition_namespace: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    assertion_method: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    asserted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_evaluated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    #: An assertion that a source published as "not provided" is recorded as such
+    #: rather than as an absent assertion.
+    value_semantics: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=ValueSemantics.PRESENT.value
+    )
+    scientific_execution_id: Mapped[str | None] = fk_column(
+        "app.scientific_executions.id", nullable=True
+    )

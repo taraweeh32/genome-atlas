@@ -76,6 +76,7 @@ TABLE_OWNING_REVISIONS = (
     "0003_identity_sessions.py",
     "0004_dataset_ingest.py",
     "0005_analysis_jobs.py",
+    "0006_variant_results.py",
 )
 
 
