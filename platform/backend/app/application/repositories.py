@@ -30,13 +30,25 @@ from app.domain.organization.entities import (
     OrganizationInvitation,
     OrganizationMembership,
 )
+from app.domain.data.entities import (
+    ColumnMapping,
+    Dataset,
+    DatasetVersion,
+    FileArtifact,
+    ImportSession,
+    UploadSession,
+    ValidationIssue,
+    ValidationRun,
+)
 from app.domain.project.entities import Project, ProjectMembership
 from app.domain.value_objects.enums import (
     ActorType,
     AuditChannel,
     AuditOutcome,
     CredentialTokenKind,
+    DatasetState,
     InvitationState,
+    JobKind,
     MembershipState,
     OrganizationState,
     PlatformRole,
@@ -273,6 +285,132 @@ class NotificationRepository(Protocol):
     ) -> str: ...
 
 
+# --------------------------------------------------------------------------- #
+# Datasets, files and ingestion                                               #
+# --------------------------------------------------------------------------- #
+
+
+@runtime_checkable
+class DatasetRepository(Protocol):
+    async def add(self, dataset: Dataset) -> Dataset: ...
+    async def get(self, dataset_id: str) -> Dataset | None: ...
+    async def save(self, dataset: Dataset) -> Dataset: ...
+    async def list_for_scope(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        project_id: str | None = None,
+        states: tuple[DatasetState, ...] = (),
+        query: str | None = None,
+        include_archived: bool = False,
+    ) -> Paged[Dataset]: ...
+    async def name_exists(
+        self, *, workspace_id: str, project_id: str | None, name: str
+    ) -> bool: ...
+
+
+@runtime_checkable
+class DatasetVersionRepository(Protocol):
+    async def add(self, version: DatasetVersion) -> DatasetVersion: ...
+    async def get(self, version_id: str) -> DatasetVersion | None: ...
+    async def save(self, version: DatasetVersion) -> DatasetVersion: ...
+    async def list_for_dataset(self, dataset_id: str, *, page: Page) -> Paged[DatasetVersion]: ...
+    async def next_version_number(self, dataset_id: str) -> int: ...
+    async def list_accepted(self, dataset_id: str) -> tuple[DatasetVersion, ...]: ...
+
+
+@runtime_checkable
+class FileArtifactRepository(Protocol):
+    async def add(self, artifact: FileArtifact) -> FileArtifact: ...
+    async def get(self, artifact_id: str) -> FileArtifact | None: ...
+    async def save(self, artifact: FileArtifact) -> FileArtifact: ...
+    async def list_for_version(self, version_id: str) -> tuple[FileArtifact, ...]: ...
+    async def find_by_checksum(
+        self, *, workspace_id: str, checksum_algorithm: str, checksum_value: str
+    ) -> FileArtifact | None: ...
+    async def find_by_filename(
+        self, *, workspace_id: str, filename: str
+    ) -> FileArtifact | None: ...
+
+
+@runtime_checkable
+class UploadSessionRepository(Protocol):
+    async def add(self, session: UploadSession) -> UploadSession: ...
+    async def get(self, session_id: str) -> UploadSession | None: ...
+    async def save(self, session: UploadSession) -> UploadSession: ...
+    async def get_for_artifact(self, artifact_id: str) -> UploadSession | None: ...
+    async def list_for_version(self, version_id: str) -> tuple[UploadSession, ...]: ...
+    async def list_expired(
+        self, *, moment: datetime, limit: int = 100
+    ) -> tuple[UploadSession, ...]: ...
+
+
+@runtime_checkable
+class ImportSessionRepository(Protocol):
+    async def add(self, session: ImportSession) -> ImportSession: ...
+    async def get(self, session_id: str) -> ImportSession | None: ...
+    async def save(self, session: ImportSession) -> ImportSession: ...
+    async def get_by_idempotency_key(self, key: str) -> ImportSession | None: ...
+    async def list_for_dataset(self, dataset_id: str, *, page: Page) -> Paged[ImportSession]: ...
+
+
+@runtime_checkable
+class ColumnMappingRepository(Protocol):
+    async def replace_all(
+        self, import_session_id: str, mappings: tuple[ColumnMapping, ...]
+    ) -> tuple[ColumnMapping, ...]: ...
+    async def list_for_session(self, import_session_id: str) -> tuple[ColumnMapping, ...]: ...
+
+
+@runtime_checkable
+class ValidationRunRepository(Protocol):
+    async def add(self, run: ValidationRun) -> ValidationRun: ...
+    async def get(self, run_id: str) -> ValidationRun | None: ...
+    async def save(self, run: ValidationRun) -> ValidationRun: ...
+    async def list_for_subject(
+        self, *, subject_type: str, subject_id: str, page: Page
+    ) -> Paged[ValidationRun]: ...
+    async def latest_for_subject(
+        self, *, subject_type: str, subject_id: str
+    ) -> ValidationRun | None: ...
+
+
+@runtime_checkable
+class ValidationIssueRepository(Protocol):
+    async def add_many(self, issues: tuple[ValidationIssue, ...]) -> None: ...
+    async def list_for_run(self, run_id: str, *, page: Page) -> Paged[ValidationIssue]: ...
+
+
+@runtime_checkable
+class JobRepository(Protocol):
+    """Transactional enqueue of durable work.
+
+    Enqueueing happens inside the business transaction that requested the work,
+    so a job can never reference state that was rolled back, and a committed
+    state change can never lose its follow-up work. Claiming, leasing, retrying
+    and executing jobs is the job-subsystem package; this port only records the
+    intent durably.
+    """
+
+    async def enqueue(
+        self,
+        *,
+        kind: JobKind,
+        payload: dict[str, Any],
+        correlation_id: str,
+        queue: str = "default",
+        priority: int = 100,
+        workspace_id: str | None = None,
+        project_id: str | None = None,
+        requested_by: str | None = None,
+        idempotency_key: str | None = None,
+        available_at: datetime | None = None,
+        max_attempts: int = 3,
+    ) -> str: ...
+    async def get(self, job_id: str) -> dict[str, Any] | None: ...
+
+
 @runtime_checkable
 class TransactionalRepositories(Protocol):
     """Every repository bound to one transaction.
@@ -293,6 +431,15 @@ class TransactionalRepositories(Protocol):
     projects: ProjectRepository
     project_memberships: ProjectMembershipRepository
     platform_roles: PlatformRoleRepository
+    datasets: DatasetRepository
+    dataset_versions: DatasetVersionRepository
+    file_artifacts: FileArtifactRepository
+    upload_sessions: UploadSessionRepository
+    import_sessions: ImportSessionRepository
+    column_mappings: ColumnMappingRepository
+    validation_runs: ValidationRunRepository
+    validation_issues: ValidationIssueRepository
+    jobs: JobRepository
     audit: AuditRepository
     security_events: SecurityEventRepository
     outbox: OutboxRepository
@@ -310,7 +457,13 @@ __all__ = [
     "AuditRecord",
     "AuditRepository",
     "CredentialTokenRepository",
+    "ColumnMappingRepository",
     "CredentialsRepository",
+    "DatasetRepository",
+    "DatasetVersionRepository",
+    "FileArtifactRepository",
+    "ImportSessionRepository",
+    "JobRepository",
     "NotificationRepository",
     "OrganizationInvitationRepository",
     "OrganizationMembershipRepository",
@@ -326,6 +479,9 @@ __all__ = [
     "SessionRepository",
     "TransactionalRepositories",
     "UnitOfWorkFactory",
+    "UploadSessionRepository",
     "UserRepository",
+    "ValidationIssueRepository",
+    "ValidationRunRepository",
     "WorkspaceRepository",
 ]
