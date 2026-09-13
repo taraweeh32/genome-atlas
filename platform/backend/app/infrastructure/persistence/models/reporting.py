@@ -23,6 +23,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
+    DeletionState,
     ChecksumAlgorithm,
     ExportFormat,
     ExportState,
@@ -62,6 +63,7 @@ class ReportTemplate(Base, TimestampMixin, ConcurrencyMixin):
 class Report(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
     __tablename__ = "reports"
     __table_args__ = (
+        state_check("deletion_state", DeletionState, "deletion_state_valid"),
         state_check("state", ReportState, "state_valid"),
         Index("ix_reports_workspace_id_state", "workspace_id", "state"),
         Index("ix_reports_project_id", "project_id"),
@@ -139,6 +141,7 @@ class ExportRequest(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
 
     __tablename__ = "export_requests"
     __table_args__ = (
+        state_check("deletion_state", DeletionState, "deletion_state_valid"),
         state_check("state", ExportState, "state_valid"),
         state_check("export_format", ExportFormat, "export_format_valid"),
         Index("ix_export_requests_workspace_id_state", "workspace_id", "state"),

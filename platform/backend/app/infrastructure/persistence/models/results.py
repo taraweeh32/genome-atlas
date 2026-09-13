@@ -12,6 +12,7 @@ from sqlalchemy import BigInteger, Boolean, Index, Integer, String, Text, Unique
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
+    DeletionState,
     ConfigurationScope,
     ResultSetState,
 )
@@ -32,6 +33,7 @@ class ResultSet(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
 
     __tablename__ = "result_sets"
     __table_args__ = (
+        state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("analysis_execution_id", "result_key",
                          name="uq_result_sets_analysis_execution_id_result_key"),
         state_check("state", ResultSetState, "state_valid"),
@@ -64,6 +66,7 @@ class FilterDefinition(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
 
     __tablename__ = "filter_definitions"
     __table_args__ = (
+        state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("scope", "scope_id", "name",
                          name="uq_filter_definitions_scope_scope_id_name"),
         state_check("scope", ConfigurationScope, "scope_valid"),
@@ -105,6 +108,7 @@ class RankingConfiguration(Base, TimestampMixin, ConcurrencyMixin, RetentionMixi
 
     __tablename__ = "ranking_configurations"
     __table_args__ = (
+        state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("scope", "scope_id", "name",
                          name="uq_ranking_configurations_scope_scope_id_name"),
         state_check("scope", ConfigurationScope, "scope_valid"),
@@ -154,6 +158,7 @@ class SavedView(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
 
     __tablename__ = "saved_views"
     __table_args__ = (
+        state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("scope", "scope_id", "name",
                          name="uq_saved_views_scope_scope_id_name"),
         state_check("scope", ConfigurationScope, "scope_valid"),

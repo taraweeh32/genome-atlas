@@ -30,6 +30,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
+    DeletionState,
     Classification,
     CriterionDirection,
     CriterionStrength,
@@ -164,6 +165,7 @@ class Interpretation(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
 
     __tablename__ = "interpretations"
     __table_args__ = (
+        state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("project_id", "variant_id", "condition_identifier",
                          name="uq_interpretations_project_id_variant_id_condition_identifier"),
         state_check("state", InterpretationState, "state_valid"),
