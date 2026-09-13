@@ -249,13 +249,13 @@ export function ResultDetailView({ resultSetId }: { resultSetId: string }) {
           <div className={styles.actions}>
             <Button
               onClick={() => setOffset((value) => Math.max(0, value - WINDOW_SIZE))}
-              isDisabled={offset === 0}
+              disabled={offset === 0}
             >
               Previous
             </Button>
             <Button
               onClick={() => setOffset((value) => value + WINDOW_SIZE)}
-              isDisabled={
+              disabled={
                 !page || page.offset + page.rows.length >= page.total_rows
               }
             >
