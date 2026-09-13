@@ -47,7 +47,12 @@ from app.application.use_cases.analysis.nodes import (
     ListNodesQuery,
 )
 from app.domain.analysis.policies import LeasePolicy, RetryPolicy
-from app.domain.errors import AuthorizationError, NotFoundError, ValidationError
+from app.domain.errors import (
+    AuthorizationError,
+    DomainError,
+    NotFoundError,
+    ValidationError,
+)
 from app.domain.value_objects.enums import (
     ExecutionState,
     JobKind,
@@ -225,7 +230,7 @@ async def test_draining_a_node_removes_it_from_selection() -> None:
 
     user_id = await create_account(harness, "owner@example.test")
     _, _, execution = await queued_execution(harness, user_id)
-    with pytest.raises(Exception):
+    with pytest.raises(DomainError):
         await RunAnalysisExecution(harness.analysis).execute(
             RunExecutionCommand(
                 analysis_execution_id=execution.execution.id, request=harness.request
