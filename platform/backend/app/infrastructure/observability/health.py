@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 from app.application.ports import DependencyProbe, DependencyStatus
 from app.infrastructure.analytics.duckdb_gateway import AnalyticsGateway

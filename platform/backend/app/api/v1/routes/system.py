@@ -6,7 +6,7 @@ response. No business rules here.
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
 
 from app import __version__
 from app.api.dependencies import ContainerDep, get_readiness_use_case
@@ -17,10 +17,8 @@ from app.api.v1.schemas.system import (
     MetaResponse,
     ReadinessResponse,
 )
-from app.domain.entities.base import utc_now
-from fastapi import Depends
-
 from app.application.use_cases.get_readiness import GetReadiness
+from app.domain.entities.base import utc_now
 
 router = APIRouter(tags=["system"])
 

@@ -11,10 +11,10 @@ from app.application.use_cases.describe_scientific_capabilities import (
 )
 from app.core.environment import Environment
 from app.core.errors import ConfigurationError
+from app.core.scientific_config import ScientificAdapterKind, ScientificSettings
 from app.domain.errors import ScientificIntegrationError
 from app.scientific.adapters.development import DevelopmentScientificAdapter
 from app.scientific.adapters.factory import build_scientific_gateway
-from app.core.scientific_config import ScientificAdapterKind, ScientificSettings
 from app.scientific.contracts import (
     ExecutionStatus,
     ScientificEngineGateway,

@@ -24,7 +24,6 @@ from app.infrastructure.persistence.database import Database
 from app.infrastructure.redis.cache import RedisCache
 from app.infrastructure.storage.object_storage import S3ObjectStorage
 
-
 # -- PostgreSQL foundation -------------------------------------------------
 
 
