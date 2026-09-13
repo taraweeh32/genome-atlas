@@ -18,7 +18,8 @@
  * short-lived, explicitly authorized transfer or download grant.
  */
 
-import type { EntityId, PageMeta } from "./identity-types";
+import type { PageMeta } from "./identity-types";
+import type { EntityId } from "./types";
 
 export interface DatasetResponse {
   readonly id: EntityId;
