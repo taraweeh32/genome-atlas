@@ -30,14 +30,14 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
-    ClassificationValue,
+    Classification,
     CriterionDirection,
     CriterionStrength,
     DataOrigin,
     EvidenceCategory,
     EvidenceStrength,
     InterpretationState,
-    ReviewDecisionKind,
+    ReviewDecision,
     ReviewState,
 )
 from app.infrastructure.persistence.base import (
@@ -200,7 +200,7 @@ class InterpretationVersion(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("interpretation_id", "version_number",
                          name="uq_interpretation_versions_interpretation_id_version_number"),
-        state_check("classification", ClassificationValue, "classification_valid"),
+        state_check("classification", Classification, "classification_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
         Index("ix_interpretation_versions_interpretation_id", "interpretation_id"),
     )
@@ -209,7 +209,7 @@ class InterpretationVersion(Base, TimestampMixin):
     interpretation_id: Mapped[str] = fk_column("app.interpretations.id")
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     classification: Mapped[str] = mapped_column(
-        String(64), nullable=False, server_default=ClassificationValue.NOT_CLASSIFIED.value
+        String(64), nullable=False, server_default=Classification.NOT_CLASSIFIED.value
     )
     #: Automated suggestion that this version accepted, modified or rejected.
     suggested_classification: Mapped[str | None] = mapped_column(String(64), nullable=True)
@@ -274,7 +274,7 @@ class ReviewDecision(Base, TimestampMixin):
 
     __tablename__ = "review_decisions"
     __table_args__ = (
-        state_check("decision", ReviewDecisionKind, "decision_valid"),
+        state_check("decision", ReviewDecision, "decision_valid"),
         Index("ix_review_decisions_interpretation_version_id", "interpretation_version_id"),
         Index("ix_review_decisions_reviewer_user_id", "reviewer_user_id"),
     )
