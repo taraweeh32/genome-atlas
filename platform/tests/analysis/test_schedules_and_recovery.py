@@ -13,6 +13,10 @@ import pytest
 
 from app.application.use_cases.analysis.maintenance import RecoverAbandonedWork
 from app.application.use_cases.analysis.nodes import MarkSilentNodesUnhealthy
+from app.application.use_cases.analysis.executions import (
+    RequestExecution,
+    RequestExecutionCommand,
+)
 from app.application.use_cases.analysis.scheduler import TriggerDueSchedules
 from app.application.use_cases.analysis.schedules import (
     ChangeScheduleState,
@@ -129,8 +133,14 @@ async def test_skip_if_running_policy_does_not_stack_executions() -> None:
         analysis.analysis.id,
         concurrency_policy=ScheduleConcurrencyPolicy.SKIP_IF_RUNNING,
     )
-    # An execution is already in flight for this analysis.
-    await queued_execution(harness, user_id, name="Trio Screen")
+    # An execution is already in flight for this very analysis.
+    await RequestExecution(harness.analysis).execute(
+        RequestExecutionCommand(
+            actor=await actor_for(harness, user_id),
+            analysis_id=analysis.analysis.id,
+            request=harness.request,
+        )
+    )
 
     harness.clock.advance(seconds=3700)
     summary = await TriggerDueSchedules(harness.analysis).execute()
