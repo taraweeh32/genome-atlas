@@ -134,6 +134,10 @@ class DuckDbQueryEngine:
             with_counts,
         )
 
+    def artifact_path(self, *segments: str) -> str:
+        """A platform-authored location under the configured analytical root."""
+        return self._analytics.dataset_path(*segments)
+
     async def materialize(
         self,
         location: str,
