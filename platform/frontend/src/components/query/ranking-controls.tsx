@@ -64,7 +64,7 @@ export function newRankingComponent(fieldId = ""): DraftComponent {
     scaleMin: "",
     scaleMax: "",
     categoryPriority: "",
-    missingBehaviour: "unscored",
+    missingBehaviour: "exclude",
   };
 }
 
@@ -354,7 +354,7 @@ export function RankingControls({
                   setComponent(component.key, { missingBehaviour: event.target.value })
                 }
               >
-                <option value="unscored">Leave unscored</option>
+                <option value="exclude">Leave unscored</option>
                 <option value="floor">Use an explicit floor value</option>
               </select>
             </label>
