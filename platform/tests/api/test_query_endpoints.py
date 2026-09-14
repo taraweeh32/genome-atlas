@@ -690,7 +690,7 @@ class TestVariantQueryTransport:
         # The row that reports no depth is unscored, not bottom-ranked by a zero.
         assert ranking["unscored_count"] == 1
         assert ranking["scored_count"] == 4
-        assert [row["position"] for row in body["rows"]][0] == 4000
+        assert body["rows"][0]["position"] == 4000
 
     async def test_ranking_never_reintroduces_a_filtered_out_row(
         self, client: TestClient, harness: Harness, surface: str
