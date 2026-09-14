@@ -18,7 +18,7 @@ at the rows Package 2, Package 9 and Package 10 already own.
 
 from __future__ import annotations
 
-from sqlalchemy import Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.infrastructure.persistence.base import (
@@ -39,10 +39,6 @@ class InterpretationVersionCriterion(Base, TimestampMixin):
             "criterion_evaluation_id",
             name="uq_interpretation_version_criteria_version_criterion",
         ),
-        Index(
-            "ix_interpretation_version_criteria_criterion_evaluation_id",
-            "criterion_evaluation_id",
-        ),
     )
 
     id: Mapped[str] = id_column()
@@ -61,10 +57,6 @@ class InterpretationVersionEvidence(Base, TimestampMixin):
             "interpretation_version_id",
             "evidence_item_id",
             name="uq_interpretation_version_evidence_version_evidence",
-        ),
-        Index(
-            "ix_interpretation_version_evidence_evidence_item_id",
-            "evidence_item_id",
         ),
     )
 

@@ -184,7 +184,6 @@ class FilterExecution(Base, TimestampMixin):
     __table_args__ = (
         state_check("outcome", QueryExecutionOutcome, "outcome_valid"),
         Index("ix_filter_executions_workspace_id_executed_at", "workspace_id", "executed_at"),
-        Index("ix_filter_executions_result_set_id", "result_set_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -239,7 +238,6 @@ class RankingExecution(Base, TimestampMixin):
     __tablename__ = "ranking_executions"
     __table_args__ = (
         state_check("outcome", QueryExecutionOutcome, "outcome_valid"),
-        Index("ix_ranking_executions_filter_execution_id", "filter_execution_id"),
     )
 
     id: Mapped[str] = id_column()

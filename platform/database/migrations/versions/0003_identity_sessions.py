@@ -16,144 +16,109 @@ baseline's docstring prescribes.
 
 Revision ID: 0003_identity_sessions
 Revises: 0002_domain_schema
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
 """
 
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
-
-from app.domain.value_objects.enums import (
-    CredentialTokenKind,
-    CredentialTokenState,
-    SessionState,
-)
 
 revision = "0003_identity_sessions"
 down_revision = "0002_domain_schema"
 branch_labels = None
 depends_on = None
 
-#: The exact table set this revision owns, as ``schema.table``. The schema
-#: drift test asserts the union of every revision's ``TABLES`` equals the model
-#: metadata, so a forgotten migration fails the build.
+#: The exact table set this revision creates, as ``schema.table``.
 TABLES: tuple[str, ...] = (
     "app.user_sessions",
     "app.user_credential_tokens",
 )
 
+#: Applied in order. Literal DDL, frozen at this revision.
+UPGRADE_STATEMENTS: tuple[str, ...] = (
+    """
+    CREATE TABLE app.user_sessions ( id VARCHAR(64) NOT NULL, user_id VARCHAR(64) NOT NULL,
+    token_hash VARCHAR(128) NOT NULL, csrf_token_hash VARCHAR(128), state VARCHAR(64) DEFAULT
+    'active' NOT NULL, issued_at TIMESTAMP WITH TIME ZONE NOT NULL, expires_at TIMESTAMP WITH
+    TIME ZONE NOT NULL, absolute_expires_at TIMESTAMP WITH TIME ZONE NOT NULL, last_seen_at
+    TIMESTAMP WITH TIME ZONE, revoked_at TIMESTAMP WITH TIME ZONE, revocation_reason
+    VARCHAR(128), mfa_satisfied BOOLEAN DEFAULT 'false' NOT NULL, reauthenticated_at TIMESTAMP
+    WITH TIME ZONE, ip_hash VARCHAR(128), user_agent_summary VARCHAR(255), correlation_id
+    VARCHAR(64), metadata_json JSONB, created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT
+    NULL, updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, version INTEGER DEFAULT
+    '1' NOT NULL, CONSTRAINT pk_user_sessions PRIMARY KEY (id), CONSTRAINT
+    ck_user_sessions_state_valid CHECK (state IN ('active', 'expired', 'revoked',
+    'superseded')), CONSTRAINT uq_user_sessions_token_hash UNIQUE (token_hash), CONSTRAINT
+    fk_user_sessions_user_id FOREIGN KEY(user_id) REFERENCES app.users (id) ON DELETE RESTRICT )
+    """,
+    """
+    CREATE INDEX ix_user_sessions_expires_at ON app.user_sessions (expires_at)
+    """,
+    """
+    CREATE INDEX ix_user_sessions_user_id ON app.user_sessions (user_id)
+    """,
+    """
+    CREATE INDEX ix_user_sessions_user_id_state ON app.user_sessions (user_id, state)
+    """,
+    """
+    CREATE TABLE app.user_credential_tokens ( id VARCHAR(64) NOT NULL, user_id VARCHAR(64) NOT
+    NULL, kind VARCHAR(64) NOT NULL, state VARCHAR(64) DEFAULT 'active' NOT NULL, token_hash
+    VARCHAR(128) NOT NULL, expires_at TIMESTAMP WITH TIME ZONE NOT NULL, consumed_at TIMESTAMP
+    WITH TIME ZONE, invalidated_at TIMESTAMP WITH TIME ZONE, presentation_count INTEGER DEFAULT
+    '0' NOT NULL, requested_ip_hash VARCHAR(128), invalidation_reason TEXT, correlation_id
+    VARCHAR(64), created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, updated_at
+    TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, version INTEGER DEFAULT '1' NOT NULL,
+    CONSTRAINT pk_user_credential_tokens PRIMARY KEY (id), CONSTRAINT
+    fk_user_credential_tokens_user_id FOREIGN KEY(user_id) REFERENCES app.users (id) ON DELETE
+    RESTRICT, CONSTRAINT ck_user_credential_tokens_state_valid CHECK (state IN ('active',
+    'consumed', 'expired', 'invalidated')), CONSTRAINT ck_user_credential_tokens_kind_valid
+    CHECK (kind IN ('email_verification', 'password_reset')), CONSTRAINT
+    uq_user_credential_tokens_token_hash UNIQUE (token_hash) )
+    """,
+    """
+    CREATE INDEX ix_user_credential_tokens_expires_at ON app.user_credential_tokens (expires_at)
+    """,
+    """
+    CREATE INDEX ix_user_credential_tokens_user_id ON app.user_credential_tokens (user_id)
+    """,
+    """
+    CREATE INDEX ix_user_credential_tokens_user_id_kind_state ON app.user_credential_tokens
+    (user_id, kind, state)
+    """,
+)
 
-def _values(vocabulary) -> str:  # noqa: ANN001
-    return ", ".join(f"'{member.value}'" for member in vocabulary)
-
+#: Exact inverse of ``UPGRADE_STATEMENTS``, in reverse dependency order.
+DOWNGRADE_STATEMENTS: tuple[str, ...] = (
+    """
+    DROP TABLE app.user_credential_tokens
+    """,
+    """
+    DROP TABLE app.user_sessions
+    """,
+)
 
 def upgrade() -> None:
-    op.create_table(
-        "user_sessions",
-        sa.Column("id", sa.String(64), primary_key=True),
-        sa.Column("user_id", sa.String(64), nullable=False),
-        sa.Column("token_hash", sa.String(128), nullable=False),
-        sa.Column("csrf_token_hash", sa.String(128), nullable=True),
-        sa.Column(
-            "state", sa.String(64), nullable=False, server_default=SessionState.ACTIVE.value
-        ),
-        sa.Column("issued_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("absolute_expires_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("last_seen_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("revocation_reason", sa.String(128), nullable=True),
-        sa.Column("mfa_satisfied", sa.Boolean(), nullable=False, server_default="false"),
-        sa.Column("reauthenticated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("ip_hash", sa.String(128), nullable=True),
-        sa.Column("user_agent_summary", sa.String(255), nullable=True),
-        sa.Column("correlation_id", sa.String(64), nullable=True),
-        sa.Column("metadata_json", sa.dialects.postgresql.JSONB(), nullable=True),
-        sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
-        sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
-        ),
-        sa.Column(
-            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
-        ),
-        sa.ForeignKeyConstraint(
-            ["user_id"],
-            ["app.users.id"],
-            name="fk_user_sessions_user_id",
-            ondelete="RESTRICT",
-        ),
-        sa.UniqueConstraint("token_hash", name="uq_user_sessions_token_hash"),
-        sa.CheckConstraint(
-            f"state IN ({_values(SessionState)})", name="ck_user_sessions_state_valid"
-        ),
-        schema="app",
-    )
-    op.create_index("ix_user_sessions_user_id", "user_sessions", ["user_id"], schema="app")
-    op.create_index(
-        "ix_user_sessions_user_id_state", "user_sessions", ["user_id", "state"], schema="app"
-    )
-    op.create_index("ix_user_sessions_expires_at", "user_sessions", ["expires_at"], schema="app")
-
-    op.create_table(
-        "user_credential_tokens",
-        sa.Column("id", sa.String(64), primary_key=True),
-        sa.Column("user_id", sa.String(64), nullable=False),
-        sa.Column("kind", sa.String(64), nullable=False),
-        sa.Column(
-            "state",
-            sa.String(64),
-            nullable=False,
-            server_default=CredentialTokenState.ACTIVE.value,
-        ),
-        sa.Column("token_hash", sa.String(128), nullable=False),
-        sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("consumed_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("invalidated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("presentation_count", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("requested_ip_hash", sa.String(128), nullable=True),
-        sa.Column("invalidation_reason", sa.Text(), nullable=True),
-        sa.Column("correlation_id", sa.String(64), nullable=True),
-        sa.Column("version", sa.Integer(), nullable=False, server_default="1"),
-        sa.Column(
-            "created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
-        ),
-        sa.Column(
-            "updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
-        ),
-        sa.ForeignKeyConstraint(
-            ["user_id"],
-            ["app.users.id"],
-            name="fk_user_credential_tokens_user_id",
-            ondelete="RESTRICT",
-        ),
-        sa.UniqueConstraint("token_hash", name="uq_user_credential_tokens_token_hash"),
-        sa.CheckConstraint(
-            f"kind IN ({_values(CredentialTokenKind)})",
-            name="ck_user_credential_tokens_kind_valid",
-        ),
-        sa.CheckConstraint(
-            f"state IN ({_values(CredentialTokenState)})",
-            name="ck_user_credential_tokens_state_valid",
-        ),
-        schema="app",
-    )
-    op.create_index(
-        "ix_user_credential_tokens_user_id", "user_credential_tokens", ["user_id"], schema="app"
-    )
-    op.create_index(
-        "ix_user_credential_tokens_user_id_kind_state",
-        "user_credential_tokens",
-        ["user_id", "kind", "state"],
-        schema="app",
-    )
-    op.create_index(
-        "ix_user_credential_tokens_expires_at",
-        "user_credential_tokens",
-        ["expires_at"],
-        schema="app",
-    )
+    for statement in UPGRADE_STATEMENTS:
+        op.execute(statement)
 
 
 def downgrade() -> None:
-    op.drop_table("user_credential_tokens", schema="app")
-    op.drop_table("user_sessions", schema="app")
+    for statement in DOWNGRADE_STATEMENTS:
+        op.execute(statement)

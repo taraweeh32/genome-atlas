@@ -123,7 +123,6 @@ class EvidenceValidationFindingRow(Base, TimestampMixin):
     __tablename__ = "evidence_validation_findings"
     __table_args__ = (
         state_check("severity", ValidationSeverity, "severity_valid"),
-        Index("ix_evidence_validation_findings_ingestion_batch_id", "ingestion_batch_id"),
         Index("ix_evidence_validation_findings_code", "code"),
     )
 

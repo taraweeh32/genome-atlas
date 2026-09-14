@@ -21,6 +21,7 @@ from datetime import datetime
 from sqlalchemy import (
     Boolean,
     DateTime,
+    ForeignKey,
     Index,
     Integer,
     String,
@@ -70,10 +71,8 @@ class EvidenceItem(Base, TimestampMixin, ConcurrencyMixin):
         state_check("origin", DataOrigin, "origin_valid"),
         state_check("applicability", EvidenceApplicability, "applicability_valid"),
         state_check("state", EvidenceRecordState, "state_valid"),
-        Index("ix_evidence_items_variant_id", "variant_id"),
         Index("ix_evidence_items_workspace_id_project_id", "workspace_id", "project_id"),
         Index("ix_evidence_items_source_key_source_version", "source_key", "source_version"),
-        Index("ix_evidence_items_ingestion_batch_id", "ingestion_batch_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -155,7 +154,6 @@ class CriterionEvaluation(Base, TimestampMixin, ConcurrencyMixin):
         state_check("strength", CriterionStrength, "strength_valid"),
         state_check("direction", CriterionDirection, "direction_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
-        Index("ix_criterion_evaluations_variant_id", "variant_id"),
         Index("ix_criterion_evaluations_interpretation_id", "interpretation_id"),
         Index("ix_criterion_evaluations_criterion_key", "criterion_key"),
         Index("ix_criterion_evaluations_classification_evaluation_id",
@@ -173,9 +171,11 @@ class CriterionEvaluation(Base, TimestampMixin, ConcurrencyMixin):
     #: Package 10: the registered ruleset version and the automated evaluation this
     #: criterion came out of. Both nullable, because a human evaluation is recorded
     #: without any automated evaluation behind it.
-    ruleset_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ruleset_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.interpretation_rulesets.id", ondelete="RESTRICT"), nullable=True
+    )
     classification_evaluation_id: Mapped[str | None] = mapped_column(
-        String(64), nullable=True
+        String(64), ForeignKey("app.classification_evaluations.id", ondelete="RESTRICT"), nullable=True
     )
     #: Criterion family, denormalized from the ruleset version so a stored
     #: evaluation stays readable on its own.
@@ -240,7 +240,6 @@ class Interpretation(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         state_check("state", InterpretationState, "state_valid"),
         state_check("review_state", ReviewState, "review_state_valid"),
         Index("ix_interpretations_workspace_id_state", "workspace_id", "state"),
-        Index("ix_interpretations_variant_id", "variant_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -274,7 +273,6 @@ class InterpretationVersion(Base, TimestampMixin):
         state_check("classification", Classification, "classification_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
         state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
-        Index("ix_interpretation_versions_interpretation_id", "interpretation_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -321,9 +319,15 @@ class InterpretationVersion(Base, TimestampMixin):
     )
     #: The registered ruleset version and the automated evaluation this decision
     #: context was built on. Nullable: a version may be authored without one.
-    ruleset_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    classification_evaluation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    automated_classification_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ruleset_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.interpretation_rulesets.id", ondelete="RESTRICT"), nullable=True
+    )
+    classification_evaluation_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.classification_evaluations.id", ondelete="RESTRICT"), nullable=True
+    )
+    automated_classification_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.automated_classifications.id", ondelete="RESTRICT"), nullable=True
+    )
     #: Review round this version closed, so successive rounds stay separable.
     review_round: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     adjudicated_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
@@ -373,8 +377,11 @@ class ReviewDecision(Base, TimestampMixin):
     __table_args__ = (
         state_check("decision", ReviewDecisionVocabulary, "decision_valid"),
         state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
-        Index("ix_review_decisions_interpretation_version_id", "interpretation_version_id"),
-        Index("ix_review_decisions_reviewer_user_id", "reviewer_user_id"),
+        Index(
+            "ix_review_decisions_interpretation_id_review_round",
+            "interpretation_id",
+            "review_round",
+        ),
     )
 
     id: Mapped[str] = id_column()

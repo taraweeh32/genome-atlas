@@ -86,7 +86,6 @@ class AnalysisConfiguration(Base, TimestampMixin):
             "analysis_id", "version_number", name="uq_analysis_configurations_analysis_id_version"
         ),
         state_check("validation_state", ConfigurationValidationState, "validation_state_valid"),
-        Index("ix_analysis_configurations_analysis_id", "analysis_id"),
         Index("ix_analysis_configurations_content_hash", "content_hash"),
     )
 
@@ -242,7 +241,6 @@ class AnalysisExecutionInput(Base, TimestampMixin):
             "role",
             name="uq_analysis_execution_inputs_execution_version_role",
         ),
-        Index("ix_analysis_execution_inputs_dataset_version_id", "dataset_version_id"),
     )
 
     id: Mapped[str] = id_column()

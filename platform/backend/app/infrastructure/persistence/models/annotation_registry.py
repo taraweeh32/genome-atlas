@@ -122,7 +122,6 @@ class AnnotationProfileVersion(Base, TimestampMixin):
             "profile_id", "version_number",
             name="uq_annotation_profile_versions_profile_id_version_number",
         ),
-        Index("ix_annotation_profile_versions_profile_id", "profile_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -167,7 +166,6 @@ class AnnotationRun(Base, TimestampMixin, ConcurrencyMixin):
         ),
         state_check("state", AnnotationRunState, "state_valid"),
         Index("ix_annotation_runs_workspace_id_state", "workspace_id", "state"),
-        Index("ix_annotation_runs_result_set_id", "result_set_id"),
         Index("ix_annotation_runs_correlation_id", "correlation_id"),
     )
 
@@ -248,7 +246,6 @@ class AnnotationResultVersion(Base, TimestampMixin, ConcurrencyMixin):
             "result_set_id",
             "resource_key",
         ),
-        Index("ix_annotation_result_versions_workspace_id", "workspace_id"),
     )
 
     id: Mapped[str] = id_column()

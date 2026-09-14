@@ -24,209 +24,259 @@ New tables:
 
 Revision ID: 0011_interpretation_review
 Revises: 0010_interpretation_rulesets
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
 """
 
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
-
-from app.domain.value_objects.enums import ClassificationDecisionRole
-from app.infrastructure.persistence.models import Base
 
 revision = "0011_interpretation_review"
 down_revision = "0010_interpretation_rulesets"
 branch_labels = None
 depends_on = None
 
-#: The exact table set this revision creates, as ``schema.table``. Asserted
-#: against ``Base.metadata`` by the schema-integrity test.
+#: The exact table set this revision creates, as ``schema.table``.
 TABLES: tuple[str, ...] = (
     "app.interpretation_version_criteria",
     "app.interpretation_version_evidence",
 )
 
-_APP = "app"
-
-_ROLE_VALUES = tuple(role.value for role in ClassificationDecisionRole)
-
-
-def _version_columns() -> tuple[sa.Column, ...]:
-    """Columns added to the immutable interpretation version row.
-
-    Built fresh on each call: a ``Column`` object may only be attached to one
-    table, so upgrade and downgrade cannot share instances. Every column is either
-    nullable or carries a server default, so pre-existing rows stay valid.
+#: Applied in order. Literal DDL, frozen at this revision.
+UPGRADE_STATEMENTS: tuple[str, ...] = (
     """
-    return (
-        sa.Column(
-            "decision_role",
-            sa.String(length=64),
-            nullable=False,
-            server_default=ClassificationDecisionRole.REVIEWER_DECISION.value,
-        ),
-        sa.Column("ruleset_id", sa.String(length=64), nullable=True),
-        sa.Column("classification_evaluation_id", sa.String(length=64), nullable=True),
-        sa.Column("automated_classification_id", sa.String(length=64), nullable=True),
-        sa.Column("review_round", sa.Integer(), nullable=False, server_default="1"),
-        sa.Column("adjudicated_by", sa.String(length=64), nullable=True),
-        sa.Column("adjudicated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("disagreement_summary", sa.JSON(), nullable=True),
-    )
+    ALTER TABLE app.interpretation_versions ADD COLUMN decision_role VARCHAR(64) NOT NULL
+    DEFAULT 'reviewer_decision'
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD COLUMN ruleset_id VARCHAR(64)
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD COLUMN classification_evaluation_id VARCHAR(64)
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD COLUMN automated_classification_id VARCHAR(64)
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD COLUMN review_round INTEGER NOT NULL DEFAULT 1
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD COLUMN adjudicated_by VARCHAR(64)
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD COLUMN adjudicated_at TIMESTAMP WITH TIME ZONE
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD COLUMN disagreement_summary JSONB
+    """,
+    """
+    ALTER TABLE app.review_decisions ADD COLUMN decision_role VARCHAR(64) NOT NULL DEFAULT
+    'reviewer_decision'
+    """,
+    """
+    ALTER TABLE app.review_decisions ADD COLUMN review_round INTEGER NOT NULL DEFAULT 1
+    """,
+    """
+    ALTER TABLE app.review_decisions ADD COLUMN previous_classification VARCHAR(64)
+    """,
+    """
+    ALTER TABLE app.review_decisions ADD COLUMN resolves_decision_id VARCHAR(64)
+    """,
+    """
+    ALTER TABLE app.review_assignments ADD COLUMN review_round INTEGER NOT NULL DEFAULT 1
+    """,
+    """
+    CREATE TABLE app.interpretation_version_criteria ( id VARCHAR(64) NOT NULL,
+    interpretation_version_id VARCHAR(64) NOT NULL, criterion_evaluation_id VARCHAR(64) NOT
+    NULL, display_order INTEGER, created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, CONSTRAINT
+    pk_interpretation_version_criteria PRIMARY KEY (id), CONSTRAINT
+    fk_interpretation_version_criteria_criterion_evaluation_id FOREIGN
+    KEY(criterion_evaluation_id) REFERENCES app.criterion_evaluations (id) ON DELETE RESTRICT,
+    CONSTRAINT uq_interpretation_version_criteria_version_criterion UNIQUE
+    (interpretation_version_id, criterion_evaluation_id), CONSTRAINT
+    fk_interpretation_version_criteria_interpretation_version_id FOREIGN
+    KEY(interpretation_version_id) REFERENCES app.interpretation_versions (id) ON DELETE
+    RESTRICT )
+    """,
+    """
+    CREATE INDEX ix_interpretation_version_criteria_criterion_evaluation_id ON
+    app.interpretation_version_criteria (criterion_evaluation_id)
+    """,
+    """
+    CREATE INDEX ix_interpretation_version_criteria_interpretation_version_id ON
+    app.interpretation_version_criteria (interpretation_version_id)
+    """,
+    """
+    CREATE TABLE app.interpretation_version_evidence ( id VARCHAR(64) NOT NULL,
+    interpretation_version_id VARCHAR(64) NOT NULL, evidence_item_id VARCHAR(64) NOT NULL,
+    relation VARCHAR(64) DEFAULT 'supports' NOT NULL, notes TEXT, created_at TIMESTAMP WITH TIME
+    ZONE DEFAULT now() NOT NULL, updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL,
+    CONSTRAINT pk_interpretation_version_evidence PRIMARY KEY (id), CONSTRAINT
+    fk_interpretation_version_evidence_interpretation_version_id FOREIGN
+    KEY(interpretation_version_id) REFERENCES app.interpretation_versions (id) ON DELETE
+    RESTRICT, CONSTRAINT uq_interpretation_version_evidence_version_evidence UNIQUE
+    (interpretation_version_id, evidence_item_id), CONSTRAINT
+    fk_interpretation_version_evidence_evidence_item_id FOREIGN KEY(evidence_item_id) REFERENCES
+    app.evidence_items (id) ON DELETE RESTRICT )
+    """,
+    """
+    CREATE INDEX ix_interpretation_version_evidence_evidence_item_id ON
+    app.interpretation_version_evidence (evidence_item_id)
+    """,
+    """
+    CREATE INDEX ix_interpretation_version_evidence_interpretation_version_id ON
+    app.interpretation_version_evidence (interpretation_version_id)
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD CONSTRAINT ck_interpretation_versions_decision_role_valid CHECK
+    (decision_role IN ('automated_suggestion', 'reviewer_decision', 'adjudicated_decision', 'final_interpretation'))
+    """,
+    """
+    ALTER TABLE app.review_decisions ADD CONSTRAINT ck_review_decisions_decision_role_valid CHECK
+    (decision_role IN ('automated_suggestion', 'reviewer_decision', 'adjudicated_decision', 'final_interpretation'))
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD CONSTRAINT fk_interpretation_versions_ruleset_id
+    FOREIGN KEY (ruleset_id) REFERENCES app.interpretation_rulesets (id) ON DELETE RESTRICT
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD CONSTRAINT
+    fk_interpretation_versions_classification_evaluation_id FOREIGN KEY
+    (classification_evaluation_id) REFERENCES app.classification_evaluations (id) ON DELETE RESTRICT
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD CONSTRAINT
+    fk_interpretation_versions_automated_classification_id FOREIGN KEY
+    (automated_classification_id) REFERENCES app.automated_classifications (id) ON DELETE RESTRICT
+    """,
+    """
+    ALTER TABLE app.interpretation_versions ADD CONSTRAINT
+    fk_interpretation_versions_adjudicated_by FOREIGN KEY (adjudicated_by) REFERENCES app.users
+    (id) ON DELETE RESTRICT
+    """,
+    """
+    ALTER TABLE app.interpretations DROP CONSTRAINT
+    uq_interpretations_project_id_variant_id_condition_identifier
+    """,
+    """
+    CREATE UNIQUE INDEX uq_interpretations_open_context ON app.interpretations (project_id,
+    variant_id, condition_identifier) WHERE state NOT IN ('superseded', 'withdrawn')
+    """,
+    """
+    CREATE INDEX ix_review_decisions_interpretation_id_review_round ON app.review_decisions
+    (interpretation_id, review_round)
+    """,
+    """
+    CREATE INDEX ix_interpretation_versions_adjudicated_by ON app.interpretation_versions (adjudicated_by)
+    """,
+)
 
-
-def _decision_columns() -> tuple[sa.Column, ...]:
-    return (
-        sa.Column(
-            "decision_role",
-            sa.String(length=64),
-            nullable=False,
-            server_default=ClassificationDecisionRole.REVIEWER_DECISION.value,
-        ),
-        sa.Column("review_round", sa.Integer(), nullable=False, server_default="1"),
-        sa.Column("previous_classification", sa.String(length=64), nullable=True),
-        sa.Column("resolves_decision_id", sa.String(length=64), nullable=True),
-    )
-
-
-def _assignment_columns() -> tuple[sa.Column, ...]:
-    return (sa.Column("review_round", sa.Integer(), nullable=False, server_default="1"),)
-
-
-def _owned_tables() -> list:
-    owned = set(TABLES)
-    return [
-        table
-        for table in Base.metadata.sorted_tables
-        if f"{table.schema or _APP}.{table.name}" in owned
-    ]
-
+#: Exact inverse of ``UPGRADE_STATEMENTS``, in reverse dependency order.
+DOWNGRADE_STATEMENTS: tuple[str, ...] = (
+    """
+    DROP INDEX app.uq_interpretations_open_context
+    """,
+    """
+    ALTER TABLE app.interpretations ADD CONSTRAINT
+    uq_interpretations_project_id_variant_id_condition_identifier UNIQUE (project_id,
+    variant_id, condition_identifier)
+    """,
+    """
+    DROP INDEX app.ix_review_decisions_interpretation_id_review_round
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP CONSTRAINT
+    fk_interpretation_versions_adjudicated_by
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP CONSTRAINT
+    fk_interpretation_versions_automated_classification_id
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP CONSTRAINT
+    fk_interpretation_versions_classification_evaluation_id
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP CONSTRAINT
+    fk_interpretation_versions_ruleset_id
+    """,
+    """
+    ALTER TABLE app.review_decisions DROP CONSTRAINT ck_review_decisions_decision_role_valid
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP CONSTRAINT
+    ck_interpretation_versions_decision_role_valid
+    """,
+    """
+    DROP TABLE app.interpretation_version_evidence
+    """,
+    """
+    DROP TABLE app.interpretation_version_criteria
+    """,
+    """
+    ALTER TABLE app.review_assignments DROP COLUMN review_round
+    """,
+    """
+    ALTER TABLE app.review_decisions DROP COLUMN resolves_decision_id
+    """,
+    """
+    ALTER TABLE app.review_decisions DROP COLUMN previous_classification
+    """,
+    """
+    ALTER TABLE app.review_decisions DROP COLUMN review_round
+    """,
+    """
+    ALTER TABLE app.review_decisions DROP COLUMN decision_role
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN disagreement_summary
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN adjudicated_at
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN adjudicated_by
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN review_round
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN automated_classification_id
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN classification_evaluation_id
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN ruleset_id
+    """,
+    """
+    ALTER TABLE app.interpretation_versions DROP COLUMN decision_role
+    """,
+)
 
 def upgrade() -> None:
-    connection = op.get_bind()
-
-    for column in _version_columns():
-        op.add_column("interpretation_versions", column, schema=_APP)
-    for column in _decision_columns():
-        op.add_column("review_decisions", column, schema=_APP)
-    for column in _assignment_columns():
-        op.add_column("review_assignments", column, schema=_APP)
-
-    Base.metadata.create_all(bind=connection, tables=_owned_tables(), checkfirst=False)
-
-    op.create_check_constraint(
-        "ck_interpretation_versions_decision_role_valid",
-        "interpretation_versions",
-        sa.column("decision_role").in_(_ROLE_VALUES),
-        schema=_APP,
-    )
-    op.create_check_constraint(
-        "ck_review_decisions_decision_role_valid",
-        "review_decisions",
-        sa.column("decision_role").in_(_ROLE_VALUES),
-        schema=_APP,
-    )
-    op.create_foreign_key(
-        "fk_interpretation_versions_ruleset_id",
-        "interpretation_versions",
-        "interpretation_rulesets",
-        ["ruleset_id"],
-        ["id"],
-        source_schema=_APP,
-        referent_schema=_APP,
-    )
-    op.create_foreign_key(
-        "fk_interpretation_versions_classification_evaluation_id",
-        "interpretation_versions",
-        "classification_evaluations",
-        ["classification_evaluation_id"],
-        ["id"],
-        source_schema=_APP,
-        referent_schema=_APP,
-    )
-    op.create_foreign_key(
-        "fk_interpretation_versions_automated_classification_id",
-        "interpretation_versions",
-        "automated_classifications",
-        ["automated_classification_id"],
-        ["id"],
-        source_schema=_APP,
-        referent_schema=_APP,
-    )
-    op.create_foreign_key(
-        "fk_interpretation_versions_adjudicated_by",
-        "interpretation_versions",
-        "users",
-        ["adjudicated_by"],
-        ["id"],
-        source_schema=_APP,
-        referent_schema=_APP,
-    )
-    # A superseded or withdrawn interpretation must not block a reclassification
-    # from opening a fresh decision context for the same question.
-    op.drop_constraint(
-        "uq_interpretations_project_id_variant_id_condition_identifier",
-        "interpretations",
-        type_="unique",
-        schema=_APP,
-    )
-    op.create_index(
-        "uq_interpretations_open_context",
-        "interpretations",
-        ["project_id", "variant_id", "condition_identifier"],
-        unique=True,
-        schema=_APP,
-        postgresql_where=sa.text("state NOT IN ('superseded', 'withdrawn')"),
-    )
-    op.create_index(
-        "ix_review_decisions_interpretation_id_review_round",
-        "review_decisions",
-        ["interpretation_id", "review_round"],
-        schema=_APP,
-    )
+    for statement in UPGRADE_STATEMENTS:
+        op.execute(statement)
 
 
 def downgrade() -> None:
-    op.drop_index("uq_interpretations_open_context", "interpretations", schema=_APP)
-    op.create_unique_constraint(
-        "uq_interpretations_project_id_variant_id_condition_identifier",
-        "interpretations",
-        ["project_id", "variant_id", "condition_identifier"],
-        schema=_APP,
-    )
-    op.drop_index(
-        "ix_review_decisions_interpretation_id_review_round",
-        "review_decisions",
-        schema=_APP,
-    )
-    for name in (
-        "fk_interpretation_versions_adjudicated_by",
-        "fk_interpretation_versions_automated_classification_id",
-        "fk_interpretation_versions_classification_evaluation_id",
-        "fk_interpretation_versions_ruleset_id",
-    ):
-        op.drop_constraint(name, "interpretation_versions", type_="foreignkey", schema=_APP)
-    op.drop_constraint(
-        "ck_review_decisions_decision_role_valid",
-        "review_decisions",
-        type_="check",
-        schema=_APP,
-    )
-    op.drop_constraint(
-        "ck_interpretation_versions_decision_role_valid",
-        "interpretation_versions",
-        type_="check",
-        schema=_APP,
-    )
-
-    connection = op.get_bind()
-    Base.metadata.drop_all(
-        bind=connection, tables=list(reversed(_owned_tables())), checkfirst=False
-    )
-
-    for column in reversed(_assignment_columns()):
-        op.drop_column("review_assignments", column.name, schema=_APP)
-    for column in reversed(_decision_columns()):
-        op.drop_column("review_decisions", column.name, schema=_APP)
-    for column in reversed(_version_columns()):
-        op.drop_column("interpretation_versions", column.name, schema=_APP)
+    for statement in DOWNGRADE_STATEMENTS:
+        op.execute(statement)

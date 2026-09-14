@@ -113,7 +113,6 @@ class PopulationFrequencyObservation(Base, TimestampMixin):
         ),
         state_check("value_semantics", ValueSemantics, "value_semantics_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
-        Index("ix_population_frequency_observations_variant_id", "variant_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -177,7 +176,6 @@ class ClinicalAssertion(Base, TimestampMixin):
         ),
         state_check("origin", DataOrigin, "origin_valid"),
         state_check("value_semantics", ValueSemantics, "value_semantics_valid"),
-        Index("ix_clinical_assertions_variant_id", "variant_id"),
         Index("ix_clinical_assertions_external_record_identifier",
               "external_record_identifier"),
     )

@@ -54,7 +54,6 @@ class ResultSet(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         state_check("completeness", ResultCompleteness, "completeness_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
         Index("ix_result_sets_workspace_id_state", "workspace_id", "state"),
-        Index("ix_result_sets_project_id", "project_id"),
     )
 
     id: Mapped[str] = id_column()

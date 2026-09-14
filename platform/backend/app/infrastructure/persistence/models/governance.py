@@ -60,7 +60,6 @@ class AuditEvent(Base, TimestampMixin):
         state_check("outcome", AuditOutcome, "outcome_valid"),
         state_check("channel", AuditChannel, "channel_valid"),
         Index("ix_audit_events_occurred_at", "occurred_at"),
-        Index("ix_audit_events_actor_user_id", "actor_user_id"),
         Index("ix_audit_events_resource_type_resource_id", "resource_type", "resource_id"),
         Index("ix_audit_events_organization_id_occurred_at", "organization_id", "occurred_at"),
         Index("ix_audit_events_correlation_id", "correlation_id"),
@@ -128,7 +127,6 @@ class ProvenanceManifest(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("scientific_execution_id",
                          name="uq_provenance_manifests_scientific_execution_id"),
-        Index("ix_provenance_manifests_analysis_execution_id", "analysis_execution_id"),
         Index("ix_provenance_manifests_correlation_id", "correlation_id"),
     )
 
@@ -153,7 +151,6 @@ class ProvenanceEntry(Base, TimestampMixin):
 
     __tablename__ = "provenance_entries"
     __table_args__ = (
-        Index("ix_provenance_entries_provenance_manifest_id", "provenance_manifest_id"),
         Index("ix_provenance_entries_entry_kind_reference_id", "entry_kind", "reference_id"),
     )
 
