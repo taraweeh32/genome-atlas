@@ -9,11 +9,17 @@ variant/result model and analytical storage. No second anything.
       validated idempotent deliveries with findings, conflict preservation,
       tenant isolation, migration 0009, 11 endpoints, admin + variant UI,
       21 focused tests, docs.
-- [ ] **Package 10 — ACMG/AMP rules engine & classification framework.**
+- [x] **Package 10 — ACMG/AMP rules engine & classification framework.**
       Independently identifiable scientific component; versioned rulesets and
       criteria; structured interpretation requests through the existing adapter;
       automated suggestion ≠ human decision; benchmark-corpus interface.
-- [ ] **Package 11 — interpretation, human review & adjudication.**
+      Migration 0010, admin ruleset governance UI, variant classification panel.
+- [x] **Package 11 — interpretation, human review & adjudication.** Migration
+      0011, versioned interpretations pinning ruleset/criteria/evidence by
+      reference, append-only reviewer decisions, disagreement escalation and
+      adjudication, immutable finalization with reclassification successors,
+      optimistic concurrency, `/interpretations` review workspace, 20 focused
+      tests, `docs/review-and-adjudication.md`.
 - [ ] **Package 12 — reporting, report versions & export.**
 - [ ] **Package 13 — notifications, events & automation.**
 - [ ] **Package 14 — search, discovery & cross-resource navigation.**
