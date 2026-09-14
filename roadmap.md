@@ -3,7 +3,8 @@
 Implementation order (per the package specification, section 60).
 
 - [x] Inspect Packages 1–6 abstractions (variant/result data layer, analytical boundary, authorization, jobs)
-- [x] Vocabulary: filter/ranking enums, permissions, role grants, lifecycle table
+- [x] Vocabulary: filter/ranking enums (`QueryScope`, `QueryDefinitionState`, `QueryExecutionOutcome`) and the shared definition lifecycle table
+- [ ] Permissions and role grants for filters, presets, rankings and saved views
 - [x] Filter expression domain model (conditions, nested groups, operators, data types)
 - [x] Filter field registry (dictionary + version + context availability)
 - [x] Filter validation and canonicalization (+ canonical hash)
