@@ -38,3 +38,5 @@ variant/result model and analytical storage. No second anything.
   production-scale cohort ingestion readiness
 - Inherited frontend lint/plugin conflict
 - Artifact-backed annotation and evidence batches are located but not parsed
+
+- [x] Migration chain audit 0001-0011: every revision now self-contained literal SQL, verified on an empty database (autogenerate diff empty apart from the platform.schema_bootstrap bookkeeping table, which has no ORM model).
