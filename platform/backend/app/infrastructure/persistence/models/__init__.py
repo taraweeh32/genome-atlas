@@ -82,10 +82,6 @@ from app.infrastructure.persistence.models.interpretation_rulesets import (
     RulesetBenchmarkCaseRow,
     RulesetBenchmarkRunRow,
 )
-from app.infrastructure.persistence.models.review import (
-    InterpretationVersionCriterion,
-    InterpretationVersionEvidence,
-)
 from app.infrastructure.persistence.models.jobs import (
     Job,
     JobAttempt,
@@ -133,6 +129,10 @@ from app.infrastructure.persistence.models.results import (
     RankingConfigurationVersion,
     ResultSet,
     SavedView,
+)
+from app.infrastructure.persistence.models.review import (
+    InterpretationVersionCriterion,
+    InterpretationVersionEvidence,
 )
 from app.infrastructure.persistence.models.scientific import (
     ScientificArtifact,

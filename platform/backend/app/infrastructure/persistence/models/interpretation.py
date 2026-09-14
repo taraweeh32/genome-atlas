@@ -19,9 +19,9 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
-    ForeignKey,
     Boolean,
     DateTime,
+    ForeignKey,
     Index,
     Integer,
     String,
