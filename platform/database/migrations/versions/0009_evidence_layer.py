@@ -220,7 +220,7 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     """,
     """
     ALTER TABLE app.evidence_items ADD CONSTRAINT fk_evidence_items_ingestion_batch_id FOREIGN
-    KEY (ingestion_batch_id) REFERENCES app.evidence_ingestion_batches (id)
+    KEY (ingestion_batch_id) REFERENCES app.evidence_ingestion_batches (id) ON DELETE RESTRICT
     """,
     """
     CREATE INDEX ix_evidence_items_source_key_source_version ON app.evidence_items (source_key,

@@ -400,6 +400,27 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     CREATE INDEX ix_variant_representations_variant_id ON app.variant_representations
     (variant_id)
     """,
+    """
+    CREATE INDEX ix_variants_scientific_execution_id ON app.variants (scientific_execution_id)
+    """,
+    """
+    CREATE INDEX ix_population_frequency_observations_scientific_execution_id ON app.population_frequency_observations (scientific_execution_id)
+    """,
+    """
+    CREATE INDEX ix_clinical_assertions_scientific_execution_id ON app.clinical_assertions (scientific_execution_id)
+    """,
+    """
+    CREATE INDEX ix_result_sets_scientific_execution_id ON app.result_sets (scientific_execution_id)
+    """,
+    """
+    CREATE INDEX ix_result_sets_analysis_configuration_id ON app.result_sets (analysis_configuration_id)
+    """,
+    """
+    CREATE INDEX ix_result_sets_engine_resource_id ON app.result_sets (engine_resource_id)
+    """,
+    """
+    CREATE INDEX ix_result_sets_reference_genome_resource_id ON app.result_sets (reference_genome_resource_id)
+    """,
 )
 
 #: Exact inverse of ``UPGRADE_STATEMENTS``, in reverse dependency order.

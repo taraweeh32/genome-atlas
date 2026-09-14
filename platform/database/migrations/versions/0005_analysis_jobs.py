@@ -331,6 +331,12 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     CREATE INDEX ix_schedule_triggers_scheduled_job_id_triggered_at ON
     platform.schedule_triggers (scheduled_job_id, triggered_at)
     """,
+    """
+    CREATE INDEX ix_analysis_executions_cancel_requested_by ON app.analysis_executions (cancel_requested_by)
+    """,
+    """
+    CREATE INDEX ix_scheduled_jobs_project_id ON platform.scheduled_jobs (project_id)
+    """,
 )
 
 #: Exact inverse of ``UPGRADE_STATEMENTS``, in reverse dependency order.

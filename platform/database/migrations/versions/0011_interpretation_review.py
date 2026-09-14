@@ -84,7 +84,7 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     ALTER TABLE app.interpretation_versions ADD COLUMN adjudicated_at TIMESTAMP WITH TIME ZONE
     """,
     """
-    ALTER TABLE app.interpretation_versions ADD COLUMN disagreement_summary JSON
+    ALTER TABLE app.interpretation_versions ADD COLUMN disagreement_summary JSONB
     """,
     """
     ALTER TABLE app.review_decisions ADD COLUMN decision_role VARCHAR(64) NOT NULL DEFAULT
@@ -170,7 +170,7 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     """
     ALTER TABLE app.interpretation_versions ADD CONSTRAINT
     fk_interpretation_versions_adjudicated_by FOREIGN KEY (adjudicated_by) REFERENCES app.users
-    (id)
+    (id) ON DELETE RESTRICT
     """,
     """
     ALTER TABLE app.interpretations DROP CONSTRAINT
@@ -183,6 +183,9 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     """
     CREATE INDEX ix_review_decisions_interpretation_id_review_round ON app.review_decisions
     (interpretation_id, review_round)
+    """,
+    """
+    CREATE INDEX ix_interpretation_versions_adjudicated_by ON app.interpretation_versions (adjudicated_by)
     """,
 )
 
