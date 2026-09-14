@@ -24,7 +24,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { getApiClient } from "@/lib/api-client";
+import { ApiClient } from "@/lib/api-client";
 import type {
   FilterConditionPayload,
   FilterFieldResponse,
@@ -546,6 +546,7 @@ function useValueSearch(
   const [truncated, setTruncated] = useState(false);
   const [failed, setFailed] = useState(false);
   const latest = useRef(0);
+  const client = useMemo(() => new ApiClient(), []);
 
   useEffect(() => {
     if (!field?.searchable || !resultSetId || term.trim().length < 2) {
@@ -556,7 +557,7 @@ function useValueSearch(
     }
     const ticket = (latest.current += 1);
     const timer = setTimeout(() => {
-      void getApiClient()
+      void client
         .filterFieldValues(field.id, {
           result_set_id: resultSetId,
           search: term.trim(),
@@ -576,7 +577,7 @@ function useValueSearch(
         });
     }, 250);
     return () => clearTimeout(timer);
-  }, [field?.id, field?.searchable, resultSetId, term]);
+  }, [client, field?.id, field?.searchable, resultSetId, term]);
 
   return { values, truncated, failed };
 }
