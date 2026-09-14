@@ -28,7 +28,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.domain.errors import ValidationError
-from app.domain.query.canonical import canonical_hash as _canonical_hash
 from app.domain.query.fields import (
     FilterFieldDefinition,
     FilterFieldRegistry,

@@ -20,7 +20,12 @@ from datetime import datetime
 from typing import Any
 
 from app.domain.errors import ValidationError
-from app.domain.query.canonical import canonical_hash, canonical_json, canonical_payload
+from app.domain.query.canonical import (
+    canonical_hash,
+    canonical_json,
+    canonical_payload,
+    canonicalize,
+)
 from app.domain.query.expressions import (
     FilterCondition,
     FilterGroup,
@@ -595,8 +600,9 @@ def validate_filter(
             details={"issues": [issue.as_dict() for issue in issues]},
         )
 
-    canonical = canonical_payload(validated)
-    encoded = canonical_json(validated).encode("utf-8")
+    canonical_expression = _as_group(canonicalize(validated))
+    canonical = canonical_payload(canonical_expression)
+    encoded = canonical_json(canonical_expression).encode("utf-8")
     if len(encoded) > limits.max_expression_bytes:
         raise ValidationError(
             "filter expression is larger than allowed",
@@ -619,12 +625,9 @@ def validate_filter(
     for definition in touched:
         unique_fields.setdefault(definition.id, definition)
     return ValidatedFilter(
-        expression=canonical
-        and FilterGroup(**{})  # placeholder replaced below
-        if False
-        else _as_group(validated),
+        expression=canonical_expression,
         canonical=canonical,
-        canonical_hash=canonical_hash(validated),
+        canonical_hash=canonical_hash(canonical_expression),
         field_dictionary_version=registry.version,
         field_ids=tuple(sorted(unique_fields)),
         condition_count=len(conditions),
