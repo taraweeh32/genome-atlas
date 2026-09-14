@@ -28,13 +28,16 @@ from app.application.use_cases.analysis.executions import (
 from app.application.use_cases.query.definitions import (
     AddVersionCommand,
     CreateConfigurationCommand,
+    FilterPresetService,
+    SavedFilterService,
+    SavedRankingService,
 )
 from app.domain.errors import NotFoundError, ValidationError
 from app.domain.query.fields import FIELD_DICTIONARY_VERSION
-from app.domain.value_objects.enums import AnalysisState, QueryScope
+from app.domain.value_objects.enums import AnalysisState, PlatformRole, QueryScope
 from tests.analysis.support import dataset_version_for, project_analysis
 from tests.query.support import condition, group, query_services
-from tests.support.actors import actor_for, create_account
+from tests.support.actors import actor_for, create_account, grant_platform_role
 from tests.support.services import build_harness
 
 PAGE = Page(number=1, size=25)
@@ -59,7 +62,7 @@ def ranking_content() -> dict:
 
 
 async def saved_filter(services, harness, user_id, *, name="Rare Disease", genes=("CFTR",)):
-    return await services.filters.create(
+    return await SavedFilterService(services).create(
         CreateConfigurationCommand(
             actor=await actor_for(harness, user_id),
             request=harness.request,
@@ -71,7 +74,7 @@ async def saved_filter(services, harness, user_id, *, name="Rare Disease", genes
 
 
 async def saved_ranking(services, harness, user_id, *, name="Weighted Priority"):
-    return await services.rankings.create(
+    return await SavedRankingService(services).create(
         CreateConfigurationCommand(
             actor=await actor_for(harness, user_id),
             request=harness.request,
@@ -167,7 +170,7 @@ async def test_editing_the_saved_filter_afterwards_leaves_the_run_untouched(tmp_
     )
     before = binding_of(execution)["filter"]["saved_filter"]
 
-    updated = await services.filters.add_version(
+    updated = await SavedFilterService(services).add_version(
         AddVersionCommand(
             actor=await actor_for(harness, user_id),
             request=harness.request,
@@ -197,7 +200,7 @@ async def test_a_referenced_version_is_never_rewritten_in_place(tmp_path):
     )
     assert version.is_referenced, "an executed version must be marked referenced"
 
-    await services.filters.add_version(
+    await SavedFilterService(services).add_version(
         AddVersionCommand(
             actor=await actor_for(harness, user_id),
             request=harness.request,
@@ -216,7 +219,7 @@ async def test_a_referenced_version_is_never_rewritten_in_place(tmp_path):
 async def test_an_explicit_version_number_is_honoured_over_the_latest(tmp_path):
     harness, user_id, services = await build(tmp_path)
     saved = await saved_filter(services, harness, user_id)
-    updated = await services.filters.add_version(
+    updated = await SavedFilterService(services).add_version(
         AddVersionCommand(
             actor=await actor_for(harness, user_id),
             request=harness.request,
@@ -263,10 +266,9 @@ async def test_an_inline_filter_is_frozen_in_canonical_form(tmp_path):
 
 async def test_a_preset_and_a_custom_expression_are_both_recorded(tmp_path):
     harness, user_id, services = await build(tmp_path)
-    administrator = await create_account(
-        harness, "platform@example.org", platform_administrator=True
-    )
-    preset = await services.filter_presets.create(
+    administrator = await create_account(harness, "platform@example.org")
+    await grant_platform_role(harness, administrator, PlatformRole.PLATFORM_ADMINISTRATOR)
+    preset = await FilterPresetService(services).create(
         CreateConfigurationCommand(
             actor=await actor_for(harness, administrator),
             request=harness.request,
