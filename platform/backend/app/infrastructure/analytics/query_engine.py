@@ -25,6 +25,7 @@ DuckDB is synchronous, so every call runs in a worker thread.
 from __future__ import annotations
 
 import asyncio
+from pathlib import Path
 import time
 
 from app.application.ports import (
@@ -203,6 +204,10 @@ class DuckDbQueryEngine:
         order_by: tuple[tuple[str, bool], ...],
         max_rows: int,
     ) -> int:
+        # A local analytical root is a directory tree; object storage creates
+        # prefixes implicitly. Creating the parent only affects the former.
+        if "://" not in target:
+            Path(target).parent.mkdir(parents=True, exist_ok=True)
         selected = ", ".join(quote_identifier(name) for name in columns)
         where, parameters = _where_clause(predicate)
         order = _order_clause(order_by)

@@ -63,8 +63,10 @@ async def test_deferring_a_query_enqueues_one_job_on_the_existing_system(tmp_pat
     assert job.kind is QUERY_JOB_KIND
     assert job.payload["requested_by"] == user_id
     # The request records that it deferred, so the trail shows both halves.
-    trail = await harness.repositories.audit.list_recent(limit=20)
-    assert any(entry.action == "variant_query.deferred" for entry in trail.items)
+    assert any(
+        record.action == "variant_query.deferred"
+        for record in harness.repositories.audit.records
+    )
 
 
 async def test_a_malformed_filter_is_refused_before_any_job_exists(tmp_path):
@@ -77,13 +79,14 @@ async def test_a_malformed_filter_is_refused_before_any_job_exists(tmp_path):
             user_id,
             result_set,
             filter=FilterSelection(
-                expression=group(condition("no_such_field", "equals", ["x"]))
+                expression=group(condition("no_such_field", "equals", "x"))
             ),
         )
 
-    assert await harness.repositories.jobs.find("job_missing") is None
-    trail = await harness.repositories.audit.list_recent(limit=20)
-    assert not any(entry.action == "variant_query.deferred" for entry in trail.items)
+    assert not any(
+        record.action == "variant_query.deferred"
+        for record in harness.repositories.audit.records
+    )
 
 
 async def test_an_unrelated_account_cannot_defer_a_query_over_the_surface(tmp_path):
@@ -102,7 +105,7 @@ async def test_the_worker_materializes_an_artifact_and_records_the_execution(tmp
         user_id,
         result_set,
         filter=FilterSelection(
-            expression=group(condition("contig", "equals", ["chr1"]))
+            expression=group(condition("contig", "equals", "chr1"))
         ),
     )
     job = await harness.repositories.jobs.find(accepted.job_id)
