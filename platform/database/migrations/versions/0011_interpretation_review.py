@@ -146,14 +146,12 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     app.interpretation_version_evidence (interpretation_version_id)
     """,
     """
-    ALTER TABLE app.interpretation_versions ADD CONSTRAINT
-    ck_interpretation_versions_ck_interpretation_versions_decision_role_valid CHECK
-    (decision_role IN (__[POSTCOMPILE_decision_role_1]))
+    ALTER TABLE app.interpretation_versions ADD CONSTRAINT ck_interpretation_versions_decision_role_valid CHECK
+    (decision_role IN ('automated_suggestion', 'reviewer_decision', 'adjudicated_decision', 'final_interpretation'))
     """,
     """
-    ALTER TABLE app.review_decisions ADD CONSTRAINT
-    ck_review_decisions_ck_review_decisions_decision_role_valid CHECK (decision_role IN
-    (__[POSTCOMPILE_decision_role_1]))
+    ALTER TABLE app.review_decisions ADD CONSTRAINT ck_review_decisions_decision_role_valid CHECK
+    (decision_role IN ('automated_suggestion', 'reviewer_decision', 'adjudicated_decision', 'final_interpretation'))
     """,
     """
     ALTER TABLE app.interpretation_versions ADD CONSTRAINT fk_interpretation_versions_ruleset_id
