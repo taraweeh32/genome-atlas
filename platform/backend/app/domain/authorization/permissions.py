@@ -78,6 +78,21 @@ class Permission(str, enum.Enum):
     #: Cross-tenant read of annotation runs, result versions and validation
     #: findings for operational oversight. Never a grant over variant content.
     PLATFORM_ANNOTATION_READ = "platform.annotation.read"
+    #: The evidence source registry: which evidence resources exist, in which
+    #: versions, and whether a version may be used at all. Platform scientific
+    #: governance; an organization administrator may never reach it.
+    PLATFORM_EVIDENCE_RESOURCE_ADMINISTER = "platform.evidence_resource.administer"
+    #: Cross-tenant read of evidence records, ingestion batches and findings for
+    #: operational oversight. Never a grant to edit scientific content.
+    PLATFORM_EVIDENCE_READ = "platform.evidence.read"
+    #: The interpretation ruleset registry: which interpretation rulesets and
+    #: specifications exist, in which versions, with which criteria and
+    #: combination logic, and whether a version may be used at all. Platform
+    #: scientific governance; an organization administrator may never reach it.
+    PLATFORM_RULESET_ADMINISTER = "platform.ruleset.administer"
+    #: Cross-tenant read of rulesets, automated evaluations and benchmark runs for
+    #: scientific oversight. Never authority over a clinical decision.
+    PLATFORM_CLASSIFICATION_READ = "platform.classification.read"
     #: Cross-tenant read of filter/ranking definitions and execution records for
     #: operational oversight. It never grants access to variant content.
     PLATFORM_QUERY_READ = "platform.query.read"
@@ -152,6 +167,27 @@ class Permission(str, enum.Enum):
     #: Requesting an annotation run against the workspace's own surface. It never
     #: implies any control over the annotation resources themselves.
     WORKSPACE_ANNOTATION_EXECUTE = "workspace.annotation.execute"
+    #: Reading evidence records and their provenance for the workspace's own
+    #: variants. Separate from variant read and from annotation read: evidence is
+    #: its own layer.
+    WORKSPACE_EVIDENCE_READ = "workspace.evidence.read"
+    #: Recording, importing or withdrawing evidence for the workspace's own
+    #: variants. It never implies authority over evidence sources themselves, and
+    #: never implies any classification authority.
+    WORKSPACE_EVIDENCE_CURATE = "workspace.evidence.curate"
+    #: Reading automated criterion evaluations and suggested classifications for
+    #: the workspace's own variants. Reading a suggestion is not deciding.
+    WORKSPACE_CLASSIFICATION_READ = "workspace.classification.read"
+    #: Requesting an automated evaluation from the scientific interpretation
+    #: component. It grants no authority over rulesets and no clinical decision.
+    WORKSPACE_CLASSIFICATION_EXECUTE = "workspace.classification.execute"
+    #: Reading interpretations, their versions, review history and adjudication
+    #: record for the workspace's own variants. Reading a decision is not making
+    #: one, and it is separate from reading the automated suggestion behind it.
+    WORKSPACE_INTERPRETATION_READ = "workspace.interpretation.read"
+    #: Opening an interpretation and authoring a version in it. It carries no
+    #: authority to adjudicate a disagreement and none to finalize.
+    WORKSPACE_INTERPRETATION_AUTHOR = "workspace.interpretation.author"
 
     # --- project scope --------------------------------------------------- #
     PROJECT_READ = "project.read"
@@ -200,6 +236,21 @@ class Permission(str, enum.Enum):
     #: Project-scoped annotation read and annotation execution.
     PROJECT_ANNOTATION_READ = "project.annotation.read"
     PROJECT_ANNOTATION_EXECUTE = "project.annotation.execute"
+    #: Project-scoped evidence read and evidence curation.
+    PROJECT_EVIDENCE_READ = "project.evidence.read"
+    PROJECT_EVIDENCE_CURATE = "project.evidence.curate"
+    #: Project-scoped automated evaluation read and execution.
+    PROJECT_CLASSIFICATION_READ = "project.classification.read"
+    PROJECT_CLASSIFICATION_EXECUTE = "project.classification.execute"
+    #: Project-scoped interpretation read and authoring.
+    PROJECT_INTERPRETATION_READ = "project.interpretation.read"
+    PROJECT_INTERPRETATION_AUTHOR = "project.interpretation.author"
+    #: Resolving a disagreement between reviewers. Deliberately not implied by
+    #: PROJECT_INTERPRETATION_REVIEW: a reviewer who disagreed must not be able to
+    #: rule on their own disagreement by virtue of being a reviewer.
+    PROJECT_INTERPRETATION_ADJUDICATE = "project.interpretation.adjudicate"
+    #: Closing an interpretation version as the final, immutable decision.
+    PROJECT_INTERPRETATION_FINALIZE = "project.interpretation.finalize"
 
     @property
     def scope(self) -> Scope:
@@ -216,7 +267,12 @@ PLATFORM_ONLY_PERMISSIONS: frozenset[Permission] = frozenset(
 #: Scientific responsibility. Kept explicit so administration never silently
 #: implies clinical/scientific review authority.
 SCIENTIFIC_REVIEW_PERMISSIONS: frozenset[Permission] = frozenset(
-    {Permission.PROJECT_INTERPRETATION_REVIEW, Permission.PROJECT_REPORT_FINALIZE}
+    {
+        Permission.PROJECT_INTERPRETATION_REVIEW,
+        Permission.PROJECT_INTERPRETATION_ADJUDICATE,
+        Permission.PROJECT_INTERPRETATION_FINALIZE,
+        Permission.PROJECT_REPORT_FINALIZE,
+    }
 )
 
 

@@ -28,7 +28,9 @@ describe("navigation model", () => {
     expect(available.map((item) => item.href).sort()).toEqual([
       "/admin",
       "/admin/annotation",
+      "/admin/evidence",
       "/admin/query",
+      "/admin/rulesets",
       "/analyses",
       "/dashboard",
       "/datasets",

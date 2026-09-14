@@ -78,6 +78,9 @@ class StubContainer:
     def annotation_field_dictionary(self):  # noqa: ANN201
         return self._harness.field_dictionary
 
+    def evidence_services(self):  # noqa: ANN201
+        return self._harness.evidence
+
     def get_readiness(self) -> GetReadiness:
         return GetReadiness(())
 

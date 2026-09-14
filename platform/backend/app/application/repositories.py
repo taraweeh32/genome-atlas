@@ -32,6 +32,14 @@ from app.domain.analysis.entities import (
     ScientificArtifactRecord,
     ScientificExecutionRecord,
 )
+from app.domain.annotation.entities import (
+    AnnotationProfileRecord,
+    AnnotationProfileVersionRecord,
+    AnnotationResourceRecord,
+    AnnotationResultVersionRecord,
+    AnnotationRunRecord,
+    AnnotationValidationFinding,
+)
 from app.domain.data.entities import (
     ColumnMapping,
     Dataset,
@@ -42,20 +50,26 @@ from app.domain.data.entities import (
     ValidationIssue,
     ValidationRun,
 )
-from app.domain.annotation.entities import (
-    AnnotationProfileRecord,
-    AnnotationProfileVersionRecord,
-    AnnotationResourceRecord,
-    AnnotationResultVersionRecord,
-    AnnotationRunRecord,
-    AnnotationValidationFinding,
-)
 from app.domain.events import DomainEvent
+from app.domain.evidence.entities import (
+    EvidenceIngestionBatch,
+    EvidenceRecord,
+    EvidenceSourceRecord,
+    EvidenceValidationFinding,
+)
 from app.domain.identity.entities import (
     Credentials,
     CredentialToken,
     Session,
     UserAccount,
+)
+from app.domain.interpretation.entities import (
+    AutomatedClassificationRecord,
+    BenchmarkCaseRecord,
+    BenchmarkRunRecord,
+    ClassificationEvaluationRecord,
+    CriterionEvaluationRecord,
+    RulesetRecord,
 )
 from app.domain.organization.entities import (
     Organization,
@@ -76,6 +90,12 @@ from app.domain.query.entities import (
     RankingVersionRecord,
     SavedViewRecord,
 )
+from app.domain.review.entities import (
+    InterpretationRecord,
+    InterpretationVersionRecord,
+    ReviewAssignmentRecord,
+    ReviewDecisionRecord,
+)
 from app.domain.value_objects.enums import (
     ActorType,
     AnalysisState,
@@ -83,9 +103,16 @@ from app.domain.value_objects.enums import (
     AnnotationRunState,
     AuditChannel,
     AuditOutcome,
+    BenchmarkValidationKind,
+    ClassificationEvaluationState,
     CredentialTokenKind,
     DatasetState,
+    EvidenceCategory,
+    EvidenceIngestionState,
+    EvidenceRecordState,
+    EvidenceSourceCategory,
     ExecutionState,
+    InterpretationState,
     InvitationState,
     JobErrorClass,
     JobKind,
@@ -96,6 +123,7 @@ from app.domain.value_objects.enums import (
     PlatformRole,
     ResultIngestionState,
     ResultSetState,
+    ReviewState,
     ScheduleState,
     ScheduleTriggerOutcome,
 )
@@ -1095,6 +1123,94 @@ class SavedViewRepository(Protocol):
     ) -> Paged[SavedViewRecord]: ...
 
 
+class EvidenceSourceRepository(Protocol):
+    """Registered evidence source versions.
+
+    Backed by the existing scientific resource registry: an evidence source
+    version is a ``scientific_resources`` row of kind ``evidence_resource``. No
+    parallel registry exists, and no external database is privileged.
+    """
+
+    async def add(self, source: EvidenceSourceRecord) -> EvidenceSourceRecord: ...
+    async def get(self, source_id: str) -> EvidenceSourceRecord | None: ...
+    async def get_by_version(
+        self, *, source_key: str, version: str
+    ) -> EvidenceSourceRecord | None: ...
+    async def save(self, source: EvidenceSourceRecord) -> EvidenceSourceRecord: ...
+    async def list_sources(
+        self,
+        *,
+        page: Page,
+        category: EvidenceSourceCategory | None = None,
+        source_key: str | None = None,
+        usable_only: bool = False,
+    ) -> Paged[EvidenceSourceRecord]: ...
+
+
+class EvidenceRecordRepository(Protocol):
+    """Evidence records, stored as rows of the one evidence table.
+
+    ``save_lifecycle`` is deliberately the only mutation: state and supersession
+    pointers change, delivered content never does.
+    """
+
+    async def add(self, record: EvidenceRecord) -> EvidenceRecord: ...
+    async def add_many(self, records: tuple[EvidenceRecord, ...]) -> None: ...
+    async def get(self, evidence_id: str) -> EvidenceRecord | None: ...
+    async def get_by_digest(
+        self, *, variant_id: str, source_key: str, payload_digest: str
+    ) -> EvidenceRecord | None: ...
+    async def current_for_lineage(
+        self, *, variant_id: str, source_key: str, evidence_key: str
+    ) -> EvidenceRecord | None: ...
+    async def save_lifecycle(self, record: EvidenceRecord) -> EvidenceRecord: ...
+    async def list_records(
+        self,
+        *,
+        page: Page,
+        workspace_ids: frozenset[str] | None = None,
+        variant_id: str | None = None,
+        project_id: str | None = None,
+        source_key: str | None = None,
+        category: EvidenceCategory | None = None,
+        state: EvidenceRecordState | None = None,
+        include_superseded: bool = False,
+    ) -> Paged[EvidenceRecord]: ...
+    async def list_for_variant(
+        self,
+        *,
+        variant_id: str,
+        workspace_ids: frozenset[str] | None = None,
+        include_superseded: bool = False,
+        limit: int = 500,
+    ) -> tuple[EvidenceRecord, ...]: ...
+
+
+class EvidenceIngestionRepository(Protocol):
+    """Evidence ingestion batches and their validation findings."""
+
+    async def add(self, batch: EvidenceIngestionBatch) -> EvidenceIngestionBatch: ...
+    async def get(self, batch_id: str) -> EvidenceIngestionBatch | None: ...
+    async def get_by_payload_digest(
+        self, *, source_key: str, payload_digest: str
+    ) -> EvidenceIngestionBatch | None: ...
+    async def save(self, batch: EvidenceIngestionBatch) -> EvidenceIngestionBatch: ...
+    async def list_batches(
+        self,
+        *,
+        page: Page,
+        workspace_ids: frozenset[str] | None = None,
+        source_key: str | None = None,
+        state: EvidenceIngestionState | None = None,
+    ) -> Paged[EvidenceIngestionBatch]: ...
+    async def add_findings(
+        self, findings: tuple[EvidenceValidationFinding, ...]
+    ) -> None: ...
+    async def list_findings(
+        self, *, ingestion_batch_id: str, page: Page
+    ) -> Paged[EvidenceValidationFinding]: ...
+
+
 class AnnotationResourceRepository(Protocol):
     """Registered annotation resource versions.
 
@@ -1207,6 +1323,184 @@ class AnnotationResultRepository(Protocol):
     ) -> Paged[AnnotationValidationFinding]: ...
 
 
+class RulesetRepository(Protocol):
+    """Registered interpretation ruleset versions and their declared content.
+
+    ``save_lifecycle`` is the only mutation. A registered version's criteria and
+    combination rules are written once: a corrected guideline, a modified criterion
+    strength or a new gene/disease specification is a new version, never an edit,
+    which is what keeps a historical classification explainable.
+    """
+
+    async def add(self, ruleset: RulesetRecord) -> RulesetRecord: ...
+    async def get(self, ruleset_id: str) -> RulesetRecord | None: ...
+    async def get_by_version(
+        self, *, ruleset_key: str, version: str
+    ) -> RulesetRecord | None: ...
+    async def save_lifecycle(self, ruleset: RulesetRecord) -> RulesetRecord: ...
+    async def list_rulesets(
+        self,
+        *,
+        page: Page,
+        ruleset_key: str | None = None,
+        gene_symbol: str | None = None,
+        usable_only: bool = False,
+    ) -> Paged[RulesetRecord]: ...
+
+
+class ClassificationEvaluationRepository(Protocol):
+    """Requested automated evaluations and the suggestions they produced.
+
+    ``add_classification`` never overwrites: a newer suggestion supersedes the
+    previous one, and the earlier row stays readable exactly as the engine
+    produced it.
+    """
+
+    async def add(
+        self, evaluation: ClassificationEvaluationRecord
+    ) -> ClassificationEvaluationRecord: ...
+    async def get(self, evaluation_id: str) -> ClassificationEvaluationRecord | None: ...
+    async def get_by_idempotency_key(
+        self, *, workspace_id: str, idempotency_key: str
+    ) -> ClassificationEvaluationRecord | None: ...
+    async def save(
+        self, evaluation: ClassificationEvaluationRecord
+    ) -> ClassificationEvaluationRecord: ...
+    async def list_evaluations(
+        self,
+        *,
+        page: Page,
+        workspace_ids: frozenset[str] | None = None,
+        variant_id: str | None = None,
+        ruleset_id: str | None = None,
+        project_id: str | None = None,
+        state: ClassificationEvaluationState | None = None,
+    ) -> Paged[ClassificationEvaluationRecord]: ...
+    async def add_classification(
+        self, classification: AutomatedClassificationRecord
+    ) -> AutomatedClassificationRecord: ...
+    async def get_classification(
+        self, classification_id: str
+    ) -> AutomatedClassificationRecord | None: ...
+    async def mark_superseded(
+        self, *, classification_id: str, superseded_by_id: str
+    ) -> None: ...
+    async def current_classification(
+        self, *, variant_id: str, ruleset_id: str, condition_identifier: str | None = None
+    ) -> AutomatedClassificationRecord | None: ...
+    async def classification_history(
+        self,
+        *,
+        variant_id: str,
+        workspace_ids: frozenset[str] | None = None,
+        ruleset_id: str | None = None,
+        limit: int = 100,
+    ) -> tuple[AutomatedClassificationRecord, ...]: ...
+    async def add_criterion_evaluations(
+        self, evaluations: tuple[CriterionEvaluationRecord, ...]
+    ) -> None: ...
+    async def list_criterion_evaluations(
+        self, *, classification_evaluation_id: str
+    ) -> tuple[CriterionEvaluationRecord, ...]: ...
+
+
+class RulesetBenchmarkRepository(Protocol):
+    """Controlled benchmark cases and the runs executed against them."""
+
+    async def add_case(self, case: BenchmarkCaseRecord) -> BenchmarkCaseRecord: ...
+    async def get_case(self, case_id: str) -> BenchmarkCaseRecord | None: ...
+    async def get_case_by_key(
+        self, *, ruleset_id: str, case_key: str
+    ) -> BenchmarkCaseRecord | None: ...
+    async def list_cases(
+        self,
+        *,
+        ruleset_id: str,
+        validation_kind: BenchmarkValidationKind | None = None,
+        active_only: bool = True,
+    ) -> tuple[BenchmarkCaseRecord, ...]: ...
+    async def add_run(self, run: BenchmarkRunRecord) -> BenchmarkRunRecord: ...
+    async def get_run(self, run_id: str) -> BenchmarkRunRecord | None: ...
+    async def list_runs(
+        self, *, ruleset_id: str, page: Page
+    ) -> Paged[BenchmarkRunRecord]: ...
+
+
+class InterpretationRepository(Protocol):
+    """Interpretations and their immutable versions.
+
+    ``add_version`` only ever appends. There is no ``update_version``: a correction
+    is a new version that names the one it supersedes, so a report citing an earlier
+    version keeps meaning what it meant.
+    """
+
+    async def add(self, record: InterpretationRecord) -> InterpretationRecord: ...
+    async def get(self, interpretation_id: str) -> InterpretationRecord | None: ...
+    async def find_for_context(
+        self,
+        *,
+        project_id: str,
+        variant_id: str,
+        condition_identifier: str | None = None,
+        sample_id: str | None = None,
+    ) -> InterpretationRecord | None: ...
+    async def save(self, record: InterpretationRecord) -> InterpretationRecord: ...
+    async def list_interpretations(
+        self,
+        *,
+        page: Page,
+        workspace_ids: frozenset[str] | None = None,
+        project_id: str | None = None,
+        variant_id: str | None = None,
+        state: InterpretationState | None = None,
+        review_state: ReviewState | None = None,
+        reviewer_user_id: str | None = None,
+    ) -> Paged[InterpretationRecord]: ...
+    async def add_version(
+        self, version: InterpretationVersionRecord
+    ) -> InterpretationVersionRecord: ...
+    async def get_version(
+        self, version_id: str
+    ) -> InterpretationVersionRecord | None: ...
+    async def finalize_version(
+        self, version: InterpretationVersionRecord
+    ) -> InterpretationVersionRecord: ...
+    async def list_versions(
+        self, *, interpretation_id: str, limit: int = 100
+    ) -> tuple[InterpretationVersionRecord, ...]: ...
+
+
+class ReviewRepository(Protocol):
+    """Reviewer assignments and the append-only record of their decisions."""
+
+    async def add_assignment(
+        self, assignment: ReviewAssignmentRecord
+    ) -> ReviewAssignmentRecord: ...
+    async def get_assignment(
+        self, assignment_id: str
+    ) -> ReviewAssignmentRecord | None: ...
+    async def find_assignment(
+        self, *, interpretation_id: str, reviewer_user_id: str, review_round: int
+    ) -> ReviewAssignmentRecord | None: ...
+    async def save_assignment(
+        self, assignment: ReviewAssignmentRecord
+    ) -> ReviewAssignmentRecord: ...
+    async def list_assignments(
+        self, *, interpretation_id: str, review_round: int | None = None
+    ) -> tuple[ReviewAssignmentRecord, ...]: ...
+    async def add_decision(
+        self, decision: ReviewDecisionRecord
+    ) -> ReviewDecisionRecord: ...
+    async def get_decision(self, decision_id: str) -> ReviewDecisionRecord | None: ...
+    async def list_decisions(
+        self,
+        *,
+        interpretation_id: str,
+        review_round: int | None = None,
+        interpretation_version_id: str | None = None,
+    ) -> tuple[ReviewDecisionRecord, ...]: ...
+
+
 @runtime_checkable
 class TransactionalRepositories(Protocol):
     """Every repository bound to one transaction.
@@ -1262,6 +1556,14 @@ class TransactionalRepositories(Protocol):
     annotation_profiles: AnnotationProfileRepository
     annotation_runs: AnnotationRunRepository
     annotation_results: AnnotationResultRepository
+    evidence_sources: EvidenceSourceRepository
+    evidence_records: EvidenceRecordRepository
+    evidence_ingestions: EvidenceIngestionRepository
+    interpretations: InterpretationRepository
+    reviews: ReviewRepository
+    rulesets: RulesetRepository
+    classification_evaluations: ClassificationEvaluationRepository
+    ruleset_benchmarks: RulesetBenchmarkRepository
     jobs: JobRepository
     audit: AuditRepository
     security_events: SecurityEventRepository
@@ -1282,6 +1584,7 @@ __all__ = [
     "AnalysisRepository",
     "AuditRecord",
     "AuditRepository",
+    "ClassificationEvaluationRepository",
     "ColumnMappingRepository",
     "ComputeNodeRepository",
     "CredentialTokenRepository",
@@ -1289,9 +1592,13 @@ __all__ = [
     "DatasetRepository",
     "DatasetVersionRepository",
     "DatasetVersionVariantRepository",
+    "EvidenceIngestionRepository",
+    "EvidenceRecordRepository",
+    "EvidenceSourceRepository",
     "FileArtifactRepository",
     "GeneTranscriptRepository",
     "ImportSessionRepository",
+    "InterpretationRepository",
     "JobRepository",
     "NotificationRepository",
     "OrganizationInvitationRepository",
@@ -1306,6 +1613,9 @@ __all__ = [
     "ResultArtifactRepository",
     "ResultIngestionRepository",
     "ResultSetRepository",
+    "ReviewRepository",
+    "RulesetBenchmarkRepository",
+    "RulesetRepository",
     "SampleRepository",
     "ScheduleRepository",
     "ScientificExecutionRepository",

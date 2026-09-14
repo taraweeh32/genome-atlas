@@ -26,16 +26,20 @@ from sqlalchemy import (
     String,
     Text,
     UniqueConstraint,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
     Classification,
+    ClassificationDecisionRole,
     CriterionDirection,
     CriterionStrength,
     DataOrigin,
     DeletionState,
+    EvidenceApplicability,
     EvidenceCategory,
+    EvidenceRecordState,
     EvidenceStrength,
     InterpretationState,
     ReviewState,
@@ -64,8 +68,12 @@ class EvidenceItem(Base, TimestampMixin, ConcurrencyMixin):
         state_check("strength", EvidenceStrength, "strength_valid"),
         state_check("direction", CriterionDirection, "direction_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
+        state_check("applicability", EvidenceApplicability, "applicability_valid"),
+        state_check("state", EvidenceRecordState, "state_valid"),
         Index("ix_evidence_items_variant_id", "variant_id"),
         Index("ix_evidence_items_workspace_id_project_id", "workspace_id", "project_id"),
+        Index("ix_evidence_items_source_key_source_version", "source_key", "source_version"),
+        Index("ix_evidence_items_ingestion_batch_id", "ingestion_batch_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -98,6 +106,46 @@ class EvidenceItem(Base, TimestampMixin, ConcurrencyMixin):
     recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     payload: Mapped[dict | None] = json_column()
 
+    # ---- Package 9: source identity, context, lifecycle and versioning ----
+    #: Source identity as strings as well as by foreign key, so a record stays
+    #: readable and attributable even if the registry row is later retired.
+    source_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: The source's own identifier for this statement (accession, PMID, record id).
+    source_identifier: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    source_released_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    #: Retrieval/import time, which is not the source's release time.
+    retrieved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    gene_symbol: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    gene_identifier: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    transcript_identifier: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    condition_identifier: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    condition_term: Mapped[str | None] = mapped_column(Text, nullable=True)
+    inheritance: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: Stated by the source or a curator; never inferred by the platform.
+    applicability: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=EvidenceApplicability.UNDETERMINED.value
+    )
+    state: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=EvidenceRecordState.RECORDED.value
+    )
+    #: How the value was obtained (assay, curation protocol, computation name).
+    method: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    #: Stable key for "the same statement" within one source across releases.
+    evidence_key: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    version_number: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    #: A newer version links back; the older row is never rewritten in content.
+    supersedes_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    superseded_by_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ingestion_batch_id: Mapped[str | None] = fk_column(
+        "app.evidence_ingestion_batches.id", nullable=True
+    )
+    #: Digest of the claim as delivered: the unit of duplicate detection.
+    payload_digest: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    provenance: Mapped[dict | None] = json_column()
+
 
 class CriterionEvaluation(Base, TimestampMixin, ConcurrencyMixin):
     """Evaluation of one ruleset criterion for a variant in a given context."""
@@ -110,6 +158,8 @@ class CriterionEvaluation(Base, TimestampMixin, ConcurrencyMixin):
         Index("ix_criterion_evaluations_variant_id", "variant_id"),
         Index("ix_criterion_evaluations_interpretation_id", "interpretation_id"),
         Index("ix_criterion_evaluations_criterion_key", "criterion_key"),
+        Index("ix_criterion_evaluations_classification_evaluation_id",
+              "classification_evaluation_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -120,6 +170,16 @@ class CriterionEvaluation(Base, TimestampMixin, ConcurrencyMixin):
     ruleset_resource_id: Mapped[str] = fk_column("app.scientific_resources.id")
     ruleset_version: Mapped[str] = mapped_column(String(128), nullable=False)
     criterion_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    #: Package 10: the registered ruleset version and the automated evaluation this
+    #: criterion came out of. Both nullable, because a human evaluation is recorded
+    #: without any automated evaluation behind it.
+    ruleset_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    classification_evaluation_id: Mapped[str | None] = mapped_column(
+        String(64), nullable=True
+    )
+    #: Criterion family, denormalized from the ruleset version so a stored
+    #: evaluation stays readable on its own.
+    family: Mapped[str | None] = mapped_column(String(16), nullable=True)
     applied: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     strength: Mapped[str] = mapped_column(
         String(64), nullable=False, server_default=CriterionStrength.NOT_APPLICABLE.value
@@ -168,8 +228,15 @@ class Interpretation(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
     __tablename__ = "interpretations"
     __table_args__ = (
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
-        UniqueConstraint("project_id", "variant_id", "condition_identifier",
-                         name="uq_interpretations_project_id_variant_id_condition_identifier"),
+        # One *open* decision context per variant and condition. A superseded or
+        # withdrawn record must stay in place — a reclassification opens a new
+        # context for the same question and the old one remains citable.
+        Index(
+            "uq_interpretations_open_context",
+            "project_id", "variant_id", "condition_identifier",
+            unique=True,
+            postgresql_where=text("state NOT IN ('superseded', 'withdrawn')"),
+        ),
         state_check("state", InterpretationState, "state_valid"),
         state_check("review_state", ReviewState, "review_state_valid"),
         Index("ix_interpretations_workspace_id_state", "workspace_id", "state"),
@@ -206,6 +273,7 @@ class InterpretationVersion(Base, TimestampMixin):
                          name="uq_interpretation_versions_interpretation_id_version_number"),
         state_check("classification", Classification, "classification_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
+        state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
         Index("ix_interpretation_versions_interpretation_id", "interpretation_id"),
     )
 
@@ -244,6 +312,28 @@ class InterpretationVersion(Base, TimestampMixin):
     supersedes_version_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     reclassification_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # ---- Package 11: which decision this version *is*, and what it came from ----
+    #: An automated suggestion, a reviewer decision, an adjudicated decision and a
+    #: finalized interpretation are four different things and stay distinguishable.
+    decision_role: Mapped[str] = mapped_column(
+        String(64), nullable=False,
+        server_default=ClassificationDecisionRole.REVIEWER_DECISION.value,
+    )
+    #: The registered ruleset version and the automated evaluation this decision
+    #: context was built on. Nullable: a version may be authored without one.
+    ruleset_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    classification_evaluation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    automated_classification_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: Review round this version closed, so successive rounds stay separable.
+    review_round: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    adjudicated_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
+    adjudicated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    #: Reviewer decisions that disagreed, kept for the record even after
+    #: adjudication chose one of them.
+    disagreement_summary: Mapped[dict | None] = json_column()
+
 
 class ReviewAssignment(Base, TimestampMixin, ConcurrencyMixin):
     """Assignment of an interpretation to a reviewer or adjudicator."""
@@ -271,6 +361,9 @@ class ReviewAssignment(Base, TimestampMixin, ConcurrencyMixin):
     assigned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     due_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    #: Package 11: assignments are per review round, so a re-review after an
+    #: adjudication does not overwrite the previous round's assignment history.
+    review_round: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
 
 
 class ReviewDecision(Base, TimestampMixin):
@@ -279,6 +372,7 @@ class ReviewDecision(Base, TimestampMixin):
     __tablename__ = "review_decisions"
     __table_args__ = (
         state_check("decision", ReviewDecisionVocabulary, "decision_valid"),
+        state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
         Index("ix_review_decisions_interpretation_version_id", "interpretation_version_id"),
         Index("ix_review_decisions_reviewer_user_id", "reviewer_user_id"),
     )
@@ -301,3 +395,17 @@ class ReviewDecision(Base, TimestampMixin):
     is_adjudication: Mapped[bool] = mapped_column(Boolean, nullable=False,
                                                   server_default="false")
     details: Mapped[dict | None] = json_column()
+
+    # ---- Package 11: attribution, rounds and retained disagreement ----
+    #: What this decision is. A reviewer decision is never an adjudicated one.
+    decision_role: Mapped[str] = mapped_column(
+        String(64), nullable=False,
+        server_default=ClassificationDecisionRole.REVIEWER_DECISION.value,
+    )
+    review_round: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    #: The classification standing when the reviewer acted, so a disagreement is
+    #: readable without replaying the whole history.
+    previous_classification: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    #: An adjudication names the reviewer decisions it resolved; it never deletes
+    #: them, and the losing decision keeps its own row unchanged.
+    resolves_decision_id: Mapped[str | None] = mapped_column(String(64), nullable=True)

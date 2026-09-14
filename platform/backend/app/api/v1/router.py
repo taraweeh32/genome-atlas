@@ -15,11 +15,14 @@ from app.api.v1.routes import (
     annotation,
     authentication,
     datasets,
+    evidence,
     identity,
+    interpretation,
     organizations,
     projects,
     queries,
     results,
+    review,
     scientific,
     system,
     workspaces,
@@ -66,3 +69,11 @@ api_v1_router.include_router(annotation.runs_router)
 api_v1_router.include_router(annotation.results_router)
 api_v1_router.include_router(annotation.admin_resources_router)
 api_v1_router.include_router(annotation.admin_profiles_router)
+api_v1_router.include_router(review.router)
+api_v1_router.include_router(interpretation.rulesets_router)
+api_v1_router.include_router(interpretation.evaluations_router)
+api_v1_router.include_router(interpretation.admin_rulesets_router)
+api_v1_router.include_router(evidence.sources_router)
+api_v1_router.include_router(evidence.records_router)
+api_v1_router.include_router(evidence.ingestion_router)
+api_v1_router.include_router(evidence.admin_sources_router)

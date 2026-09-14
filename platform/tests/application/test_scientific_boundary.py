@@ -147,6 +147,26 @@ VOCABULARY_ONLY_PATHS = (
     # layer combines already-stored values using weights and orderings supplied
     # entirely by the configuration author. The derivation guard below applies.
     "domain/query",
+    # Package 9's evidence *vocabulary*. Evidence records name the direction a
+    # source stated — a source calling a variant pathogenic is quoted, not
+    # believed — and conflict detection compares two stated directions without
+    # deciding which is right. Nothing here derives a direction, a strength or a
+    # classification; the derivation guard below holds that line.
+    "domain/evidence",
+    # Package 10's interpretation *vocabulary*. These modules name the guideline
+    # framework, its criteria families and the classification terms the platform
+    # stores, and derive none of them: a ruleset version's criteria and combination
+    # rules are stored data, validation checks attribution and shape only, and the
+    # suggested classification arrives from the independently deployable rules
+    # engine across the versioned scientific contract. The derivation guard below
+    # holds that line.
+    "domain/interpretation",
+    "application/use_cases/interpretation",
+    "workers/interpretation_handlers.py",
+    "infrastructure/persistence/repositories/interpretation_rulesets.py",
+    "api/v1/schemas/interpretation.py",
+    "api/v1/interpretation_mapping.py",
+    "api/v1/routes/interpretation.py",
 )
 
 #: Constructs that would mean a scientific decision is being *derived* here.

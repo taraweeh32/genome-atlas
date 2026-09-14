@@ -330,6 +330,11 @@ class JobKind(StrEnum):
     ANNOTATION_EXECUTION = "annotation_execution"
     #: Validates and stores an annotation payload the subsystem produced.
     ANNOTATION_INGESTION = "annotation_ingestion"
+    #: Submits an automated criterion/classification evaluation to the scientific
+    #: interpretation component and tracks it.
+    CLASSIFICATION_EVALUATION = "classification_evaluation"
+    #: Validates and stores the structured evaluation the component returned.
+    CLASSIFICATION_INGESTION = "classification_ingestion"
 
 
 class JobQueue(StrEnum):
@@ -1095,3 +1100,168 @@ class AnnotationResultState(StrEnum):
     AVAILABLE = "available"
     REJECTED = "rejected"
     SUPERSEDED = "superseded"
+
+
+# --------------------------------------------------------------------------- #
+# Evidence resources and evidence records (Package 9)                         #
+# --------------------------------------------------------------------------- #
+
+
+class EvidenceSourceCategory(StrEnum):
+    """The role a registered evidence source plays.
+
+    A category describes what kind of evidence the source supplies, never a
+    specific vendor or database: no external resource is privileged, and a new
+    source is a registry row rather than a code change.
+    """
+
+    CLINICAL_DATABASE = "clinical_database"
+    LITERATURE = "literature"
+    POPULATION = "population"
+    FUNCTIONAL = "functional"
+    SEGREGATION = "segregation"
+    COMPUTATIONAL = "computational"
+    CURATED_KNOWLEDGE = "curated_knowledge"
+    INTERNAL_CURATION = "internal_curation"
+    OTHER = "other"
+
+
+class EvidenceRecordState(StrEnum):
+    """Lifecycle of one stored evidence record.
+
+    ``SUPERSEDED`` marks a record that a newer version *from the same source and
+    the same evidence key* replaced for reading purposes; the superseded row stays
+    readable so a historical interpretation remains reproducible. Evidence from a
+    *different* source is never superseded — disagreement between sources is
+    preserved, not resolved.
+    """
+
+    RECORDED = "recorded"
+    AVAILABLE = "available"
+    SUPERSEDED = "superseded"
+    #: Withdrawn by the source (e.g. a retracted assertion). Kept, never deleted.
+    WITHDRAWN = "withdrawn"
+    #: Refused at ingestion; retained with its findings so it stays explainable.
+    REJECTED = "rejected"
+
+
+class EvidenceApplicability(StrEnum):
+    """Whether an evidence item applies to the context it is read in.
+
+    Stated by the source or by a human curator, never inferred by the platform:
+    applicability is a scientific judgement.
+    """
+
+    APPLICABLE = "applicable"
+    CONTEXT_SPECIFIC = "context_specific"
+    NOT_APPLICABLE = "not_applicable"
+    UNDETERMINED = "undetermined"
+
+
+class EvidenceIngestionState(StrEnum):
+    """Lifecycle of one evidence ingestion batch."""
+
+    REQUESTED = "requested"
+    VALIDATING = "validating"
+    ACCEPTED = "accepted"
+    PARTIALLY_ACCEPTED = "partially_accepted"
+    REJECTED = "rejected"
+    FAILED = "failed"
+
+
+class EvidenceConflictKind(StrEnum):
+    """How two retained evidence records disagree.
+
+    Computed on read from stored rows; never written back over the evidence, so
+    the platform reports disagreement without deciding it.
+    """
+
+    DIRECTION = "direction"
+    STRENGTH = "strength"
+    APPLICABILITY = "applicability"
+
+
+# --------------------------------------------------------------------------- #
+# Rulesets, criterion evaluation and automated classification                 #
+# --------------------------------------------------------------------------- #
+
+
+class RulesetSpecificationScope(StrEnum):
+    """How widely a ruleset version applies.
+
+    The framework is never assumed to be one universal table: a gene- or
+    disease-specific specification (a ClinGen VCEP specification, for example) is
+    a first-class scope rather than a special case bolted on later.
+    """
+
+    GENERAL = "general"
+    GENE_SPECIFIC = "gene_specific"
+    DISEASE_SPECIFIC = "disease_specific"
+    GENE_DISEASE_SPECIFIC = "gene_disease_specific"
+    LABORATORY_SPECIFIC = "laboratory_specific"
+
+
+class RulesetCombinationStrategy(StrEnum):
+    """How a ruleset states that criteria combine into a classification.
+
+    The application stores the declared strategy and the declared rules; the
+    scientific interpretation component applies them. Naming Bayesian and
+    point-based strategies here is what keeps a future validated method from
+    requiring a platform redesign.
+    """
+
+    CRITERIA_COMBINATION = "criteria_combination"
+    POINT_BASED = "point_based"
+    BAYESIAN = "bayesian"
+    EXTERNAL_SPECIFICATION = "external_specification"
+
+
+class ClassificationEvaluationState(StrEnum):
+    """Lifecycle of one requested automated evaluation.
+
+    Separate from ``JobState`` (operational), ``ScientificExecutionState`` (what
+    the compute subsystem reported) and ``InterpretationState`` (the human
+    decision context). An automated evaluation is never a human decision.
+    """
+
+    REQUESTED = "requested"
+    SUBMITTED = "submitted"
+    RUNNING = "running"
+    INGESTING = "ingesting"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class ClassificationDecisionRole(StrEnum):
+    """What a stored classification *is*, so it can never be mistaken for more.
+
+    An automated suggestion, a reviewer's decision, an adjudicated decision and a
+    finalized interpretation are four different things. Package 10 only ever
+    writes ``automated_suggestion``.
+    """
+
+    AUTOMATED_SUGGESTION = "automated_suggestion"
+    REVIEWER_DECISION = "reviewer_decision"
+    ADJUDICATED_DECISION = "adjudicated_decision"
+    FINAL_INTERPRETATION = "final_interpretation"
+
+
+class BenchmarkValidationKind(StrEnum):
+    """What a benchmark case is actually able to validate.
+
+    ``CONTRACT`` cases check determinism and structure only. ``SCIENTIFIC_ACCURACY``
+    is reserved for cases whose expected outputs come from a declared external
+    reference corpus; the platform never invents one, and never reports accuracy
+    for a contract case.
+    """
+
+    CONTRACT = "contract"
+    SCIENTIFIC_ACCURACY = "scientific_accuracy"
+
+
+class BenchmarkCaseOutcome(StrEnum):
+    MATCHED = "matched"
+    MISMATCHED = "mismatched"
+    NOT_EVALUATED = "not_evaluated"
+

@@ -42,6 +42,15 @@ _PLATFORM_ADMINISTRATOR = frozenset(
         # everyone runs under.
         Permission.PLATFORM_ANNOTATION_RESOURCE_ADMINISTER,
         Permission.PLATFORM_ANNOTATION_READ,
+        # Governance of the evidence source registry, and cross-tenant evidence
+        # oversight. Storing evidence is never classifying it.
+        Permission.PLATFORM_EVIDENCE_RESOURCE_ADMINISTER,
+        Permission.PLATFORM_EVIDENCE_READ,
+        # Governance of the interpretation ruleset registry, and cross-tenant
+        # oversight of automated evaluations. Governing a ruleset is not making a
+        # clinical decision with it.
+        Permission.PLATFORM_RULESET_ADMINISTER,
+        Permission.PLATFORM_CLASSIFICATION_READ,
         Permission.PLATFORM_FILTER_FIELD_ADMINISTER,
         Permission.PLATFORM_RANKING_METHOD_ADMINISTER,
         Permission.PLATFORM_QUERY_PRESET_ADMINISTER,
@@ -59,6 +68,7 @@ _PLATFORM_OPERATOR = frozenset(
         Permission.PLATFORM_USER_READ,
         Permission.PLATFORM_AUDIT_READ,
         # An operator watches the control plane; it does not steer it.
+        Permission.PLATFORM_CLASSIFICATION_READ,
         Permission.PLATFORM_JOB_READ,
         Permission.PLATFORM_COMPUTE_READ,
         # Operational visibility of the result surface, without the authority to
@@ -66,6 +76,8 @@ _PLATFORM_OPERATOR = frozenset(
         Permission.PLATFORM_RESULT_READ,
         # Visibility of what was queried, without authority over the vocabulary.
         Permission.PLATFORM_QUERY_READ,
+        # Oversight of evidence ingestion, without governance of the registry.
+        Permission.PLATFORM_EVIDENCE_READ,
     }
 )
 
@@ -107,6 +119,14 @@ _ORGANIZATION_MEMBER = _ORGANIZATION_GUEST | {
     Permission.WORKSPACE_QUERY_EXECUTE,
     Permission.WORKSPACE_SAVED_VIEW_MANAGE,
     Permission.ORGANIZATION_QUERY_PRESET_READ,
+    Permission.WORKSPACE_ANNOTATION_READ,
+    Permission.WORKSPACE_ANNOTATION_EXECUTE,
+    Permission.WORKSPACE_EVIDENCE_READ,
+    Permission.WORKSPACE_EVIDENCE_CURATE,
+    Permission.WORKSPACE_CLASSIFICATION_READ,
+    Permission.WORKSPACE_CLASSIFICATION_EXECUTE,
+    Permission.WORKSPACE_INTERPRETATION_READ,
+    Permission.WORKSPACE_INTERPRETATION_AUTHOR,
 }
 _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_UPDATE,
@@ -186,6 +206,15 @@ _PROJECT_VIEWER = frozenset(
         # Annotation status and provenance are part of reading the project's
         # scientific data; requesting a run is an analyst capability below.
         Permission.PROJECT_ANNOTATION_READ,
+        # Evidence and its provenance are part of reading the project's
+        # scientific record; recording evidence is a separate grant.
+        Permission.PROJECT_EVIDENCE_READ,
+        # An automated suggestion is part of the project's scientific record;
+        # reading one is never deciding with it.
+        Permission.PROJECT_CLASSIFICATION_READ,
+        # The interpretation record, its review history and its disagreements are
+        # part of reading the project's scientific record. Acting on it is not.
+        Permission.PROJECT_INTERPRETATION_READ,
     }
 )
 #: An analyst produces and imports data; deletion stays with project management.
@@ -203,6 +232,8 @@ _PROJECT_ANALYST = _PROJECT_VIEWER | {
     Permission.PROJECT_RESULT_INGEST,
     Permission.PROJECT_RESULT_DOWNLOAD,
     Permission.PROJECT_ANNOTATION_EXECUTE,
+    Permission.PROJECT_EVIDENCE_CURATE,
+    Permission.PROJECT_CLASSIFICATION_EXECUTE,
 }
 #: A reviewer is a scientific/clinical responsibility, not an administrator: it
 #: reviews and finalizes, it does not manage membership.
@@ -210,7 +241,13 @@ _PROJECT_REVIEWER = _PROJECT_VIEWER | {
     Permission.PROJECT_DATA_DOWNLOAD,
     Permission.PROJECT_RESULT_DOWNLOAD,
     Permission.PROJECT_INTERPRETATION_REVIEW,
+    Permission.PROJECT_INTERPRETATION_AUTHOR,
+    Permission.PROJECT_INTERPRETATION_FINALIZE,
     Permission.PROJECT_REPORT_FINALIZE,
+    # A reviewer may record the evidence their review rests on, and may ask the
+    # rules engine for a suggestion. The suggestion never becomes the decision.
+    Permission.PROJECT_EVIDENCE_CURATE,
+    Permission.PROJECT_CLASSIFICATION_EXECUTE,
 }
 _PROJECT_MANAGER = _PROJECT_ANALYST | {
     Permission.PROJECT_DATA_DELETE,
@@ -222,9 +259,25 @@ _PROJECT_MANAGER = _PROJECT_ANALYST | {
     Permission.PROJECT_MEMBER_ROLE_CHANGE,
 }
 
+#: Adjudication is an owner/manager responsibility precisely because it must not
+#: be exercisable by one of the disagreeing reviewers on the strength of being a
+#: reviewer. Assigning it to a reviewer is a deliberate project decision.
+_PROJECT_ADJUDICATOR = frozenset(
+    {
+        Permission.PROJECT_INTERPRETATION_READ,
+        # Opening a decision context and assigning reviewers is coordination, not
+        # deciding: an owner/manager may do both without holding a reviewer's vote.
+        Permission.PROJECT_INTERPRETATION_AUTHOR,
+        Permission.PROJECT_INTERPRETATION_ADJUDICATE,
+        Permission.PROJECT_INTERPRETATION_FINALIZE,
+    }
+)
+
 PROJECT_ROLE_PERMISSIONS: Mapping[ProjectRole, frozenset[Permission]] = {
-    ProjectRole.OWNER: _PROJECT_MANAGER | {Permission.PROJECT_OWNERSHIP_TRANSFER},
-    ProjectRole.MANAGER: _PROJECT_MANAGER,
+    ProjectRole.OWNER: _PROJECT_MANAGER
+    | _PROJECT_ADJUDICATOR
+    | {Permission.PROJECT_OWNERSHIP_TRANSFER},
+    ProjectRole.MANAGER: _PROJECT_MANAGER | _PROJECT_ADJUDICATOR,
     ProjectRole.ANALYST: _PROJECT_ANALYST,
     ProjectRole.REVIEWER: _PROJECT_REVIEWER,
     ProjectRole.VIEWER: _PROJECT_VIEWER,
@@ -261,6 +314,12 @@ PERSONAL_WORKSPACE_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.WORKSPACE_SAVED_VIEW_MANAGE,
         Permission.WORKSPACE_ANNOTATION_READ,
         Permission.WORKSPACE_ANNOTATION_EXECUTE,
+        Permission.WORKSPACE_EVIDENCE_READ,
+        Permission.WORKSPACE_EVIDENCE_CURATE,
+        Permission.WORKSPACE_CLASSIFICATION_READ,
+        Permission.WORKSPACE_CLASSIFICATION_EXECUTE,
+        Permission.WORKSPACE_INTERPRETATION_READ,
+        Permission.WORKSPACE_INTERPRETATION_AUTHOR,
     }
 )
 
