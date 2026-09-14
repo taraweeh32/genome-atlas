@@ -39,8 +39,7 @@ from app.domain.value_objects.enums import PlatformRole, QueryDefinitionState, Q
 from app.application.repositories import Page
 from tests.support.actors import actor_for, create_account, grant_platform_role
 from tests.query.support import condition, group, query_services
-
-from tests.support.memory import build_harness
+from tests.support.services import build_harness
 
 async def build(tmp_path):
     harness = build_harness()
