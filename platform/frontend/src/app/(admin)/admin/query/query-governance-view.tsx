@@ -100,7 +100,7 @@ export function QueryGovernanceView() {
             }
           />
         ) : (
-          <div className={styles.scroll}>
+          <div className={queryStyles.scrollArea}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -154,7 +154,7 @@ export function QueryGovernanceView() {
             }
           />
         ) : (
-          <div className={styles.scroll}>
+          <div className={queryStyles.scrollArea}>
             <table className={styles.table}>
               <thead>
                 <tr>
@@ -271,7 +271,7 @@ function PresetGovernance({
           description="Platform and organization presets appear here once they are created."
         />
       ) : (
-        <div className={styles.scroll}>
+        <div className={queryStyles.scrollArea}>
           <table className={styles.table}>
             <thead>
               <tr>

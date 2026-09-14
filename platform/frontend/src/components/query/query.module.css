@@ -169,3 +169,7 @@
   grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   gap: var(--space-1) var(--space-3);
 }
+
+.scrollArea {
+  overflow-x: auto;
+}
