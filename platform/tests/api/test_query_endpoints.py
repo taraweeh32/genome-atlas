@@ -23,12 +23,6 @@ from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
-
-from app.application.use_cases.describe_scientific_capabilities import (
-    DescribeScientificCapabilities,
-)
-from app.application.use_cases.get_readiness import GetReadiness
-from app.domain.value_objects.enums import PlatformRole
 from tests.query.support import (
     condition,
     group,
@@ -38,6 +32,12 @@ from tests.query.support import (
 )
 from tests.support.actors import create_account, grant_platform_role
 from tests.support.services import STRONG_PASSWORD, Harness, build_harness
+
+from app.application.use_cases.describe_scientific_capabilities import (
+    DescribeScientificCapabilities,
+)
+from app.application.use_cases.get_readiness import GetReadiness
+from app.domain.value_objects.enums import PlatformRole
 
 
 class StubContainer:
@@ -57,22 +57,22 @@ class StubContainer:
         self.sessions = harness.sessions
         self.authorization = harness.authorization
 
-    def identity_services(self):  # noqa: ANN201
+    def identity_services(self):
         return self._harness.identity
 
-    def tenancy_services(self):  # noqa: ANN201
+    def tenancy_services(self):
         return self._harness.tenancy
 
-    def data_services(self):  # noqa: ANN201
+    def data_services(self):
         return self._harness.data
 
-    def analysis_services(self):  # noqa: ANN201
+    def analysis_services(self):
         return self._harness.analysis
 
-    def result_services(self):  # noqa: ANN201
+    def result_services(self):
         return self._harness.results
 
-    def query_services(self):  # noqa: ANN201
+    def query_services(self):
         return self._queries
 
     def get_readiness(self) -> GetReadiness:
@@ -395,12 +395,13 @@ class TestSavedFilterTransport:
     ) -> None:
         owner = await create_account(harness, "filter-private-owner@example.org")
         owner_workspace = await workspace_of(harness, owner)
+        from tests.support.actors import actor_for
+
         from app.application.use_cases.query.definitions import (
             CreateConfigurationCommand,
             SavedFilterService,
         )
         from app.domain.value_objects.enums import QueryScope
-        from tests.support.actors import actor_for
 
         services = StubContainer(harness, Path("/tmp")).query_services()
         view = await SavedFilterService(services).create(

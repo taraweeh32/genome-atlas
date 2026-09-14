@@ -65,6 +65,7 @@ from app.api.v1.schemas.query import (
     VariantQueryPayload,
     VariantQueryResponse,
 )
+from app.application.services.recorder import ActivityRecorder
 from app.application.use_cases.query import (
     DescribeFilterFields,
     ExecuteVariantQuery,
@@ -77,6 +78,11 @@ from app.application.use_cases.query import (
     SearchFieldValues,
     ValidateFilterExpression,
 )
+from app.application.use_cases.query.deferred import (
+    DEFAULT_MAX_MATERIALIZED_ROWS,
+    DeferVariantQuery,
+    DeferVariantQueryCommand,
+)
 from app.application.use_cases.query.definitions import (
     AddVersionCommand,
     ConfigurationService,
@@ -86,11 +92,6 @@ from app.application.use_cases.query.definitions import (
     ListConfigurationsQuery,
     UpdateMetadataCommand,
     ValidateFilterQuery,
-)
-from app.application.use_cases.query.deferred import (
-    DEFAULT_MAX_MATERIALIZED_ROWS,
-    DeferVariantQuery,
-    DeferVariantQueryCommand,
 )
 from app.application.use_cases.query.execution import (
     FilterSelection,
@@ -108,7 +109,6 @@ from app.application.use_cases.query.views import (
     SavedViewQuery,
     UpdateSavedViewCommand,
 )
-from app.application.services.recorder import ActivityRecorder
 from app.domain.authorization.permissions import Permission
 from app.domain.errors import NotFoundError
 from app.domain.query.fields import FilterFieldCategory
