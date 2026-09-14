@@ -17,6 +17,7 @@ from app.api.v1.routes import (
     identity,
     organizations,
     projects,
+    queries,
     results,
     scientific,
     system,
@@ -48,3 +49,12 @@ api_v1_router.include_router(results.router)
 api_v1_router.include_router(results.variants_router)
 api_v1_router.include_router(results.platform_results_router)
 api_v1_router.include_router(administration.router)
+api_v1_router.include_router(queries.filter_fields_router)
+api_v1_router.include_router(queries.filters_router)
+api_v1_router.include_router(queries.filter_presets_router)
+api_v1_router.include_router(queries.ranking_methods_router)
+api_v1_router.include_router(queries.rankings_router)
+api_v1_router.include_router(queries.ranking_presets_router)
+api_v1_router.include_router(queries.variant_query_router)
+api_v1_router.include_router(queries.saved_views_router)
+api_v1_router.include_router(queries.query_admin_router)
