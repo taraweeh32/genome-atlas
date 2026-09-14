@@ -36,14 +36,11 @@ from app.domain.errors import (
     ValidationError,
 )
 from app.domain.value_objects.enums import PlatformRole, QueryDefinitionState, QueryScope
-from app.domain.value_objects.pagination import Page
+from app.application.repositories import Page
 from tests.support.actors import actor_for, create_account, grant_platform_role
 from tests.query.support import condition, group, query_services
 
 from tests.support.memory import build_harness
-
-pytestmark = pytest.mark.anyio if False else ()
-
 
 async def build(tmp_path):
     harness = build_harness()
@@ -149,7 +146,7 @@ class TestPersonalIsolation:
             ListConfigurationsQuery(
                 actor=await actor_for(harness, outsider),
                 request=harness.request,
-                page=Page(limit=20, offset=0),
+                page=Page(number=1, size=20),
             )
         )
         assert all(item.id != saved.definition.id for item in listing.items)
@@ -342,7 +339,7 @@ class TestRankingConfigurations:
             ListConfigurationsQuery(
                 actor=await actor_for(harness, user_id),
                 request=harness.request,
-                page=Page(limit=20, offset=0),
+                page=Page(number=1, size=20),
             )
         )
         assert all(item.id != ranking.definition.id for item in filters.items)
@@ -399,7 +396,7 @@ class TestSavedViews:
             ListSavedViewsQuery(
                 actor=await actor_for(harness, outsider),
                 request=harness.request,
-                page=Page(limit=20, offset=0),
+                page=Page(number=1, size=20),
             )
         )
         assert all(item.id != view.view.id for item in listing.items)
