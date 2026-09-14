@@ -92,7 +92,7 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     label: "Variant query",
     href: "/variant-query",
     namespace: "application",
-    requiredPermission: "query.execute",
+    requiredPermission: "workspace.query.execute",
     available: true,
   },
   {
@@ -100,7 +100,7 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     label: "Query library",
     href: "/query-library",
     namespace: "application",
-    requiredPermission: "filter.read",
+    requiredPermission: "workspace.filter.read",
     available: true,
   },
   {
