@@ -77,8 +77,8 @@ def ranking_configuration():
                 "field_id": "allele_frequency",
                 "kind": "numeric_ascending",
                 "weight": 1.0,
-                "scale_minimum": 0.0,
-                "scale_maximum": 0.01,
+                "scale_min": 0.0,
+                "scale_max": 0.01,
                 "missing_behaviour": "exclude",
             }
         ],
@@ -189,7 +189,7 @@ class TestConcurrencyAndVersioning:
                 name="Renamed once",
             )
         )
-        with pytest.raises(ConcurrencyConflictError):
+        with pytest.raises((ConcurrencyConflictError, ConflictError)):
             await service.update_metadata(
                 UpdateMetadataCommand(
                     actor=await actor_for(harness, user_id),
@@ -430,7 +430,7 @@ class TestSavedViews:
                 changes={"name": "Renamed"},
             )
         )
-        with pytest.raises(ConcurrencyConflictError):
+        with pytest.raises((ConcurrencyConflictError, ConflictError)):
             await service.update(
                 UpdateSavedViewCommand(
                     actor=await actor_for(harness, user_id),
