@@ -12,6 +12,16 @@
 import { apiUrl, loadFrontendConfig, type FrontendConfig } from "./config";
 import { CSRF_HEADER_NAME, readCsrfToken } from "./csrf";
 import type {
+  AnnotationFieldCollection,
+  AnnotationProfileCollection,
+  AnnotationResourceCollection,
+  AnnotationResourceResponse,
+  AnnotationResultCollection,
+  AnnotationResultResponse,
+  AnnotationRunCollection,
+  AnnotationRunResponse,
+} from "./annotation-types";
+import type {
   AccountAdministrationCollection,
   AccountAdministrationResponse,
   AcknowledgementResponse,
@@ -1136,5 +1146,133 @@ export class ApiClient {
 
   adminQueryLimits(): Promise<QueryLimitsResponse> {
     return this.request<QueryLimitsResponse>("/administration/query/limits");
+  }
+
+  // --- Annotation (Package 8) ---------------------------------------------- //
+
+  /** Registered annotation resource versions the caller may read. */
+  annotationResources(
+    params: {
+      page?: number;
+      size?: number;
+      category?: string;
+      resource_key?: string;
+      usable_only?: boolean;
+    } = {},
+  ): Promise<AnnotationResourceCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    if (params.category) search.set("category", params.category);
+    if (params.resource_key) search.set("resource_key", params.resource_key);
+    if (params.usable_only) search.set("usable_only", "true");
+    const query = search.toString();
+    return this.request<AnnotationResourceCollection>(
+      `/annotation-resources${query ? `?${query}` : ""}`,
+    );
+  }
+
+  annotationResource(resourceId: string): Promise<AnnotationResourceResponse> {
+    return this.request<AnnotationResourceResponse>(
+      `/annotation-resources/${encodeURIComponent(resourceId)}`,
+    );
+  }
+
+  /** Annotation fields currently offered to filtering and ranking. */
+  annotationFields(): Promise<AnnotationFieldCollection> {
+    return this.request<AnnotationFieldCollection>("/annotation-fields");
+  }
+
+  annotationProfiles(
+    params: { page?: number; size?: number } = {},
+  ): Promise<AnnotationProfileCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    const query = search.toString();
+    return this.request<AnnotationProfileCollection>(
+      `/annotation-profiles${query ? `?${query}` : ""}`,
+    );
+  }
+
+  annotationRuns(
+    params: {
+      page?: number;
+      size?: number;
+      result_set_id?: string;
+      workspace_id?: string;
+      state?: string;
+    } = {},
+  ): Promise<AnnotationRunCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    if (params.result_set_id) search.set("result_set_id", params.result_set_id);
+    if (params.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params.state) search.set("state", params.state);
+    const query = search.toString();
+    return this.request<AnnotationRunCollection>(
+      `/annotation-runs${query ? `?${query}` : ""}`,
+    );
+  }
+
+  /** Requests annotation of a surface; the backend answers with a queued run. */
+  requestAnnotationRun(body: {
+    annotation_profile_id: string;
+    result_set_id?: string;
+    dataset_version_id?: string;
+    profile_version_number?: number;
+    idempotency_key?: string;
+  }): Promise<AnnotationRunResponse> {
+    return this.request<AnnotationRunResponse>("/annotation-runs", {
+      method: "POST",
+      body,
+    });
+  }
+
+  cancelAnnotationRun(runId: string): Promise<AnnotationRunResponse> {
+    return this.request<AnnotationRunResponse>(
+      `/annotation-runs/${encodeURIComponent(runId)}/cancel`,
+      { method: "POST" },
+    );
+  }
+
+  /** Annotation result metadata only: annotation rows are never inlined here. */
+  annotationResults(
+    resultSetId: string,
+    params: { page?: number; size?: number } = {},
+  ): Promise<AnnotationResultCollection> {
+    const search = new URLSearchParams({ result_set_id: resultSetId });
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    return this.request<AnnotationResultCollection>(
+      `/annotation-results?${search.toString()}`,
+    );
+  }
+
+  annotationResult(resultId: string): Promise<AnnotationResultResponse> {
+    return this.request<AnnotationResultResponse>(
+      `/annotation-results/${encodeURIComponent(resultId)}`,
+    );
+  }
+
+  /** Platform-administrative annotation resource management. */
+  adminRegisterAnnotationResource(
+    body: Record<string, unknown>,
+  ): Promise<AnnotationResourceResponse> {
+    return this.request<AnnotationResourceResponse>("/administration/annotation-resources", {
+      method: "POST",
+      body,
+    });
+  }
+
+  adminTransitionAnnotationResource(
+    resourceId: string,
+    body: { state: string; reason?: string },
+  ): Promise<AnnotationResourceResponse> {
+    return this.request<AnnotationResourceResponse>(
+      `/administration/annotation-resources/${encodeURIComponent(resourceId)}/state`,
+      { method: "POST", body },
+    );
   }
 }
