@@ -61,6 +61,12 @@ def ranking_content() -> dict:
     }
 
 
+async def workspace_of(harness, user_id: str) -> str:
+    workspace = await harness.repositories.workspaces.get_personal_for_user(user_id)
+    assert workspace is not None
+    return workspace.id
+
+
 async def saved_filter(services, harness, user_id, *, name="Rare Disease", genes=("CFTR",)):
     return await SavedFilterService(services).create(
         CreateConfigurationCommand(
@@ -68,6 +74,7 @@ async def saved_filter(services, harness, user_id, *, name="Rare Disease", genes
             request=harness.request,
             name=name,
             scope=QueryScope.PERSONAL,
+            workspace_id=await workspace_of(harness, user_id),
             content=group(condition("gene_symbol", "in", *genes)),
         )
     )
@@ -80,6 +87,7 @@ async def saved_ranking(services, harness, user_id, *, name="Weighted Priority")
             request=harness.request,
             name=name,
             scope=QueryScope.PERSONAL,
+            workspace_id=await workspace_of(harness, user_id),
             content=ranking_content()["configuration"],
             method_id="weighted_field_score",
         )
