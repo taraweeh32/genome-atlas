@@ -46,6 +46,14 @@ from app.infrastructure.persistence.repositories.ingest import (
     SqlValidationRunRepository,
 )
 from app.infrastructure.persistence.repositories.jobs import SqlJobRepository
+from app.infrastructure.persistence.repositories.queries import (
+    SqlFilterDefinitionRepository,
+    SqlFilterPresetRepository,
+    SqlQueryExecutionRepository,
+    SqlRankingDefinitionRepository,
+    SqlRankingPresetRepository,
+    SqlSavedViewRepository,
+)
 from app.infrastructure.persistence.repositories.projects import (
     SqlProjectMembershipRepository,
     SqlProjectRepository,
@@ -120,6 +128,12 @@ class SqlRepositories:
     result_sets: SqlResultSetRepository
     result_artifacts: SqlResultArtifactRepository
     result_ingestions: SqlResultIngestionRepository
+    filter_definitions: SqlFilterDefinitionRepository
+    filter_presets: SqlFilterPresetRepository
+    ranking_definitions: SqlRankingDefinitionRepository
+    ranking_presets: SqlRankingPresetRepository
+    query_executions: SqlQueryExecutionRepository
+    saved_views: SqlSavedViewRepository
     jobs: SqlJobRepository
     audit: SqlAuditRepository
     security_events: SqlSecurityEventRepository
@@ -165,6 +179,12 @@ class SqlRepositories:
             result_sets=SqlResultSetRepository(session),
             result_artifacts=SqlResultArtifactRepository(session),
             result_ingestions=SqlResultIngestionRepository(session),
+            filter_definitions=SqlFilterDefinitionRepository(session),
+            filter_presets=SqlFilterPresetRepository(session),
+            ranking_definitions=SqlRankingDefinitionRepository(session),
+            ranking_presets=SqlRankingPresetRepository(session),
+            query_executions=SqlQueryExecutionRepository(session),
+            saved_views=SqlSavedViewRepository(session),
             jobs=SqlJobRepository(session),
             audit=SqlAuditRepository(session),
             security_events=SqlSecurityEventRepository(session),

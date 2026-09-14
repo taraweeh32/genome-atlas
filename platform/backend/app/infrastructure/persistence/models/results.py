@@ -23,9 +23,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.domain.value_objects.enums import (
-    ConfigurationScope,
     DataOrigin,
     DeletionState,
+    QueryDefinitionState,
+    QueryScope,
     ResultCompleteness,
     ResultSetState,
 )
@@ -117,14 +118,21 @@ class ResultSet(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
 
 
 class FilterDefinition(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
-    """A saved, versioned filter definition. Distinct from ranking."""
+    """A saved, versioned filter definition. Distinct from ranking.
+
+    The row is the *definition*: name, ownership, scope and lifecycle, all
+    mutable. Its content lives in ``filter_definition_versions`` and is never
+    edited — editing a saved filter issues a new version, so an execution that
+    referenced version 3 still resolves to version 3 forever.
+    """
 
     __tablename__ = "filter_definitions"
     __table_args__ = (
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("scope", "scope_id", "name",
                          name="uq_filter_definitions_scope_scope_id_name"),
-        state_check("scope", ConfigurationScope, "scope_valid"),
+        state_check("scope", QueryScope, "scope_valid"),
+        state_check("state", QueryDefinitionState, "state_valid"),
         Index("ix_filter_definitions_scope_scope_id", "scope", "scope_id"),
     )
 
@@ -132,18 +140,40 @@ class FilterDefinition(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     scope: Mapped[str] = mapped_column(String(64), nullable=False)
+    state: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=QueryDefinitionState.DRAFT.value
+    )
     #: Owning user / project / organization; null for platform scope.
     scope_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     is_preset: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     current_version_number: Mapped[int] = mapped_column(Integer, nullable=False,
                                                         server_default="1")
+    #: Highest version number ever issued. Distinct from
+    #: ``current_version_number``, which is the version the definition currently
+    #: offers: withdrawing a version must not hand its number out again.
+    latest_version_number: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    #: True once any version was frozen into an analysis execution.
+    is_referenced: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
     #: Nested AND/OR predicate tree, validated server-side against the schema.
+    #: Mirrors the current version's canonical form for convenience; the version
+    #: table remains authoritative.
     predicate_tree: Mapped[dict | None] = json_column()
+    owner_user_id: Mapped[str | None] = fk_column("app.users.id", nullable=True)
+    workspace_id: Mapped[str | None] = fk_column("app.workspaces.id", nullable=True)
+    project_id: Mapped[str | None] = fk_column("app.projects.id", nullable=True)
+    organization_id: Mapped[str | None] = fk_column("app.organizations.id", nullable=True)
+    metadata_json: Mapped[dict | None] = json_column()
     created_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
     updated_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
 
 
 class FilterDefinitionVersion(Base, TimestampMixin):
+    """One immutable filter expression. Append-only."""
+
     __tablename__ = "filter_definition_versions"
     __table_args__ = (
         UniqueConstraint("filter_definition_id", "version_number",
@@ -155,6 +185,20 @@ class FilterDefinitionVersion(Base, TimestampMixin):
                                                   ondelete="CASCADE")
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     predicate_tree: Mapped[dict | None] = json_column()
+    #: Hash of the canonical form: two expressions that mean the same thing hash
+    #: identically, which is what makes a reproduction check possible.
+    canonical_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    #: The field dictionary the expression was validated against. Without it a
+    #: historical expression cannot be re-read with its original meaning.
+    field_dictionary_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    required_field_ids: Mapped[dict | None] = json_column()
+    condition_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    depth: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    change_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_referenced: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    metadata_json: Mapped[dict | None] = json_column()
     created_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
 
 
@@ -166,7 +210,8 @@ class RankingConfiguration(Base, TimestampMixin, ConcurrencyMixin, RetentionMixi
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("scope", "scope_id", "name",
                          name="uq_ranking_configurations_scope_scope_id_name"),
-        state_check("scope", ConfigurationScope, "scope_valid"),
+        state_check("scope", QueryScope, "scope_valid"),
+        state_check("state", QueryDefinitionState, "state_valid"),
         Index("ix_ranking_configurations_scope_scope_id", "scope", "scope_id"),
     )
 
@@ -174,6 +219,9 @@ class RankingConfiguration(Base, TimestampMixin, ConcurrencyMixin, RetentionMixi
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     scope: Mapped[str] = mapped_column(String(64), nullable=False)
+    state: Mapped[str] = mapped_column(
+        String(64), nullable=False, server_default=QueryDefinitionState.DRAFT.value
+    )
     scope_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     is_preset: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     #: Method identity is a scientific concern; only its identity is stored.
@@ -184,13 +232,26 @@ class RankingConfiguration(Base, TimestampMixin, ConcurrencyMixin, RetentionMixi
     )
     current_version_number: Mapped[int] = mapped_column(Integer, nullable=False,
                                                         server_default="1")
+    latest_version_number: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    is_referenced: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
     weights: Mapped[dict | None] = json_column()
     parameters: Mapped[dict | None] = json_column()
+    owner_user_id: Mapped[str | None] = fk_column("app.users.id", nullable=True)
+    workspace_id: Mapped[str | None] = fk_column("app.workspaces.id", nullable=True)
+    project_id: Mapped[str | None] = fk_column("app.projects.id", nullable=True)
+    organization_id: Mapped[str | None] = fk_column("app.organizations.id", nullable=True)
+    metadata_json: Mapped[dict | None] = json_column()
     created_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
     updated_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
 
 
 class RankingConfigurationVersion(Base, TimestampMixin):
+    """One immutable ranking configuration. Append-only."""
+
     __tablename__ = "ranking_configuration_versions"
     __table_args__ = (
         UniqueConstraint("ranking_configuration_id", "version_number",
@@ -205,22 +266,39 @@ class RankingConfigurationVersion(Base, TimestampMixin):
     method_version: Mapped[str | None] = mapped_column(String(128), nullable=True)
     weights: Mapped[dict | None] = json_column()
     parameters: Mapped[dict | None] = json_column()
+    #: Full canonical configuration: components, weights, direction and
+    #: tie-breakers as one immutable payload.
+    canonical: Mapped[dict | None] = json_column()
+    canonical_hash: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    field_dictionary_version: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    required_field_ids: Mapped[dict | None] = json_column()
+    component_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    change_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    is_referenced: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default="false"
+    )
+    metadata_json: Mapped[dict | None] = json_column()
     created_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
 
 
 class SavedView(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
-    """A saved presentation view: column selection, sort, filter + ranking refs."""
+    """A saved presentation view: column selection, sort, filter + ranking refs.
+
+    Presentation state only. Nothing here changes what the data means: hiding a
+    column does not remove a value, and the view's sort is not a ranking.
+    """
 
     __tablename__ = "saved_views"
     __table_args__ = (
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
         UniqueConstraint("scope", "scope_id", "name",
                          name="uq_saved_views_scope_scope_id_name"),
-        state_check("scope", ConfigurationScope, "scope_valid"),
+        state_check("scope", QueryScope, "scope_valid"),
     )
 
     id: Mapped[str] = id_column()
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
     scope: Mapped[str] = mapped_column(String(64), nullable=False)
     scope_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     filter_definition_id: Mapped[str | None] = fk_column(
@@ -229,6 +307,14 @@ class SavedView(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
     ranking_configuration_id: Mapped[str | None] = fk_column(
         "app.ranking_configurations.id", nullable=True
     )
+    filter_preset_id: Mapped[str | None] = fk_column("app.filter_presets.id", nullable=True)
+    ranking_preset_id: Mapped[str | None] = fk_column("app.ranking_presets.id", nullable=True)
     column_layout: Mapped[dict | None] = json_column()
     sort_specification: Mapped[dict | None] = json_column()
+    page_size: Mapped[int] = mapped_column(Integer, nullable=False, server_default="50")
+    owner_user_id: Mapped[str | None] = fk_column("app.users.id", nullable=True)
+    workspace_id: Mapped[str | None] = fk_column("app.workspaces.id", nullable=True)
+    project_id: Mapped[str | None] = fk_column("app.projects.id", nullable=True)
+    organization_id: Mapped[str | None] = fk_column("app.organizations.id", nullable=True)
+    metadata_json: Mapped[dict | None] = json_column()
     created_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)

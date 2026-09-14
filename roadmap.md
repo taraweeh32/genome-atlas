@@ -14,8 +14,8 @@ Implementation order (per the package specification, section 60).
 - [ ] Persistence models, migration 0007, repository ports, SQL repositories, in-memory doubles
 - [ ] Use cases: field dictionary, distinct-value search, variant query, saved filters, presets, rankings
 - [ ] Analysis configuration integration (frozen filter/ranking snapshot on execution)
-- [ ] Audit and provenance integration (filter/ranking execution records)
-- [ ] Deferred execution through the existing durable job system
+- [x] Audit and provenance integration (filter/ranking execution records)
+- [x] Deferred execution through the existing durable job system
 - [ ] REST API: filter fields, filters, presets, validation, variant query, rankings, admin
 - [ ] Frontend: filter builder, saved filters, presets, ranking controls, table columns/views
 - [ ] Admin surfaces (platform registry/presets/limits, organization presets)

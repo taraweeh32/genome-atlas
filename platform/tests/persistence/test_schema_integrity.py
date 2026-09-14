@@ -21,6 +21,8 @@ MAX_IDENTIFIER_LENGTH = 63
 #: Tables that are append-only history and therefore must never be mutated.
 IMMUTABLE_TABLES = {
     "analysis_executions",
+    "filter_executions",
+    "ranking_executions",
     "audit_events",
     "criterion_evaluation_evidence",
     "interpretation_versions",
@@ -77,6 +79,7 @@ TABLE_OWNING_REVISIONS = (
     "0004_dataset_ingest.py",
     "0005_analysis_jobs.py",
     "0006_variant_results.py",
+    "0007_filtering_ranking.py",
 )
 
 
@@ -152,6 +155,8 @@ ALLOWED_CASCADES = {
     ("provenance_entries", "provenance_manifest_id"),
     ("analysis_configuration_inputs", "analysis_configuration_id"),
     ("filter_definition_versions", "filter_definition_id"),
+    ("filter_preset_versions", "filter_preset_id"),
+    ("ranking_preset_versions", "ranking_preset_id"),
     ("ranking_configuration_versions", "ranking_configuration_id"),
     ("configuration_setting_versions", "configuration_setting_id"),
     ("notification_deliveries", "notification_id"),

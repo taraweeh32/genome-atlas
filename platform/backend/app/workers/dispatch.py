@@ -17,6 +17,7 @@ from app.domain.errors import ValidationError
 from app.domain.value_objects.enums import JobKind
 from app.workers.analysis_handlers import AnalysisJobHandlers
 from app.workers.handlers import DataJobHandlers
+from app.workers.query_handlers import QueryJobHandlers
 from app.workers.result_handlers import ResultJobHandlers
 
 logger = get_logger(__name__)
@@ -29,6 +30,7 @@ class JobDispatcher:
         self._data = DataJobHandlers(container.data_services())
         self._analysis = AnalysisJobHandlers(container.analysis_services())
         self._results = ResultJobHandlers(container.result_services())
+        self._queries = QueryJobHandlers(container.query_services())
 
     @property
     def supported_kinds(self) -> tuple[JobKind, ...]:
@@ -37,6 +39,7 @@ class JobDispatcher:
                 self._analysis.supported_kinds
                 | self._data.supported_kinds
                 | self._results.supported_kinds
+                | self._queries.supported_kinds
             )
         )
 
@@ -51,6 +54,10 @@ class JobDispatcher:
             )
         if job.kind in self._results.supported_kinds:
             return await self._results.handle(
+                job.kind, job.payload, correlation_id=job.correlation_id
+            )
+        if job.kind in self._queries.supported_kinds:
+            return await self._queries.handle(
                 job.kind, job.payload, correlation_id=job.correlation_id
             )
         if job.kind in self._data.supported_kinds:

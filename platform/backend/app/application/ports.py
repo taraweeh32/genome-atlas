@@ -216,3 +216,89 @@ class AnalyticalReadService(Protocol):
     async def read_page(
         self, location: str, *, offset: int, limit: int
     ) -> AnalyticalPage: ...
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalPredicate:
+    """A parameterized SQL fragment the *platform itself* generated.
+
+    ``sql`` contains ``?`` placeholders only; every value the caller supplied
+    travels in ``parameters`` and is bound by the engine. No request content ever
+    becomes SQL text, so there is nothing to escape and nothing to inject.
+    """
+
+    sql: str
+    parameters: tuple[object, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalQuerySpec:
+    """A bounded, fully-specified analytical read.
+
+    Every column and ordering identifier here comes from the platform's own field
+    dictionary, never from a request: a caller names a *field*, and the dictionary
+    decides which stored column that is. ``limit`` is always set, so there is no
+    way to express an unbounded scan.
+    """
+
+    location: str
+    columns: tuple[str, ...]
+    limit: int
+    predicate: AnalyticalPredicate | None = None
+    #: ``(column, descending)`` pairs. Always non-empty in practice, because a
+    #: page without a total ordering is not reproducible.
+    order_by: tuple[tuple[str, bool], ...] = ()
+    #: Keyset continuation from a previous page's last row. Also parameterized.
+    keyset: AnalyticalPredicate | None = None
+    #: Totals are opt-in: counting a very large surface is itself expensive, and a
+    #: fabricated total is worse than an absent one.
+    count_total: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalQueryResult:
+    columns: tuple[str, ...]
+    rows: tuple[tuple[object, ...], ...]
+    #: ``None`` means "not counted". Never conflated with zero.
+    total_rows: int | None
+    #: True when the engine stopped at ``limit`` and more rows match.
+    truncated: bool
+    duration_ms: int
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalDistinctValue:
+    value: object
+    #: ``None`` when counts were not requested, never zero as a stand-in.
+    occurrence_count: int | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AnalyticalDistinctValues:
+    column: str
+    values: tuple[AnalyticalDistinctValue, ...]
+    truncated: bool
+
+
+@runtime_checkable
+class AnalyticalQueryService(Protocol):
+    """Filtered, ordered, bounded reads over materialized result surfaces.
+
+    Separate from ``AnalyticalReadService`` on purpose: that port reads a surface
+    as stored, while this one runs a *validated, versioned* filter against it. It
+    still interprets nothing — it evaluates predicates the platform compiled from
+    a canonical expression and returns the rows as stored.
+    """
+
+    async def execute(self, spec: AnalyticalQuerySpec) -> AnalyticalQueryResult: ...
+
+    async def distinct_values(
+        self,
+        location: str,
+        *,
+        column: str,
+        search: str | None,
+        limit: int,
+        predicate: AnalyticalPredicate | None = None,
+        with_counts: bool = False,
+    ) -> AnalyticalDistinctValues: ...

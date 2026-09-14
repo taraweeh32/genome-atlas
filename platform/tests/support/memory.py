@@ -52,6 +52,14 @@ from tests.support.analysis_memory import (
     MemorySchedules,
     MemoryScientificExecutions,
 )
+from tests.support.query_memory import (
+    MemoryFilterDefinitions,
+    MemoryFilterPresets,
+    MemoryQueryExecutions,
+    MemoryRankingDefinitions,
+    MemoryRankingPresets,
+    MemorySavedViews,
+)
 from tests.support.variant_memory import (
     MemoryDatasetVersionVariants,
     MemoryGenesTranscripts,
@@ -648,6 +656,17 @@ class MemoryRepositories:
     result_sets: MemoryResultSets = field(default_factory=MemoryResultSets)
     result_artifacts: MemoryResultArtifacts = field(default_factory=MemoryResultArtifacts)
     result_ingestions: MemoryResultIngestions = field(default_factory=MemoryResultIngestions)
+    # Package 7: filtering, ranking, views and their execution history.
+    filter_definitions: MemoryFilterDefinitions = field(
+        default_factory=MemoryFilterDefinitions
+    )
+    filter_presets: MemoryFilterPresets = field(default_factory=MemoryFilterPresets)
+    ranking_definitions: MemoryRankingDefinitions = field(
+        default_factory=MemoryRankingDefinitions
+    )
+    ranking_presets: MemoryRankingPresets = field(default_factory=MemoryRankingPresets)
+    query_executions: MemoryQueryExecutions = field(default_factory=MemoryQueryExecutions)
+    saved_views: MemorySavedViews = field(default_factory=MemorySavedViews)
 
     def __post_init__(self) -> None:
         self.organizations.memberships = self.organization_memberships

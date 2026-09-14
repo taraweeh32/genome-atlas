@@ -24,6 +24,7 @@ from typing import Any
 from app.application.repositories import Page, Paged
 from app.application.services.context import RequestContext
 from app.application.services.recorder import ActivityRecorder
+from app.application.use_cases.query.analysis_binding import freeze_query_sections
 from app.application.use_cases.analysis.dependencies import (
     CANCEL,
     EXECUTE,
@@ -65,6 +66,10 @@ class ExecutionView:
     inputs: tuple[ExecutionInput, ...] = ()
     analysis_name: str | None = None
     can_cancel: bool = False
+
+
+#: Identifies the software that pinned an execution's filter/ranking binding.
+QUERY_SOFTWARE_VERSION = "package-7"
 
 
 def _resolve_queue(analysis: AnalysisDefinition, requested: JobQueue | None) -> JobQueue:
@@ -175,6 +180,14 @@ class RequestExecution:
             snapshot["configuration_id"] = configuration.id
             snapshot["configuration_version_number"] = configuration.version_number
             snapshot["content_hash"] = configuration.content_hash
+            # Filtering and ranking are pinned to exact versions here, once. A
+            # later edit of a saved filter or preset publishes a new version and
+            # cannot change what this run used.
+            snapshot = await freeze_query_sections(
+                repositories,
+                snapshot,
+                software_version=QUERY_SOFTWARE_VERSION,
+            )
             queue = _resolve_queue(analysis, command.queue)
             priority = _resolve_priority(analysis, command.priority)
             requirements = _resolve_requirements(analysis, snapshot)

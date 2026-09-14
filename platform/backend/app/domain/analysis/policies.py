@@ -49,6 +49,9 @@ JOB_KIND_NODE_CLASS: dict[JobKind, NodeClass] = {
     # Ingesting a result surface is application work — verifying bytes, reading a
     # file's declared shape, writing rows. It never runs on a scientific node.
     JobKind.RESULT_INGESTION: NodeClass.APPLICATION_WORKER,
+    # A deferred variant query reads analytical files and writes an artifact. It
+    # is application work: no scientific computation happens in it.
+    JobKind.VARIANT_QUERY: NodeClass.APPLICATION_WORKER,
 }
 
 DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
@@ -61,6 +64,7 @@ DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
     JobKind.SCHEDULE_TRIGGER: JobQueue.MAINTENANCE,
     JobKind.STALE_RECOVERY: JobQueue.MAINTENANCE,
     JobKind.RESULT_INGESTION: JobQueue.IMPORT,
+    JobKind.VARIANT_QUERY: JobQueue.EXPORT,
 }
 
 
