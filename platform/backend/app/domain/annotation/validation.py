@@ -43,7 +43,6 @@ from app.scientific.annotation import (
     ANNOTATION_CONTRACT_VERSION,
     MAX_INLINE_ANNOTATION_RECORDS,
     AnnotationPayload,
-    AnnotationRecordClaim,
 )
 
 #: Contract versions the platform will still read. Old payloads stay readable.

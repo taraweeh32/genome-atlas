@@ -363,7 +363,7 @@ class SubmitAnnotationRun:
             response = await self._services.scientific.submit_execution(
                 execution_request
             )
-        except Exception as error:  # noqa: BLE001 - recorded, then re-raised
+        except Exception as error:
             async with self._services.unit_of_work.begin() as repositories:
                 recorder = ActivityRecorder(repositories, request)
                 failed = await repositories.annotation_runs.save(

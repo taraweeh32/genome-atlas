@@ -18,7 +18,7 @@ from app.application.use_cases.annotation.resources import (
     TransitionAnnotationResource,
     TransitionResourceCommand,
 )
-from app.domain.errors import AuthorizationError, ConflictError, ValidationError
+from app.domain.errors import AuthorizationError, ConflictError
 from app.domain.value_objects.enums import ScientificResourceState
 from tests.annotation.support import (
     PAGE,

@@ -28,9 +28,9 @@ from app.application.use_cases.annotation.runs import (
 )
 from app.domain.annotation.entities import AnnotationFieldSpec
 from app.domain.value_objects.enums import (
-    DataOrigin,
     AnnotationResourceCategory,
     AnnotationValueType,
+    DataOrigin,
     PlatformRole,
     ValueSemantics,
 )

@@ -25,7 +25,6 @@ from typing import Any
 from sqlalchemy import Select, func, insert, select, update
 
 from app.application.repositories import Page, Paged
-from app.domain.errors import NotFoundError
 from app.domain.annotation.entities import (
     AnnotationFieldSpec,
     AnnotationProfileRecord,
@@ -36,6 +35,7 @@ from app.domain.annotation.entities import (
     AnnotationValidationFinding,
     ProfileResourceBinding,
 )
+from app.domain.errors import NotFoundError
 from app.domain.value_objects.enums import (
     AnnotationResourceCategory,
     AnnotationResultState,

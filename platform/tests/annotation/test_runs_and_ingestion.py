@@ -34,9 +34,6 @@ from tests.annotation.support import (
     value,
 )
 from tests.results.support import (
-    ENGINE,
-    ENGINE_VERSION,
-    GENOME as GENOME_RESOURCE,
     execution_for,
     ingest_variants,
     normalized_claim,
