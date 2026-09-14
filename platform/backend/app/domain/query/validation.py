@@ -205,7 +205,7 @@ def _coerce_value(
             )
             return None
         try:
-            datetime.fromisoformat(value.replace("Z", "+00:00"))
+            datetime.fromisoformat(value)
         except ValueError:
             issues.append(
                 FilterValidationIssue(
