@@ -44,6 +44,14 @@ import type {
   RulesetResponse,
 } from "./interpretation-types";
 import type {
+  InterpretationCollection,
+  InterpretationDetailResponse,
+  InterpretationResponse,
+  InterpretationVersionResponse,
+  ReviewAssignmentResponse,
+  ReviewDecisionResponse,
+} from "./review-types";
+import type {
   AccountAdministrationCollection,
   AccountAdministrationResponse,
   AcknowledgementResponse,
@@ -1582,6 +1590,98 @@ export class ApiClient {
   ): Promise<BenchmarkRunResponse> {
     return this.request<BenchmarkRunResponse>(
       `/administration/interpretation-rulesets/${encodeURIComponent(rulesetId)}/benchmark-runs`,
+      { method: "POST", body },
+    );
+  }
+
+  // ---- Package 11: interpretation, human review and adjudication ---------- //
+
+  /**
+   * Interpretations the caller may read. `assigned_to_me` narrows to the
+   * caller's own review queue; the backend, not the browser, decides visibility.
+   */
+  interpretations(params: Record<string, string | number | boolean | undefined> = {}): Promise<InterpretationCollection> {
+    return this.request<InterpretationCollection>(`/interpretations${this.query(params)}`);
+  }
+
+  interpretation(interpretationId: string): Promise<InterpretationDetailResponse> {
+    return this.request<InterpretationDetailResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}`,
+    );
+  }
+
+  openInterpretation(body: Record<string, unknown>): Promise<InterpretationResponse> {
+    return this.request<InterpretationResponse>("/interpretations", { method: "POST", body });
+  }
+
+  recordInterpretationVersion(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationVersionResponse> {
+    return this.request<InterpretationVersionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/versions`,
+      { method: "POST", body },
+    );
+  }
+
+  assignReviewer(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<ReviewAssignmentResponse> {
+    return this.request<ReviewAssignmentResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/reviewers`,
+      { method: "POST", body },
+    );
+  }
+
+  /**
+   * Records one reviewer action. `expected_current_version_number` is sent back so
+   * a reviewer looking at stale work cannot land on top of newer work.
+   */
+  recordReviewDecision(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<ReviewDecisionResponse> {
+    return this.request<ReviewDecisionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/decisions`,
+      { method: "POST", body },
+    );
+  }
+
+  submitReview(interpretationId: string): Promise<ReviewAssignmentResponse> {
+    return this.request<ReviewAssignmentResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/submit-review`,
+      { method: "POST" },
+    );
+  }
+
+  adjudicateInterpretation(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationVersionResponse> {
+    return this.request<InterpretationVersionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/adjudicate`,
+      { method: "POST", body },
+    );
+  }
+
+  finalizeInterpretation(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationVersionResponse> {
+    return this.request<InterpretationVersionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/finalize`,
+      { method: "POST", body },
+    );
+  }
+
+  /** A correction never rewrites a finalized record: it opens a successor. */
+  reclassifyInterpretation(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationResponse> {
+    return this.request<InterpretationResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/reclassify`,
       { method: "POST", body },
     );
   }
