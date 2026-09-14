@@ -35,8 +35,8 @@ from app.domain.query.expressions import (
     node_from_payload,
 )
 from app.domain.query.fields import (
-    FIELD_DICTIONARY_VERSION,
     DEFAULT_FIELD_REGISTRY,
+    FIELD_DICTIONARY_VERSION,
     FilterFieldDefinition,
     FilterFieldRegistry,
 )
@@ -58,7 +58,7 @@ from app.domain.query.ranking import (
     RankingMissingBehaviour,
     RowScore,
     ValidatedRanking,
-    score_row,
+    prioritize_row,
     validate_ranking,
 )
 from app.domain.query.validation import (
@@ -111,7 +111,7 @@ __all__ = [
     "node_from_payload",
     "operator_arity",
     "operators_for",
-    "score_row",
+    "prioritize_row",
     "validate_filter",
     "validate_ranking",
 ]

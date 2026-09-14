@@ -84,7 +84,7 @@ class FilterGroup:
     """A logical connective over child nodes. Groups may nest."""
 
     operator: LogicalOperator = LogicalOperator.AND
-    children: tuple["FilterNode", ...] = ()
+    children: tuple[FilterNode, ...] = ()
 
     @property
     def kind(self) -> str:
@@ -101,7 +101,7 @@ class FilterGroup:
             "children": [child.to_payload() for child in self.children],
         }
 
-    def with_children(self, children: tuple["FilterNode", ...]) -> FilterGroup:
+    def with_children(self, children: tuple[FilterNode, ...]) -> FilterGroup:
         return replace(self, children=children)
 
 

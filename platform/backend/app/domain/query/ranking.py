@@ -488,7 +488,7 @@ def _component_value(
     return _clamp(normalized), semantics
 
 
-def score_row(
+def prioritize_row(
     spec: RankingConfigurationSpec,
     row: Mapping[str, Any],
     *,
@@ -617,7 +617,7 @@ __all__ = [
     "RowScore",
     "ValidatedRanking",
     "canonical_ranking_hash",
+    "prioritize_row",
     "ranking_sort_key",
-    "score_row",
     "validate_ranking",
 ]
