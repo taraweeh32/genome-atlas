@@ -168,9 +168,10 @@ class TestScoring:
         )
         assert first.score is not None and last.score is not None
         assert first.score > last.score
-        # A term the author never ranked contributes nothing rather than being
-        # guessed into the middle of the order.
-        assert unlisted.score == pytest.approx(0.0)
+        # A term the author never ranked is treated as an input the configuration
+        # cannot score, not as a low value guessed into the order.
+        assert unlisted.score is None
+        assert unlisted.missing_field_ids == ("consequence_term",)
 
     def test_weights_are_applied_exactly_as_declared(self) -> None:
         configuration = spec(
