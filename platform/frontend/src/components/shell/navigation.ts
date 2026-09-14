@@ -104,6 +104,14 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     available: true,
   },
   {
+    id: "interpretations",
+    label: "Interpretation review",
+    href: "/interpretations",
+    namespace: "application",
+    requiredPermission: "project.interpretation.read",
+    available: true,
+  },
+  {
     id: "reports",
     label: "Reports",
     href: "/reports",
