@@ -19,6 +19,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from sqlalchemy import (
+    ForeignKey,
     Boolean,
     DateTime,
     Index,
@@ -170,9 +171,11 @@ class CriterionEvaluation(Base, TimestampMixin, ConcurrencyMixin):
     #: Package 10: the registered ruleset version and the automated evaluation this
     #: criterion came out of. Both nullable, because a human evaluation is recorded
     #: without any automated evaluation behind it.
-    ruleset_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ruleset_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.interpretation_rulesets.id"), nullable=True
+    )
     classification_evaluation_id: Mapped[str | None] = mapped_column(
-        String(64), nullable=True
+        String(64), ForeignKey("app.classification_evaluations.id"), nullable=True
     )
     #: Criterion family, denormalized from the ruleset version so a stored
     #: evaluation stays readable on its own.
@@ -316,9 +319,15 @@ class InterpretationVersion(Base, TimestampMixin):
     )
     #: The registered ruleset version and the automated evaluation this decision
     #: context was built on. Nullable: a version may be authored without one.
-    ruleset_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    classification_evaluation_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
-    automated_classification_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    ruleset_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.interpretation_rulesets.id"), nullable=True
+    )
+    classification_evaluation_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.classification_evaluations.id"), nullable=True
+    )
+    automated_classification_id: Mapped[str | None] = mapped_column(
+        String(64), ForeignKey("app.automated_classifications.id"), nullable=True
+    )
     #: Review round this version closed, so successive rounds stay separable.
     review_round: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     adjudicated_by: Mapped[str | None] = fk_column("app.users.id", nullable=True)
@@ -368,6 +377,11 @@ class ReviewDecision(Base, TimestampMixin):
     __table_args__ = (
         state_check("decision", ReviewDecisionVocabulary, "decision_valid"),
         state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
+        Index(
+            "ix_review_decisions_interpretation_id_review_round",
+            "interpretation_id",
+            "review_round",
+        ),
     )
 
     id: Mapped[str] = id_column()
