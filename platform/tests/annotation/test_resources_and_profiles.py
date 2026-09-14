@@ -158,7 +158,7 @@ async def test_profile_pins_resource_versions_and_refuses_unusable_ones():
             state=ScientificResourceState.ACTIVE,
         )
     )
-    profile, view = await published_profile(
+    _profile, view = await published_profile(
         harness, admin_id, resource_ids=(record.id,)
     )
     version = view.versions[0]
@@ -178,7 +178,7 @@ async def test_a_referenced_profile_version_is_immutable_and_new_work_versions()
             state=ScientificResourceState.ACTIVE,
         )
     )
-    _profile, view = await published_profile(
+    profile, view = await published_profile(
         harness, admin_id, resource_ids=(record.id,)
     )
     service = AnnotationProfileService(harness.annotation)
