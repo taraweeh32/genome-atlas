@@ -68,7 +68,7 @@ async def saved_filter(services, harness, user_id, *, name="Rare Disease", genes
             request=harness.request,
             name=name,
             scope=QueryScope.PERSONAL,
-            content={"expression": group(condition("gene_symbol", "in", *genes))},
+            content=group(condition("gene_symbol", "in", *genes)),
         )
     )
 
@@ -80,7 +80,7 @@ async def saved_ranking(services, harness, user_id, *, name="Weighted Priority")
             request=harness.request,
             name=name,
             scope=QueryScope.PERSONAL,
-            content=ranking_content(),
+            content=ranking_content()["configuration"],
             method_id="weighted_field_score",
         )
     )
@@ -176,7 +176,7 @@ async def test_editing_the_saved_filter_afterwards_leaves_the_run_untouched(tmp_
             request=harness.request,
             definition_id=saved.definition.id,
             expected_version=saved.definition.record_version,
-            content={"expression": group(condition("gene_symbol", "in", "CFTR", "ABCA4"))},
+            content=group(condition("gene_symbol", "in", "CFTR", "ABCA4")),
             change_note="widened the gene list",
         )
     )
@@ -206,7 +206,7 @@ async def test_a_referenced_version_is_never_rewritten_in_place(tmp_path):
             request=harness.request,
             definition_id=saved.definition.id,
             expected_version=saved.definition.record_version,
-            content={"expression": group(condition("gene_symbol", "in", "ABCA4"))},
+            content=group(condition("gene_symbol", "in", "ABCA4")),
         )
     )
     unchanged = await harness.repositories.filter_definitions.find_version(
@@ -225,7 +225,7 @@ async def test_an_explicit_version_number_is_honoured_over_the_latest(tmp_path):
             request=harness.request,
             definition_id=saved.definition.id,
             expected_version=saved.definition.record_version,
-            content={"expression": group(condition("gene_symbol", "in", "ABCA4"))},
+            content=group(condition("gene_symbol", "in", "ABCA4")),
         )
     )
     assert updated.latest_version.version_number == 2
@@ -274,7 +274,7 @@ async def test_a_preset_and_a_custom_expression_are_both_recorded(tmp_path):
             request=harness.request,
             name="Rare Disease",
             scope=QueryScope.PLATFORM,
-            content={"expression": group(condition("allele_frequency", "less_than", 0.01))},
+            content=group(condition("allele_frequency", "less_than", 0.01)),
         )
     )
     execution = await bound_execution(
