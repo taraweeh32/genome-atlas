@@ -20,7 +20,7 @@ from app.domain.query.expressions import (
     node_depth,
 )
 from app.domain.query.fields import DEFAULT_FIELD_REGISTRY, FIELD_DICTIONARY_VERSION
-from app.domain.query.operators import FilterDataType, FilterOperator
+from app.domain.query.operators import FilterDataType, FilterOperator, operators_for
 from app.domain.query.validation import (
     FilterLimits,
     combine_expressions,
@@ -103,7 +103,7 @@ class TestTypeAwareValidation:
     def test_a_value_that_is_not_of_the_declared_type_is_refused(self) -> None:
         with pytest.raises(ValidationError) as error:
             validated(group(condition("allele_frequency", "less_than", "rare")))
-        assert "invalid_value" in codes(error.value)
+        assert "type_mismatch" in codes(error.value)
 
     def test_a_boolean_is_not_inferred_from_an_arbitrary_string(self) -> None:
         with pytest.raises(ValidationError):
@@ -116,17 +116,17 @@ class TestTypeAwareValidation:
     def test_a_presence_test_with_a_value_is_refused(self) -> None:
         with pytest.raises(ValidationError) as error:
             validated(group(condition("allele_frequency", "is_missing", 0)))
-        assert "unexpected_values" in codes(error.value)
+        assert "unexpected_value" in codes(error.value)
 
     def test_a_range_operator_needs_both_bounds(self) -> None:
         with pytest.raises(ValidationError) as error:
             validated(group(condition("position", "between", 100)))
-        assert "value_count" in codes(error.value)
+        assert "wrong_value_count" in codes(error.value)
 
     def test_a_list_operator_with_no_value_is_refused(self) -> None:
         with pytest.raises(ValidationError) as error:
             validated(group(condition("gene_symbol", "in")))
-        assert "value_count" in codes(error.value)
+        assert "wrong_value_count" in codes(error.value)
 
     def test_every_issue_is_reported_at_once_not_one_at_a_time(self) -> None:
         with pytest.raises(ValidationError) as error:
@@ -148,7 +148,7 @@ class TestTypeAwareValidation:
                 group(condition("gene_symbol", "equals", "CFTR")),
                 available_field_ids=frozenset({"contig", "position"}),
             )
-        assert "field_unavailable" in codes(error.value)
+        assert "field_not_in_context" in codes(error.value)
 
 
 class TestResourceLimits:
@@ -265,10 +265,10 @@ class TestCombination:
 
 
 def test_every_registered_field_publishes_only_operators_its_type_supports() -> None:
-    for definition in REGISTRY.fields:
+    for definition in REGISTRY.definitions:
         for operator in definition.supported_operators:
             assert isinstance(operator, FilterOperator)
-            assert operator in definition.data_type.operators, (
+            assert operator in operators_for(definition.data_type), (
                 f"{definition.id} publishes {operator} which {definition.data_type} "
                 "does not support"
             )
