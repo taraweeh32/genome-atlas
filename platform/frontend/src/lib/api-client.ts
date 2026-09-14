@@ -1600,8 +1600,21 @@ export class ApiClient {
    * Interpretations the caller may read. `assigned_to_me` narrows to the
    * caller's own review queue; the backend, not the browser, decides visibility.
    */
-  interpretations(params: Record<string, string | number | boolean | undefined> = {}): Promise<InterpretationCollection> {
-    return this.request<InterpretationCollection>(`/interpretations${this.query(params)}`);
+  interpretations(params?: {
+    workspace_id?: string;
+    project_id?: string;
+    variant_id?: string;
+    state?: string;
+    assigned_to_me?: boolean;
+  }): Promise<InterpretationCollection> {
+    const search = new URLSearchParams();
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    if (params?.variant_id) search.set("variant_id", params.variant_id);
+    if (params?.state) search.set("state", params.state);
+    if (params?.assigned_to_me) search.set("assigned_to_me", "true");
+    const query = search.toString();
+    return this.request<InterpretationCollection>(`/interpretations${query ? `?${query}` : ""}`);
   }
 
   interpretation(interpretationId: string): Promise<InterpretationDetailResponse> {
