@@ -486,9 +486,12 @@ def _validate_claim(
                 "the populated value slot does not match the declared type",
                 {"populated": populated[0], "expected": _TYPED_SLOTS[value_type]},
             )
-        if specification.allowed_values and claim.value_string is not None:
-            if claim.value_string not in specification.allowed_values:
-                return (
+        if (
+            specification.allowed_values
+            and claim.value_string is not None
+            and claim.value_string not in specification.allowed_values
+        ):
+            return (
                     "value_not_allowed",
                     "the value is outside the vocabulary the field declares",
                     {"value": claim.value_string},
