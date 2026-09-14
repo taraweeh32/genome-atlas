@@ -15,11 +15,11 @@ from collections.abc import Awaitable, Callable
 from typing import Any
 
 from app.application.services.context import RequestContext
-from app.application.use_cases.query.dependencies import QueryServices
 from app.application.use_cases.query.deferred import (
     QUERY_JOB_KIND,
     RunDeferredVariantQuery,
 )
+from app.application.use_cases.query.dependencies import QueryServices
 from app.core.logging import get_logger
 from app.domain.errors import ValidationError
 from app.domain.value_objects.enums import JobKind

@@ -23,8 +23,7 @@ from tests.query.support import (
     surface_result_set,
     write_surface,
 )
-from tests.support.actors import actor_for
-from tests.support.actors import create_account
+from tests.support.actors import actor_for, create_account
 from tests.support.services import build_harness
 
 

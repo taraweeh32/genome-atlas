@@ -12,14 +12,14 @@ from app.application.ports import HealthProbe
 from app.application.services.authorization import AuthorizationService
 from app.application.services.sessions import SessionService
 from app.application.use_cases.analysis.dependencies import AnalysisServices
-from app.application.use_cases.query.dependencies import QueryServices
-from app.application.use_cases.results.dependencies import ResultServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
 )
 from app.application.use_cases.get_readiness import GetReadiness
 from app.application.use_cases.identity.dependencies import IdentityServices
+from app.application.use_cases.query.dependencies import QueryServices
+from app.application.use_cases.results.dependencies import ResultServices
 from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.core.app_config import ApplicationSettings, get_application_settings
 from app.core.environment import EnvironmentSettings, get_environment_settings

@@ -90,7 +90,7 @@ async def test_a_malformed_filter_is_refused_before_any_job_exists(tmp_path):
 
 
 async def test_an_unrelated_account_cannot_defer_a_query_over_the_surface(tmp_path):
-    harness, user_id, result_set, services = await build_surface(tmp_path)
+    harness, _owner_id, result_set, services = await build_surface(tmp_path)
     stranger = await create_account(harness, "stranger@example.org")
 
     with pytest.raises(AuthorizationError):

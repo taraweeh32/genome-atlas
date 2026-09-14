@@ -25,8 +25,8 @@ DuckDB is synchronous, so every call runs in a worker thread.
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
 import time
+from pathlib import Path
 
 from app.application.ports import (
     AnalyticalColumn,

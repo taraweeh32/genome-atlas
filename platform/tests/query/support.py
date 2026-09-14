@@ -20,9 +20,9 @@ from app.application.repositories import Page
 from app.application.use_cases.query.dependencies import QueryServices
 from app.core.app_config import ApplicationSettings
 from app.core.environment import AnalyticsSettings
+from app.domain.query.fields import DEFAULT_FIELD_REGISTRY
 from app.infrastructure.analytics.duckdb_gateway import AnalyticsGateway
 from app.infrastructure.analytics.query_engine import DuckDbQueryEngine
-from app.domain.query.fields import DEFAULT_FIELD_REGISTRY
 from tests.results.support import available_result, execution_for
 
 PAGE = Page(number=1, size=25)

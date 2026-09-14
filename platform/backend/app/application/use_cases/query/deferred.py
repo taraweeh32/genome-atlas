@@ -37,10 +37,10 @@ from app.application.use_cases.query.dependencies import (
     resolve_workspace_scope,
 )
 from app.application.use_cases.query.execution import (
+    ExecuteVariantQuery,
     FilterSelection,
     RankingSelection,
     VariantQueryCommand,
-    ExecuteVariantQuery,
 )
 from app.domain.analysis.policies import default_queue_for, node_class_for
 from app.domain.authorization.context import ActorContext
@@ -75,8 +75,8 @@ class DeferVariantQueryCommand:
     actor: ActorContext
     request: RequestContext
     result_set_id: str
-    filter: FilterSelection = FilterSelection()
-    ranking: RankingSelection = RankingSelection()
+    filter: FilterSelection = field(default_factory=FilterSelection)
+    ranking: RankingSelection = field(default_factory=RankingSelection)
     field_ids: tuple[str, ...] = ()
     sort_field_id: str | None = None
     sort_descending: bool = False
