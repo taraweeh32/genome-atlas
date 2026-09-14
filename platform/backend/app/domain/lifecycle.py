@@ -33,6 +33,7 @@ from app.domain.value_objects.enums import (
     NodeLifecycleState,
     OrganizationState,
     ProjectState,
+    QueryDefinitionState,
     ResultArtifactState,
     ResultIngestionState,
     ResultSetState,
@@ -666,6 +667,20 @@ TERMINAL_JOB_STATES: frozenset[JobState] = frozenset(
 )
 
 
+#: Saved filters, filter presets, ranking configurations and ranking presets all
+#: share one lifecycle: a definition is drafted, published (from which point its
+#: versions may be referenced by executions and are immutable), and eventually
+#: archived. Archiving is reversible because withdrawing a preset from a menu is
+#: not a deletion; nothing an execution referenced is ever affected.
+QUERY_DEFINITION_TRANSITIONS: Mapping[QueryDefinitionState, frozenset[QueryDefinitionState]] = {
+    QueryDefinitionState.DRAFT: frozenset(
+        {QueryDefinitionState.PUBLISHED, QueryDefinitionState.ARCHIVED}
+    ),
+    QueryDefinitionState.PUBLISHED: frozenset({QueryDefinitionState.ARCHIVED}),
+    QueryDefinitionState.ARCHIVED: frozenset({QueryDefinitionState.PUBLISHED}),
+}
+
+
 _TABLES: dict[str, Mapping[StrEnum, frozenset[StrEnum]]] = {
     "account": ACCOUNT_TRANSITIONS,  # type: ignore[dict-item]
     "email_verification": EMAIL_VERIFICATION_TRANSITIONS,  # type: ignore[dict-item]
@@ -691,6 +706,10 @@ _TABLES: dict[str, Mapping[StrEnum, frozenset[StrEnum]]] = {
     "result_set": RESULT_SET_TRANSITIONS,  # type: ignore[dict-item]
     "result_artifact": RESULT_ARTIFACT_TRANSITIONS,  # type: ignore[dict-item]
     "result_ingestion": RESULT_INGESTION_TRANSITIONS,  # type: ignore[dict-item]
+    "filter_definition": QUERY_DEFINITION_TRANSITIONS,  # type: ignore[dict-item]
+    "filter_preset": QUERY_DEFINITION_TRANSITIONS,  # type: ignore[dict-item]
+    "ranking_definition": QUERY_DEFINITION_TRANSITIONS,  # type: ignore[dict-item]
+    "ranking_preset": QUERY_DEFINITION_TRANSITIONS,  # type: ignore[dict-item]
 }
 
 
@@ -734,6 +753,7 @@ __all__ = [
     "NODE_LIFECYCLE_TRANSITIONS",
     "ORGANIZATION_TRANSITIONS",
     "PROJECT_TRANSITIONS",
+    "QUERY_DEFINITION_TRANSITIONS",
     "READABLE_RESULT_SET_STATES",
     "RESULT_ARTIFACT_TRANSITIONS",
     "RESULT_INGESTION_TRANSITIONS",
