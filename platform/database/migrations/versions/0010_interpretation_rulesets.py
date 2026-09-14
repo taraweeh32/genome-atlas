@@ -372,11 +372,11 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     """
     ALTER TABLE app.criterion_evaluations ADD CONSTRAINT
     fk_criterion_evaluations_classification_evaluation_id FOREIGN KEY
-    (classification_evaluation_id) REFERENCES app.classification_evaluations (id)
+    (classification_evaluation_id) REFERENCES app.classification_evaluations (id) ON DELETE RESTRICT
     """,
     """
     ALTER TABLE app.criterion_evaluations ADD CONSTRAINT fk_criterion_evaluations_ruleset_id
-    FOREIGN KEY (ruleset_id) REFERENCES app.interpretation_rulesets (id)
+    FOREIGN KEY (ruleset_id) REFERENCES app.interpretation_rulesets (id) ON DELETE RESTRICT
     """,
     """
     CREATE INDEX ix_criterion_evaluations_classification_evaluation_id ON

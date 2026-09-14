@@ -155,17 +155,17 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     """,
     """
     ALTER TABLE app.interpretation_versions ADD CONSTRAINT fk_interpretation_versions_ruleset_id
-    FOREIGN KEY (ruleset_id) REFERENCES app.interpretation_rulesets (id)
+    FOREIGN KEY (ruleset_id) REFERENCES app.interpretation_rulesets (id) ON DELETE RESTRICT
     """,
     """
     ALTER TABLE app.interpretation_versions ADD CONSTRAINT
     fk_interpretation_versions_classification_evaluation_id FOREIGN KEY
-    (classification_evaluation_id) REFERENCES app.classification_evaluations (id)
+    (classification_evaluation_id) REFERENCES app.classification_evaluations (id) ON DELETE RESTRICT
     """,
     """
     ALTER TABLE app.interpretation_versions ADD CONSTRAINT
     fk_interpretation_versions_automated_classification_id FOREIGN KEY
-    (automated_classification_id) REFERENCES app.automated_classifications (id)
+    (automated_classification_id) REFERENCES app.automated_classifications (id) ON DELETE RESTRICT
     """,
     """
     ALTER TABLE app.interpretation_versions ADD CONSTRAINT
