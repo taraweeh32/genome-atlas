@@ -66,7 +66,6 @@ class Report(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         state_check("deletion_state", DeletionState, "deletion_state_valid"),
         state_check("state", ReportState, "state_valid"),
         Index("ix_reports_workspace_id_state", "workspace_id", "state"),
-        Index("ix_reports_project_id", "project_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -91,7 +90,6 @@ class ReportVersion(Base, TimestampMixin):
         UniqueConstraint("report_id", "version_number",
                          name="uq_report_versions_report_id_version_number"),
         state_check("checksum_algorithm", ChecksumAlgorithm, "checksum_algorithm_valid"),
-        Index("ix_report_versions_report_id", "report_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -124,8 +122,6 @@ class ReportVersionInterpretation(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("report_version_id", "interpretation_version_id",
                          name="uq_report_version_interpretations_version_interpretation"),
-        Index("ix_report_version_interpretations_interpretation_version_id",
-              "interpretation_version_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -145,7 +141,6 @@ class ExportRequest(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         state_check("state", ExportState, "state_valid"),
         state_check("export_format", ExportFormat, "export_format_valid"),
         Index("ix_export_requests_workspace_id_state", "workspace_id", "state"),
-        Index("ix_export_requests_requested_by", "requested_by"),
     )
 
     id: Mapped[str] = id_column()

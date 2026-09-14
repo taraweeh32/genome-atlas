@@ -54,7 +54,6 @@ class Job(Base, TimestampMixin, ConcurrencyMixin):
               "available_at"),
         Index("ix_jobs_state_lease_expires_at", "state", "lease_expires_at"),
         Index("ix_jobs_correlation_id", "correlation_id"),
-        Index("ix_jobs_analysis_execution_id", "analysis_execution_id"),
         {"schema": OPERATIONAL_SCHEMA},
     )
 
@@ -154,7 +153,6 @@ class ScheduledJob(Base, TimestampMixin, ConcurrencyMixin):
         state_check("missed_policy", MissedSchedulePolicy, "missed_policy_valid"),
         state_check("queue", JobQueue, "queue_valid"),
         Index("ix_scheduled_jobs_state_next_execution_at", "state", "next_execution_at"),
-        Index("ix_scheduled_jobs_workspace_id", "workspace_id"),
         {"schema": OPERATIONAL_SCHEMA},
     )
 

@@ -76,11 +76,6 @@ class VariantRepresentation(Base, TimestampMixin):
         ),
         state_check("normalization_state", NormalizationState, "normalization_state_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
-        Index("ix_variant_representations_variant_id", "variant_id"),
-        Index(
-            "ix_variant_representations_scientific_execution_id",
-            "scientific_execution_id",
-        ),
     )
 
     id: Mapped[str] = id_column()
@@ -123,8 +118,6 @@ class DatasetVersionVariant(Base, TimestampMixin):
             "variant_id",
             name="uq_dataset_version_variants_dataset_version_id_variant_id",
         ),
-        Index("ix_dataset_version_variants_variant_id", "variant_id"),
-        Index("ix_dataset_version_variants_workspace_id", "workspace_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -192,10 +185,6 @@ class ResultIngestionRequest(Base, TimestampMixin, ConcurrencyMixin):
         state_check("state", ResultIngestionState, "state_valid"),
         state_check("declared_completeness", ResultCompleteness, "declared_completeness_valid"),
         Index("ix_result_ingestion_requests_workspace_id_state", "workspace_id", "state"),
-        Index(
-            "ix_result_ingestion_requests_analysis_execution_id",
-            "analysis_execution_id",
-        ),
         Index("ix_result_ingestion_requests_correlation_id", "correlation_id"),
     )
 

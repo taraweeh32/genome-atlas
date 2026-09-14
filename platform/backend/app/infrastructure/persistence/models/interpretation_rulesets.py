@@ -218,8 +218,6 @@ class ClassificationEvaluationRow(Base, TimestampMixin, ConcurrencyMixin):
         ),
         state_check("state", ClassificationEvaluationState, "state_valid"),
         Index("ix_classification_evaluations_workspace_id_state", "workspace_id", "state"),
-        Index("ix_classification_evaluations_variant_id", "variant_id"),
-        Index("ix_classification_evaluations_ruleset_id", "ruleset_id"),
         Index("ix_classification_evaluations_input_digest", "input_digest"),
     )
 
@@ -299,7 +297,6 @@ class AutomatedClassificationRow(Base, TimestampMixin):
         state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
         Index("ix_automated_classifications_variant_id_ruleset_id",
               "variant_id", "ruleset_id"),
-        Index("ix_automated_classifications_workspace_id", "workspace_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -397,7 +394,6 @@ class RulesetBenchmarkRunRow(Base, TimestampMixin):
     __tablename__ = "ruleset_benchmark_runs"
     __table_args__ = (
         state_check("validation_kind", BenchmarkValidationKind, "validation_kind_valid"),
-        Index("ix_ruleset_benchmark_runs_ruleset_id", "ruleset_id"),
     )
 
     id: Mapped[str] = id_column()

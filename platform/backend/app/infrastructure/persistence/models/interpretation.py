@@ -70,10 +70,8 @@ class EvidenceItem(Base, TimestampMixin, ConcurrencyMixin):
         state_check("origin", DataOrigin, "origin_valid"),
         state_check("applicability", EvidenceApplicability, "applicability_valid"),
         state_check("state", EvidenceRecordState, "state_valid"),
-        Index("ix_evidence_items_variant_id", "variant_id"),
         Index("ix_evidence_items_workspace_id_project_id", "workspace_id", "project_id"),
         Index("ix_evidence_items_source_key_source_version", "source_key", "source_version"),
-        Index("ix_evidence_items_ingestion_batch_id", "ingestion_batch_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -155,7 +153,6 @@ class CriterionEvaluation(Base, TimestampMixin, ConcurrencyMixin):
         state_check("strength", CriterionStrength, "strength_valid"),
         state_check("direction", CriterionDirection, "direction_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
-        Index("ix_criterion_evaluations_variant_id", "variant_id"),
         Index("ix_criterion_evaluations_interpretation_id", "interpretation_id"),
         Index("ix_criterion_evaluations_criterion_key", "criterion_key"),
         Index("ix_criterion_evaluations_classification_evaluation_id",
@@ -240,7 +237,6 @@ class Interpretation(Base, TimestampMixin, ConcurrencyMixin, RetentionMixin):
         state_check("state", InterpretationState, "state_valid"),
         state_check("review_state", ReviewState, "review_state_valid"),
         Index("ix_interpretations_workspace_id_state", "workspace_id", "state"),
-        Index("ix_interpretations_variant_id", "variant_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -274,7 +270,6 @@ class InterpretationVersion(Base, TimestampMixin):
         state_check("classification", Classification, "classification_valid"),
         state_check("origin", DataOrigin, "origin_valid"),
         state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
-        Index("ix_interpretation_versions_interpretation_id", "interpretation_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -373,8 +368,6 @@ class ReviewDecision(Base, TimestampMixin):
     __table_args__ = (
         state_check("decision", ReviewDecisionVocabulary, "decision_valid"),
         state_check("decision_role", ClassificationDecisionRole, "decision_role_valid"),
-        Index("ix_review_decisions_interpretation_version_id", "interpretation_version_id"),
-        Index("ix_review_decisions_reviewer_user_id", "reviewer_user_id"),
     )
 
     id: Mapped[str] = id_column()

@@ -113,7 +113,6 @@ class VariantSourceRepresentation(Base, TimestampMixin):
             name="uq_variant_source_representations_dataset_version_id_record_key",
         ),
         state_check("normalization_state", NormalizationState, "normalization_state_valid"),
-        Index("ix_variant_source_representations_variant_id", "variant_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -197,7 +196,6 @@ class Transcript(Base, TimestampMixin):
             "namespace", "transcript_identifier", "transcript_version",
             name="uq_transcripts_namespace_transcript_identifier_version",
         ),
-        Index("ix_transcripts_gene_id", "gene_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -222,8 +220,6 @@ class VariantTranscriptConsequence(Base, TimestampMixin):
             name="uq_variant_transcript_consequences_identity",
         ),
         state_check("origin", DataOrigin, "origin_valid"),
-        Index("ix_variant_transcript_consequences_variant_id", "variant_id"),
-        Index("ix_variant_transcript_consequences_gene_id", "gene_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -260,7 +256,6 @@ class Sample(Base, TimestampMixin):
     __table_args__ = (
         UniqueConstraint("dataset_version_id", "sample_key",
                          name="uq_samples_dataset_version_id_sample_key"),
-        Index("ix_samples_workspace_id", "workspace_id"),
     )
 
     id: Mapped[str] = id_column()
@@ -286,8 +281,6 @@ class VariantObservation(Base, TimestampMixin):
         ),
         state_check("zygosity", Zygosity, "zygosity_valid"),
         state_check("genotype_semantics", ValueSemantics, "genotype_semantics_valid"),
-        Index("ix_variant_observations_variant_id", "variant_id"),
-        Index("ix_variant_observations_dataset_version_id", "dataset_version_id"),
     )
 
     id: Mapped[str] = id_column()

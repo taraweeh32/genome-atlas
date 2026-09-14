@@ -39,10 +39,6 @@ class InterpretationVersionCriterion(Base, TimestampMixin):
             "criterion_evaluation_id",
             name="uq_interpretation_version_criteria_version_criterion",
         ),
-        Index(
-            "ix_interpretation_version_criteria_criterion_evaluation_id",
-            "criterion_evaluation_id",
-        ),
     )
 
     id: Mapped[str] = id_column()
@@ -61,10 +57,6 @@ class InterpretationVersionEvidence(Base, TimestampMixin):
             "interpretation_version_id",
             "evidence_item_id",
             name="uq_interpretation_version_evidence_version_evidence",
-        ),
-        Index(
-            "ix_interpretation_version_evidence_evidence_item_id",
-            "evidence_item_id",
         ),
     )
 

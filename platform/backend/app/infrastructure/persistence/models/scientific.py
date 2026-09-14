@@ -98,7 +98,6 @@ class ScientificExecution(Base, TimestampMixin):
     __tablename__ = "scientific_executions"
     __table_args__ = (
         state_check("state", ScientificExecutionState, "state_valid"),
-        Index("ix_scientific_executions_analysis_execution_id", "analysis_execution_id"),
         Index("ix_scientific_executions_correlation_id", "correlation_id"),
         Index("ix_scientific_executions_state_submitted_at", "state", "submitted_at"),
     )
