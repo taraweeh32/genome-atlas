@@ -36,6 +36,12 @@ this point in the schema history. It deliberately does not import the current
 SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
 must describe the schema as it was, so evolving the ORM can never rewrite
 history.
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
 """
 
 from __future__ import annotations
@@ -57,7 +63,7 @@ TABLES: tuple[str, ...] = (
 UPGRADE_STATEMENTS: tuple[str, ...] = (
     """
     ALTER TABLE app.interpretation_versions ADD COLUMN decision_role VARCHAR(64) NOT NULL
-    DEFAULT reviewer_decision
+    DEFAULT 'reviewer_decision'
     """,
     """
     ALTER TABLE app.interpretation_versions ADD COLUMN ruleset_id VARCHAR(64)
@@ -82,7 +88,7 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     """,
     """
     ALTER TABLE app.review_decisions ADD COLUMN decision_role VARCHAR(64) NOT NULL DEFAULT
-    reviewer_decision
+    'reviewer_decision'
     """,
     """
     ALTER TABLE app.review_decisions ADD COLUMN review_round INTEGER NOT NULL DEFAULT 1

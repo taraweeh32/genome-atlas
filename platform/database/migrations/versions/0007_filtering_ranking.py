@@ -50,6 +50,12 @@ this point in the schema history. It deliberately does not import the current
 SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
 must describe the schema as it was, so evolving the ORM can never rewrite
 history.
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
 """
 
 from __future__ import annotations

@@ -39,6 +39,12 @@ this point in the schema history. It deliberately does not import the current
 SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
 must describe the schema as it was, so evolving the ORM can never rewrite
 history.
+
+This revision is **self-contained**: every statement is literal SQL frozen at
+this point in the schema history. It deliberately does not import the current
+SQLAlchemy models, ``Base.metadata`` or the domain vocabularies — a migration
+must describe the schema as it was, so evolving the ORM can never rewrite
+history.
 """
 
 from __future__ import annotations
@@ -175,10 +181,10 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     """,
     """
     ALTER TABLE app.evidence_items ADD COLUMN applicability VARCHAR(64) NOT NULL DEFAULT
-    undetermined
+    'undetermined'
     """,
     """
-    ALTER TABLE app.evidence_items ADD COLUMN state VARCHAR(64) NOT NULL DEFAULT recorded
+    ALTER TABLE app.evidence_items ADD COLUMN state VARCHAR(64) NOT NULL DEFAULT 'recorded'
     """,
     """
     ALTER TABLE app.evidence_items ADD COLUMN method VARCHAR(255)
