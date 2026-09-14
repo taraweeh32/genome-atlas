@@ -158,7 +158,7 @@ async def test_profile_pins_resource_versions_and_refuses_unusable_ones():
             state=ScientificResourceState.ACTIVE,
         )
     )
-    _profile, view = await published_profile(
+    profile, view = await published_profile(
         harness, admin_id, resource_ids=(record.id,)
     )
     version = view.versions[0]
