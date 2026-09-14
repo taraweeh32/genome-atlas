@@ -991,3 +991,47 @@ class DuplicateRelation(StrEnum):
     NONE = "none"
     SAME_CHECKSUM_IN_SCOPE = "same_checksum_in_scope"
     SAME_NAME_IN_SCOPE = "same_name_in_scope"
+
+
+class QueryScope(StrEnum):
+    """Who a saved filter, preset or ranking configuration is visible to.
+
+    The order is a widening one, but visibility is never *inherited upwards*: a
+    personal configuration is never globally visible, and an organization
+    configuration is never available to an unrelated organization. The scope
+    states where a configuration may be offered; authorization still decides
+    whether a given caller may see or use it.
+    """
+
+    PERSONAL = "personal"
+    PROJECT = "project"
+    ORGANIZATION = "organization"
+    PLATFORM = "platform"
+
+
+class QueryDefinitionState(StrEnum):
+    """Lifecycle of a saved filter, preset or ranking configuration.
+
+    ``PUBLISHED`` is the point from which a version may be referenced by an
+    analysis execution; from then on that *version* is immutable and editing
+    produces a new one. ``ARCHIVED`` withdraws a definition from being offered
+    without removing anything an execution already referenced.
+    """
+
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
+class QueryExecutionOutcome(StrEnum):
+    """How a filter or ranking execution ended.
+
+    Recorded so an empty page can be told apart from a query the platform
+    stopped: zero surviving variants and a refused query must never look alike.
+    """
+
+    COMPLETED = "completed"
+    LIMIT_EXCEEDED = "limit_exceeded"
+    TIMED_OUT = "timed_out"
+    CANCELLED = "cancelled"
+    FAILED = "failed"

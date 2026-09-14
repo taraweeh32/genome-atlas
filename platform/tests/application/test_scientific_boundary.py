@@ -139,6 +139,14 @@ VOCABULARY_ONLY_PATHS = (
     "api/v1/schemas/results.py",
     "api/v1/result_mapping.py",
     "api/v1/routes/results.py",
+    # Filtering and ranking (Package 7). These modules name the recorded fields
+    # they let a user filter and prioritize on — a frequency column is still
+    # called a frequency, and a clinical significance term is still quoted as the
+    # source reported it. Not one of them derives such a value: the filter layer
+    # compiles declared conditions into a parameterized query, and the ranking
+    # layer combines already-stored values using weights and orderings supplied
+    # entirely by the configuration author. The derivation guard below applies.
+    "domain/query",
 )
 
 #: Constructs that would mean a scientific decision is being *derived* here.
