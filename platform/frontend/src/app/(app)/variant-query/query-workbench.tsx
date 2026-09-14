@@ -378,7 +378,7 @@ export function QueryWorkbench() {
   const available = resultSets.data?.items ?? [];
 
   return (
-    <div className={styles.filters}>
+    <div className={queryStyles.builder}>
       <Card
         title="Result surface"
         description="A variant query always runs against one result set you are authorized to read."
