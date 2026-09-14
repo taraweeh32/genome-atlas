@@ -492,10 +492,10 @@ def _validate_claim(
             and claim.value_string not in specification.allowed_values
         ):
             return (
-                    "value_not_allowed",
-                    "the value is outside the vocabulary the field declares",
-                    {"value": claim.value_string},
-                )
+                "value_not_allowed",
+                "the value is outside the vocabulary the field declares",
+                {"value": claim.value_string},
+            )
     else:
         if populated:
             # The whole point of the semantics field: "missing" may never smuggle
