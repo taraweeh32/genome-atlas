@@ -27,6 +27,7 @@ describe("navigation model", () => {
     // scientific modules stay unavailable rather than linking to empty pages.
     expect(available.map((item) => item.href).sort()).toEqual([
       "/admin",
+      "/admin/annotation",
       "/admin/query",
       "/analyses",
       "/dashboard",
