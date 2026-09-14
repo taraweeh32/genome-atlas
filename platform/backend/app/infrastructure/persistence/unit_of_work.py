@@ -15,22 +15,27 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.repositories.analysis import (
+    SqlAnalysisConfigurationRepository,
+    SqlAnalysisExecutionRepository,
+    SqlAnalysisRepository,
+)
 from app.infrastructure.persistence.repositories.annotation import (
     SqlAnnotationProfileRepository,
     SqlAnnotationResourceRepository,
     SqlAnnotationResultRepository,
     SqlAnnotationRunRepository,
 )
-from app.infrastructure.persistence.repositories.analysis import (
-    SqlAnalysisConfigurationRepository,
-    SqlAnalysisExecutionRepository,
-    SqlAnalysisRepository,
-)
 from app.infrastructure.persistence.repositories.datasets import (
     SqlDatasetRepository,
     SqlDatasetVersionRepository,
     SqlFileArtifactRepository,
     SqlUploadSessionRepository,
+)
+from app.infrastructure.persistence.repositories.evidence import (
+    SqlEvidenceIngestionRepository,
+    SqlEvidenceRecordRepository,
+    SqlEvidenceSourceRepository,
 )
 from app.infrastructure.persistence.repositories.governance import (
     SqlAuditRepository,
@@ -51,7 +56,16 @@ from app.infrastructure.persistence.repositories.ingest import (
     SqlValidationIssueRepository,
     SqlValidationRunRepository,
 )
+from app.infrastructure.persistence.repositories.interpretation_rulesets import (
+    SqlClassificationEvaluationRepository,
+    SqlRulesetBenchmarkRepository,
+    SqlRulesetRepository,
+)
 from app.infrastructure.persistence.repositories.jobs import SqlJobRepository
+from app.infrastructure.persistence.repositories.projects import (
+    SqlProjectMembershipRepository,
+    SqlProjectRepository,
+)
 from app.infrastructure.persistence.repositories.queries import (
     SqlFilterDefinitionRepository,
     SqlFilterPresetRepository,
@@ -60,14 +74,14 @@ from app.infrastructure.persistence.repositories.queries import (
     SqlRankingPresetRepository,
     SqlSavedViewRepository,
 )
-from app.infrastructure.persistence.repositories.projects import (
-    SqlProjectMembershipRepository,
-    SqlProjectRepository,
-)
 from app.infrastructure.persistence.repositories.results import (
     SqlResultArtifactRepository,
     SqlResultIngestionRepository,
     SqlResultSetRepository,
+)
+from app.infrastructure.persistence.repositories.review import (
+    SqlInterpretationRepository,
+    SqlReviewRepository,
 )
 from app.infrastructure.persistence.repositories.scheduling import (
     SqlComputeNodeRepository,
@@ -144,6 +158,14 @@ class SqlRepositories:
     annotation_profiles: SqlAnnotationProfileRepository
     annotation_runs: SqlAnnotationRunRepository
     annotation_results: SqlAnnotationResultRepository
+    evidence_sources: SqlEvidenceSourceRepository
+    evidence_records: SqlEvidenceRecordRepository
+    evidence_ingestions: SqlEvidenceIngestionRepository
+    interpretations: SqlInterpretationRepository
+    reviews: SqlReviewRepository
+    rulesets: SqlRulesetRepository
+    classification_evaluations: SqlClassificationEvaluationRepository
+    ruleset_benchmarks: SqlRulesetBenchmarkRepository
     jobs: SqlJobRepository
     audit: SqlAuditRepository
     security_events: SqlSecurityEventRepository
@@ -199,6 +221,14 @@ class SqlRepositories:
             annotation_profiles=SqlAnnotationProfileRepository(session),
             annotation_runs=SqlAnnotationRunRepository(session),
             annotation_results=SqlAnnotationResultRepository(session),
+            evidence_sources=SqlEvidenceSourceRepository(session),
+            evidence_records=SqlEvidenceRecordRepository(session),
+            evidence_ingestions=SqlEvidenceIngestionRepository(session),
+            interpretations=SqlInterpretationRepository(session),
+            reviews=SqlReviewRepository(session),
+            rulesets=SqlRulesetRepository(session),
+            classification_evaluations=SqlClassificationEvaluationRepository(session),
+            ruleset_benchmarks=SqlRulesetBenchmarkRepository(session),
             jobs=SqlJobRepository(session),
             audit=SqlAuditRepository(session),
             security_events=SqlSecurityEventRepository(session),

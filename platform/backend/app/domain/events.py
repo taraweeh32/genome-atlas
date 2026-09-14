@@ -142,6 +142,36 @@ class EventType:
     ANNOTATION_RUN_FAILED = "annotation_run.failed"
     ANNOTATION_RESULT_INGESTED = "annotation_result.ingested"
     ANNOTATION_RESULT_REJECTED = "annotation_result.rejected"
+    EVIDENCE_SOURCE_REGISTERED = "evidence_source.registered"
+    EVIDENCE_SOURCE_STATE_CHANGED = "evidence_source.state_changed"
+    EVIDENCE_INGESTION_ACCEPTED = "evidence_ingestion.accepted"
+    EVIDENCE_INGESTION_REJECTED = "evidence_ingestion.rejected"
+    EVIDENCE_RECORDED = "evidence.recorded"
+    EVIDENCE_SUPERSEDED = "evidence.superseded"
+    EVIDENCE_WITHDRAWN = "evidence.withdrawn"
+    RULESET_REGISTERED = "ruleset.registered"
+    RULESET_STATE_CHANGED = "ruleset.state_changed"
+    CLASSIFICATION_EVALUATION_REQUESTED = "classification_evaluation.requested"
+    CLASSIFICATION_EVALUATION_SUBMITTED = "classification_evaluation.submitted"
+    CLASSIFICATION_EVALUATION_COMPLETED = "classification_evaluation.completed"
+    CLASSIFICATION_EVALUATION_FAILED = "classification_evaluation.failed"
+    CLASSIFICATION_EVALUATION_REJECTED = "classification_evaluation.rejected"
+    AUTOMATED_CLASSIFICATION_RECORDED = "automated_classification.recorded"
+    AUTOMATED_CLASSIFICATION_SUPERSEDED = "automated_classification.superseded"
+    RULESET_BENCHMARK_CASE_REGISTERED = "ruleset_benchmark_case.registered"
+    RULESET_BENCHMARK_EXECUTED = "ruleset_benchmark.executed"
+    # Package 11: interpretation, human review and adjudication. Each of these is
+    # a distinct fact — an automated suggestion, a reviewer decision, an
+    # adjudicated decision and a finalization are never the same event.
+    INTERPRETATION_OPENED = "interpretation.opened"
+    INTERPRETATION_VERSION_RECORDED = "interpretation_version.recorded"
+    INTERPRETATION_STATE_CHANGED = "interpretation.state_changed"
+    INTERPRETATION_FINALIZED = "interpretation.finalized"
+    INTERPRETATION_RECLASSIFIED = "interpretation.reclassified"
+    REVIEW_ASSIGNED = "review.assigned"
+    REVIEW_DECISION_RECORDED = "review_decision.recorded"
+    REVIEW_DISAGREEMENT_DETECTED = "review.disagreement_detected"
+    REVIEW_ADJUDICATED = "review.adjudicated"
 
 
 @dataclass(frozen=True, slots=True)

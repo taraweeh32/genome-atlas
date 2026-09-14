@@ -35,6 +35,10 @@ from app.infrastructure.persistence.models.dataset import (
     DatasetVersion,
     FileArtifact,
 )
+from app.infrastructure.persistence.models.evidence_registry import (
+    EvidenceIngestionBatchRow,
+    EvidenceValidationFindingRow,
+)
 from app.infrastructure.persistence.models.governance import (
     AuditEvent,
     ConfigurationSetting,
@@ -69,6 +73,19 @@ from app.infrastructure.persistence.models.interpretation import (
     ReviewAssignment,
     ReviewDecision,
 )
+from app.infrastructure.persistence.models.interpretation_rulesets import (
+    AutomatedClassificationRow,
+    ClassificationEvaluationRow,
+    InterpretationCombinationRuleRow,
+    InterpretationCriterionRow,
+    InterpretationRulesetRow,
+    RulesetBenchmarkCaseRow,
+    RulesetBenchmarkRunRow,
+)
+from app.infrastructure.persistence.models.review import (
+    InterpretationVersionCriterion,
+    InterpretationVersionEvidence,
+)
 from app.infrastructure.persistence.models.jobs import (
     Job,
     JobAttempt,
@@ -94,13 +111,6 @@ from app.infrastructure.persistence.models.project import (
     ProjectMembership,
     ResourceAssignment,
 )
-from app.infrastructure.persistence.models.reporting import (
-    ExportRequest,
-    Report,
-    ReportTemplate,
-    ReportVersion,
-    ReportVersionInterpretation,
-)
 from app.infrastructure.persistence.models.queries import (
     FilterExecution,
     FilterPreset,
@@ -108,6 +118,13 @@ from app.infrastructure.persistence.models.queries import (
     RankingExecution,
     RankingPreset,
     RankingPresetVersion,
+)
+from app.infrastructure.persistence.models.reporting import (
+    ExportRequest,
+    Report,
+    ReportTemplate,
+    ReportVersion,
+    ReportVersionInterpretation,
 )
 from app.infrastructure.persistence.models.results import (
     FilterDefinition,
@@ -151,18 +168,20 @@ from app.infrastructure.persistence.models.workspace import Workspace
 
 __all__ = [
     "Analysis",
+    "AnalysisConfiguration",
+    "AnalysisConfigurationInput",
+    "AnalysisExecution",
+    "AnalysisExecutionInput",
     "AnnotationProfile",
     "AnnotationProfileVersion",
     "AnnotationResourceProfileField",
     "AnnotationResultVersion",
     "AnnotationRun",
     "AnnotationValidationFindingRow",
-    "AnalysisConfiguration",
-    "AnalysisConfigurationInput",
-    "AnalysisExecution",
-    "AnalysisExecutionInput",
     "AuditEvent",
+    "AutomatedClassificationRow",
     "Base",
+    "ClassificationEvaluationRow",
     "ClinicalAssertion",
     "ConfigurationSetting",
     "ConfigurationSettingVersion",
@@ -174,7 +193,9 @@ __all__ = [
     "DatasetVersionVariant",
     "DiscussionComment",
     "DomainEventOutbox",
+    "EvidenceIngestionBatchRow",
     "EvidenceItem",
+    "EvidenceValidationFindingRow",
     "ExportRequest",
     "ExternalAssertionSource",
     "FileArtifact",
@@ -186,7 +207,12 @@ __all__ = [
     "Gene",
     "ImportSession",
     "Interpretation",
+    "InterpretationCombinationRuleRow",
+    "InterpretationCriterionRow",
+    "InterpretationRulesetRow",
     "InterpretationVersion",
+    "InterpretationVersionCriterion",
+    "InterpretationVersionEvidence",
     "Job",
     "JobAttempt",
     "Notification",
@@ -222,6 +248,8 @@ __all__ = [
     "RetentionPolicy",
     "ReviewAssignment",
     "ReviewDecision",
+    "RulesetBenchmarkCaseRow",
+    "RulesetBenchmarkRunRow",
     "Sample",
     "SavedView",
     "ScheduleTrigger",

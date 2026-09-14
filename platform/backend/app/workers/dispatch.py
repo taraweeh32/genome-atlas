@@ -18,6 +18,7 @@ from app.domain.value_objects.enums import JobKind
 from app.workers.analysis_handlers import AnalysisJobHandlers
 from app.workers.annotation_handlers import AnnotationJobHandlers
 from app.workers.handlers import DataJobHandlers
+from app.workers.interpretation_handlers import InterpretationJobHandlers
 from app.workers.query_handlers import QueryJobHandlers
 from app.workers.result_handlers import ResultJobHandlers
 
@@ -33,6 +34,9 @@ class JobDispatcher:
         self._results = ResultJobHandlers(container.result_services())
         self._queries = QueryJobHandlers(container.query_services())
         self._annotation = AnnotationJobHandlers(container.annotation_services())
+        self._interpretation = InterpretationJobHandlers(
+            container.interpretation_services()
+        )
 
     @property
     def supported_kinds(self) -> tuple[JobKind, ...]:
@@ -43,6 +47,7 @@ class JobDispatcher:
                 | self._results.supported_kinds
                 | self._queries.supported_kinds
                 | self._annotation.supported_kinds
+                | self._interpretation.supported_kinds
             )
         )
 
@@ -65,6 +70,10 @@ class JobDispatcher:
             )
         if job.kind in self._annotation.supported_kinds:
             return await self._annotation.handle(
+                job.kind, job.payload, correlation_id=job.correlation_id
+            )
+        if job.kind in self._interpretation.supported_kinds:
+            return await self._interpretation.handle(
                 job.kind, job.payload, correlation_id=job.correlation_id
             )
         if job.kind in self._data.supported_kinds:

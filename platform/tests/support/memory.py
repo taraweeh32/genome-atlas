@@ -58,6 +58,20 @@ from tests.support.annotation_memory import (
     MemoryAnnotationResults,
     MemoryAnnotationRuns,
 )
+from tests.support.evidence_memory import (
+    MemoryEvidenceIngestions,
+    MemoryEvidenceRecords,
+    MemoryEvidenceSources,
+)
+from tests.support.interpretation_memory import (
+    MemoryClassificationEvaluations,
+    MemoryRulesetBenchmarks,
+    MemoryRulesets,
+)
+from tests.support.review_memory import (
+    MemoryInterpretations,
+    MemoryReviews,
+)
 from tests.support.query_memory import (
     MemoryFilterDefinitions,
     MemoryFilterPresets,
@@ -684,11 +698,33 @@ class MemoryRepositories:
     annotation_results: MemoryAnnotationResults = field(
         default_factory=MemoryAnnotationResults
     )
+    # Package 9: evidence sources, records and deliveries.
+    evidence_sources: MemoryEvidenceSources = field(
+        default_factory=MemoryEvidenceSources
+    )
+    evidence_records: MemoryEvidenceRecords = field(
+        default_factory=MemoryEvidenceRecords
+    )
+    evidence_ingestions: MemoryEvidenceIngestions = field(
+        default_factory=MemoryEvidenceIngestions
+    )
+    # Package 10: interpretation rulesets, automated evaluations and benchmarks.
+    rulesets: MemoryRulesets = field(default_factory=MemoryRulesets)
+    classification_evaluations: MemoryClassificationEvaluations = field(
+        default_factory=MemoryClassificationEvaluations
+    )
+    ruleset_benchmarks: MemoryRulesetBenchmarks = field(
+        default_factory=MemoryRulesetBenchmarks
+    )
+    # Package 11: interpretations, human review and adjudication.
+    interpretations: MemoryInterpretations = field(default_factory=MemoryInterpretations)
+    reviews: MemoryReviews = field(default_factory=MemoryReviews)
 
     def __post_init__(self) -> None:
         self.organizations.memberships = self.organization_memberships
         self.workspaces.memberships = self.organization_memberships
         self.variants.memberships = self.dataset_version_variants
+        self.interpretations.reviews = self.reviews
 
 
 class MemoryUnitOfWorkFactory:

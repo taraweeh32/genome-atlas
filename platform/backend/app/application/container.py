@@ -10,18 +10,21 @@ from dataclasses import dataclass
 
 from app.application.ports import HealthProbe
 from app.application.services.authorization import AuthorizationService
-from app.application.services.sessions import SessionService
 from app.application.services.field_dictionary import AnnotationFieldDictionary
+from app.application.services.sessions import SessionService
 from app.application.use_cases.analysis.dependencies import AnalysisServices
 from app.application.use_cases.annotation.dependencies import AnnotationServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
 )
+from app.application.use_cases.evidence.dependencies import EvidenceServices
 from app.application.use_cases.get_readiness import GetReadiness
 from app.application.use_cases.identity.dependencies import IdentityServices
+from app.application.use_cases.interpretation.dependencies import InterpretationServices
 from app.application.use_cases.query.dependencies import QueryServices
 from app.application.use_cases.results.dependencies import ResultServices
+from app.application.use_cases.review.dependencies import ReviewServices
 from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.core.app_config import ApplicationSettings, get_application_settings
 from app.core.environment import EnvironmentSettings, get_environment_settings
@@ -326,6 +329,50 @@ class Container:
             scientific=self.scientific,
             dictionary=self.annotation_field_dictionary(),
             checksums=StreamingChecksumService(self.object_storage),
+        )
+
+    def evidence_services(self) -> EvidenceServices:
+        """Evidence registry, ingestion and curation dependencies.
+
+        The same scientific gateway as everything else: evidence retrieved from an
+        external resource is retrieved through the existing boundary, and this
+        application never queries a clinical database itself.
+        """
+        return EvidenceServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            authorization=self.authorization,
+            config=self.application,
+            scientific=self.scientific,
+            checksums=StreamingChecksumService(self.object_storage),
+        )
+
+    def interpretation_services(self) -> InterpretationServices:
+        """Ruleset registry, evaluation, ingestion and benchmark dependencies.
+
+        The same scientific gateway as everything else: the rules engine is an
+        independently deployable scientific component reached through the existing
+        boundary, and this application never applies a rule itself.
+        """
+        return InterpretationServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            authorization=self.authorization,
+            config=self.application,
+            scientific=self.scientific,
+        )
+
+    def review_services(self) -> ReviewServices:
+        """Interpretation, human review and adjudication dependencies.
+
+        No scientific gateway here on purpose: this layer records decisions people
+        made, it never asks the rules engine for a new one.
+        """
+        return ReviewServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            authorization=self.authorization,
+            config=self.application,
         )
 
     def get_readiness(self) -> GetReadiness:

@@ -104,6 +104,14 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     available: true,
   },
   {
+    id: "interpretations",
+    label: "Interpretation review",
+    href: "/interpretations",
+    namespace: "application",
+    requiredPermission: "project.interpretation.read",
+    available: true,
+  },
+  {
     id: "reports",
     label: "Reports",
     href: "/reports",
@@ -152,6 +160,22 @@ export const ADMINISTRATION_NAVIGATION: readonly NavigationItem[] = [
     href: "/admin/query",
     namespace: "administration",
     requiredPermission: "platform.query_preset.administer",
+    available: true,
+  },
+  {
+    id: "admin-evidence",
+    label: "Evidence sources",
+    href: "/admin/evidence",
+    namespace: "administration",
+    requiredPermission: "platform.evidence_resource.administer",
+    available: true,
+  },
+  {
+    id: "admin-rulesets",
+    label: "Interpretation rulesets",
+    href: "/admin/rulesets",
+    namespace: "administration",
+    requiredPermission: "platform.ruleset.administer",
     available: true,
   },
   {

@@ -56,6 +56,10 @@ JOB_KIND_NODE_CLASS: dict[JobKind, NodeClass] = {
     # The annotation itself runs on a scientific node, behind the adapter.
     JobKind.ANNOTATION_EXECUTION: NodeClass.APPLICATION_WORKER,
     JobKind.ANNOTATION_INGESTION: NodeClass.APPLICATION_WORKER,
+    # Submitting an interpretation request and ingesting the engine's payload are
+    # application work. The interpretation rules engine runs behind the adapter.
+    JobKind.CLASSIFICATION_EVALUATION: NodeClass.APPLICATION_WORKER,
+    JobKind.CLASSIFICATION_INGESTION: NodeClass.APPLICATION_WORKER,
 }
 
 DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
@@ -71,6 +75,8 @@ DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
     JobKind.VARIANT_QUERY: JobQueue.EXPORT,
     JobKind.ANNOTATION_EXECUTION: JobQueue.SCIENTIFIC,
     JobKind.ANNOTATION_INGESTION: JobQueue.IMPORT,
+    JobKind.CLASSIFICATION_EVALUATION: JobQueue.SCIENTIFIC,
+    JobKind.CLASSIFICATION_INGESTION: JobQueue.IMPORT,
 }
 
 

@@ -20,6 +20,9 @@ from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.application.use_cases.analysis.dependencies import AnalysisServices
 from app.application.use_cases.annotation.dependencies import AnnotationServices
+from app.application.use_cases.evidence.dependencies import EvidenceServices
+from app.application.use_cases.interpretation.dependencies import InterpretationServices
+from app.application.use_cases.review.dependencies import ReviewServices
 from app.application.services.field_dictionary import AnnotationFieldDictionary
 from app.application.use_cases.results.dependencies import ResultServices
 from app.core.environment import Environment
@@ -69,6 +72,9 @@ class Harness:
     analytics: StubAnalyticalReader
     annotation: AnnotationServices
     field_dictionary: AnnotationFieldDictionary
+    evidence: EvidenceServices
+    interpretation: InterpretationServices
+    review: ReviewServices
 
     def advance_to(self, moment: datetime) -> None:
         self.clock._moment = moment  # noqa: SLF001 - test clock
@@ -151,8 +157,32 @@ def build_harness(
         dictionary=field_dictionary,
         checksums=StubChecksums(storage),
     )
+    evidence = EvidenceServices(
+        unit_of_work=unit_of_work,
+        clock=clock,
+        authorization=authorization,
+        config=ApplicationSettings(),
+        scientific=scientific,
+        checksums=StubChecksums(storage),
+    )
+    interpretation = InterpretationServices(
+        unit_of_work=unit_of_work,
+        clock=clock,
+        authorization=authorization,
+        config=ApplicationSettings(),
+        scientific=scientific,
+    )
+    review = ReviewServices(
+        unit_of_work=unit_of_work,
+        clock=clock,
+        authorization=authorization,
+        config=ApplicationSettings(),
+    )
     return Harness(
+        review=review,
+        interpretation=interpretation,
         annotation=annotation,
+        evidence=evidence,
         field_dictionary=field_dictionary,
         results=results,
         analytics=analytics,

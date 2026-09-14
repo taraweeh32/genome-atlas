@@ -22,6 +22,36 @@ import type {
   AnnotationRunResponse,
 } from "./annotation-types";
 import type {
+  EvidenceConflictCollection,
+  EvidenceHistoryResponse,
+  EvidenceIngestionBatchCollection,
+  EvidenceRecordCollection,
+  EvidenceRecordResponse,
+  EvidenceSourceCollection,
+  EvidenceSourceResponse,
+  EvidenceValidationFindingCollection,
+} from "./evidence-types";
+import type {
+  BenchmarkCaseCollection,
+  BenchmarkCaseResponse,
+  BenchmarkRunCollection,
+  BenchmarkRunResponse,
+  ClassificationEvaluationCollection,
+  ClassificationEvaluationDetailResponse,
+  ClassificationEvaluationResponse,
+  ClassificationHistoryResponse,
+  RulesetCollection,
+  RulesetResponse,
+} from "./interpretation-types";
+import type {
+  InterpretationCollection,
+  InterpretationDetailResponse,
+  InterpretationResponse,
+  InterpretationVersionResponse,
+  ReviewAssignmentResponse,
+  ReviewDecisionResponse,
+} from "./review-types";
+import type {
   AccountAdministrationCollection,
   AccountAdministrationResponse,
   AcknowledgementResponse,
@@ -1272,6 +1302,399 @@ export class ApiClient {
   ): Promise<AnnotationResourceResponse> {
     return this.request<AnnotationResourceResponse>(
       `/administration/annotation-resources/${encodeURIComponent(resourceId)}/state`,
+      { method: "POST", body },
+    );
+  }
+
+  // ----------------------------------------------------------- evidence ----
+  // Evidence is read and curated here; nothing in this client interprets it.
+
+  evidenceSources(
+    params: {
+      page?: number;
+      size?: number;
+      category?: string;
+      source_key?: string;
+      usable_only?: boolean;
+    } = {},
+  ): Promise<EvidenceSourceCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    if (params.category) search.set("category", params.category);
+    if (params.source_key) search.set("source_key", params.source_key);
+    if (params.usable_only !== undefined) {
+      search.set("usable_only", String(params.usable_only));
+    }
+    const query = search.toString();
+    return this.request<EvidenceSourceCollection>(
+      query ? `/evidence-sources?${query}` : "/evidence-sources",
+    );
+  }
+
+  evidenceSource(sourceId: string): Promise<EvidenceSourceResponse> {
+    return this.request<EvidenceSourceResponse>(
+      `/evidence-sources/${encodeURIComponent(sourceId)}`,
+    );
+  }
+
+  evidenceRecords(
+    params: {
+      page?: number;
+      size?: number;
+      variant_id?: string;
+      workspace_id?: string;
+      project_id?: string;
+      source_key?: string;
+      category?: string;
+      include_superseded?: boolean;
+    } = {},
+  ): Promise<EvidenceRecordCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    if (params.variant_id) search.set("variant_id", params.variant_id);
+    if (params.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params.project_id) search.set("project_id", params.project_id);
+    if (params.source_key) search.set("source_key", params.source_key);
+    if (params.category) search.set("category", params.category);
+    if (params.include_superseded !== undefined) {
+      search.set("include_superseded", String(params.include_superseded));
+    }
+    const query = search.toString();
+    return this.request<EvidenceRecordCollection>(
+      query ? `/evidence-records?${query}` : "/evidence-records",
+    );
+  }
+
+  evidenceRecord(evidenceId: string): Promise<EvidenceRecordResponse> {
+    return this.request<EvidenceRecordResponse>(
+      `/evidence-records/${encodeURIComponent(evidenceId)}`,
+    );
+  }
+
+  /** Every version of every record about one variant, superseded included. */
+  evidenceHistory(variantId: string): Promise<EvidenceHistoryResponse> {
+    return this.request<EvidenceHistoryResponse>(
+      `/evidence-records/variants/${encodeURIComponent(variantId)}/history`,
+    );
+  }
+
+  /** Retained disagreement. The server resolves nothing and neither does the UI. */
+  evidenceConflicts(variantId: string): Promise<EvidenceConflictCollection> {
+    return this.request<EvidenceConflictCollection>(
+      `/evidence-records/variants/${encodeURIComponent(variantId)}/conflicts`,
+    );
+  }
+
+  recordEvidence(body: Record<string, unknown>): Promise<EvidenceRecordResponse> {
+    return this.request<EvidenceRecordResponse>("/evidence-records", {
+      method: "POST",
+      body,
+    });
+  }
+
+  withdrawEvidence(
+    evidenceId: string,
+    body: { reason?: string } = {},
+  ): Promise<EvidenceRecordResponse> {
+    return this.request<EvidenceRecordResponse>(
+      `/evidence-records/${encodeURIComponent(evidenceId)}/withdrawal`,
+      { method: "POST", body },
+    );
+  }
+
+  evidenceDeliveries(
+    params: { page?: number; size?: number; source_key?: string; state?: string } = {},
+  ): Promise<EvidenceIngestionBatchCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    if (params.source_key) search.set("source_key", params.source_key);
+    if (params.state) search.set("state", params.state);
+    const query = search.toString();
+    return this.request<EvidenceIngestionBatchCollection>(
+      query ? `/evidence-deliveries?${query}` : "/evidence-deliveries",
+    );
+  }
+
+  evidenceDeliveryFindings(
+    batchId: string,
+    params: { page?: number; size?: number } = {},
+  ): Promise<EvidenceValidationFindingCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    const query = search.toString();
+    return this.request<EvidenceValidationFindingCollection>(
+      query
+        ? `/evidence-deliveries/${encodeURIComponent(batchId)}/findings?${query}`
+        : `/evidence-deliveries/${encodeURIComponent(batchId)}/findings`,
+    );
+  }
+
+  /** Platform-administrative evidence source management. */
+  adminRegisterEvidenceSource(
+    body: Record<string, unknown>,
+  ): Promise<EvidenceSourceResponse> {
+    return this.request<EvidenceSourceResponse>("/administration/evidence-sources", {
+      method: "POST",
+      body,
+    });
+  }
+
+  adminTransitionEvidenceSource(
+    sourceId: string,
+    body: { state: string; reason?: string },
+  ): Promise<EvidenceSourceResponse> {
+    return this.request<EvidenceSourceResponse>(
+      `/administration/evidence-sources/${encodeURIComponent(sourceId)}/state`,
+      { method: "POST", body },
+    );
+  }
+
+  // ----------------------------------------------------- interpretation ----
+  // Rulesets are read here and classifications are displayed here. No criterion
+  // is evaluated and no classification is combined in this client: the rules
+  // engine decides behind the scientific boundary.
+
+  interpretationRulesets(
+    params: {
+      page?: number;
+      size?: number;
+      ruleset_key?: string;
+      gene_symbol?: string;
+      usable_only?: boolean;
+    } = {},
+  ): Promise<RulesetCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    if (params.ruleset_key) search.set("ruleset_key", params.ruleset_key);
+    if (params.gene_symbol) search.set("gene_symbol", params.gene_symbol);
+    if (params.usable_only !== undefined) {
+      search.set("usable_only", String(params.usable_only));
+    }
+    const query = search.toString();
+    return this.request<RulesetCollection>(
+      query ? `/interpretation-rulesets?${query}` : "/interpretation-rulesets",
+    );
+  }
+
+  interpretationRuleset(rulesetId: string): Promise<RulesetResponse> {
+    return this.request<RulesetResponse>(
+      `/interpretation-rulesets/${encodeURIComponent(rulesetId)}`,
+    );
+  }
+
+  classificationEvaluations(
+    params: {
+      page?: number;
+      size?: number;
+      workspace_id?: string;
+      project_id?: string;
+      variant_id?: string;
+      ruleset_id?: string;
+      state?: string;
+    } = {},
+  ): Promise<ClassificationEvaluationCollection> {
+    const search = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && value !== "") {
+        search.set(key, String(value));
+      }
+    }
+    const query = search.toString();
+    return this.request<ClassificationEvaluationCollection>(
+      query ? `/classification-evaluations?${query}` : "/classification-evaluations",
+    );
+  }
+
+  classificationEvaluation(
+    evaluationId: string,
+  ): Promise<ClassificationEvaluationDetailResponse> {
+    return this.request<ClassificationEvaluationDetailResponse>(
+      `/classification-evaluations/${encodeURIComponent(evaluationId)}`,
+    );
+  }
+
+  classificationHistory(variantId: string): Promise<ClassificationHistoryResponse> {
+    return this.request<ClassificationHistoryResponse>(
+      `/classification-evaluations/variants/${encodeURIComponent(variantId)}/history`,
+    );
+  }
+
+  requestClassificationEvaluation(
+    body: Record<string, unknown>,
+  ): Promise<ClassificationEvaluationResponse> {
+    return this.request<ClassificationEvaluationResponse>("/classification-evaluations", {
+      method: "POST",
+      body,
+    });
+  }
+
+  /** Platform-administrative ruleset governance and benchmark validation. */
+  adminRegisterRuleset(body: Record<string, unknown>): Promise<RulesetResponse> {
+    return this.request<RulesetResponse>("/administration/interpretation-rulesets", {
+      method: "POST",
+      body,
+    });
+  }
+
+  adminTransitionRuleset(
+    rulesetId: string,
+    body: { state: string; reason?: string },
+  ): Promise<RulesetResponse> {
+    return this.request<RulesetResponse>(
+      `/administration/interpretation-rulesets/${encodeURIComponent(rulesetId)}/state`,
+      { method: "POST", body },
+    );
+  }
+
+  adminBenchmarkCases(
+    rulesetId: string,
+    params: { validation_kind?: string } = {},
+  ): Promise<BenchmarkCaseCollection> {
+    const search = new URLSearchParams();
+    if (params.validation_kind) search.set("validation_kind", params.validation_kind);
+    const query = search.toString();
+    const base = `/administration/interpretation-rulesets/${encodeURIComponent(rulesetId)}/benchmark-cases`;
+    return this.request<BenchmarkCaseCollection>(query ? `${base}?${query}` : base);
+  }
+
+  adminRegisterBenchmarkCase(
+    rulesetId: string,
+    body: Record<string, unknown>,
+  ): Promise<BenchmarkCaseResponse> {
+    return this.request<BenchmarkCaseResponse>(
+      `/administration/interpretation-rulesets/${encodeURIComponent(rulesetId)}/benchmark-cases`,
+      { method: "POST", body },
+    );
+  }
+
+  adminBenchmarkRuns(
+    rulesetId: string,
+    params: { page?: number; size?: number } = {},
+  ): Promise<BenchmarkRunCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    const query = search.toString();
+    const base = `/administration/interpretation-rulesets/${encodeURIComponent(rulesetId)}/benchmark-runs`;
+    return this.request<BenchmarkRunCollection>(query ? `${base}?${query}` : base);
+  }
+
+  adminRecordBenchmarkRun(
+    rulesetId: string,
+    body: Record<string, unknown>,
+  ): Promise<BenchmarkRunResponse> {
+    return this.request<BenchmarkRunResponse>(
+      `/administration/interpretation-rulesets/${encodeURIComponent(rulesetId)}/benchmark-runs`,
+      { method: "POST", body },
+    );
+  }
+
+  // ---- Package 11: interpretation, human review and adjudication ---------- //
+
+  /**
+   * Interpretations the caller may read. `assigned_to_me` narrows to the
+   * caller's own review queue; the backend, not the browser, decides visibility.
+   */
+  interpretations(params?: {
+    workspace_id?: string;
+    project_id?: string;
+    variant_id?: string;
+    state?: string;
+    assigned_to_me?: boolean;
+  }): Promise<InterpretationCollection> {
+    const search = new URLSearchParams();
+    if (params?.workspace_id) search.set("workspace_id", params.workspace_id);
+    if (params?.project_id) search.set("project_id", params.project_id);
+    if (params?.variant_id) search.set("variant_id", params.variant_id);
+    if (params?.state) search.set("state", params.state);
+    if (params?.assigned_to_me) search.set("assigned_to_me", "true");
+    const query = search.toString();
+    return this.request<InterpretationCollection>(`/interpretations${query ? `?${query}` : ""}`);
+  }
+
+  interpretation(interpretationId: string): Promise<InterpretationDetailResponse> {
+    return this.request<InterpretationDetailResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}`,
+    );
+  }
+
+  openInterpretation(body: Record<string, unknown>): Promise<InterpretationResponse> {
+    return this.request<InterpretationResponse>("/interpretations", { method: "POST", body });
+  }
+
+  recordInterpretationVersion(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationVersionResponse> {
+    return this.request<InterpretationVersionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/versions`,
+      { method: "POST", body },
+    );
+  }
+
+  assignReviewer(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<ReviewAssignmentResponse> {
+    return this.request<ReviewAssignmentResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/reviewers`,
+      { method: "POST", body },
+    );
+  }
+
+  /**
+   * Records one reviewer action. `expected_current_version_number` is sent back so
+   * a reviewer looking at stale work cannot land on top of newer work.
+   */
+  recordReviewDecision(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<ReviewDecisionResponse> {
+    return this.request<ReviewDecisionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/decisions`,
+      { method: "POST", body },
+    );
+  }
+
+  submitReview(interpretationId: string): Promise<ReviewAssignmentResponse> {
+    return this.request<ReviewAssignmentResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/submit-review`,
+      { method: "POST" },
+    );
+  }
+
+  adjudicateInterpretation(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationVersionResponse> {
+    return this.request<InterpretationVersionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/adjudicate`,
+      { method: "POST", body },
+    );
+  }
+
+  finalizeInterpretation(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationVersionResponse> {
+    return this.request<InterpretationVersionResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/finalize`,
+      { method: "POST", body },
+    );
+  }
+
+  /** A correction never rewrites a finalized record: it opens a successor. */
+  reclassifyInterpretation(
+    interpretationId: string,
+    body: Record<string, unknown>,
+  ): Promise<InterpretationResponse> {
+    return this.request<InterpretationResponse>(
+      `/interpretations/${encodeURIComponent(interpretationId)}/reclassify`,
       { method: "POST", body },
     );
   }

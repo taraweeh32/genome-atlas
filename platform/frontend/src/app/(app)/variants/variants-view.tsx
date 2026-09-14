@@ -24,6 +24,8 @@ import type {
   AnnotationResponse,
   FrequencyResponse,
 } from "@/lib/result-types";
+import { ClassificationPanel } from "./classification-panel";
+import { EvidencePanel } from "./evidence-panel";
 import styles from "../results/results.module.css";
 
 const EMPTY_PAGE = { items: [], page: { number: 1, size: 0, total: 0 } } as const;
@@ -576,6 +578,8 @@ export function VariantsView() {
           )}
         </Card>
       ) : null}
+      {selectedVariantId ? <EvidencePanel variantId={selectedVariantId} /> : null}
+      {selectedVariantId ? <ClassificationPanel variantId={selectedVariantId} /> : null}
     </>
   );
 }

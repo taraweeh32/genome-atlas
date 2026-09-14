@@ -35,3 +35,39 @@
   flex-wrap: wrap;
   gap: var(--space-1);
 }
+
+.scroll {
+  overflow-x: auto;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.badge {
+  background: var(--color-surface-muted, transparent);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  padding: 0 var(--space-1);
+  text-transform: capitalize;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  color: var(--color-accent, inherit);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+}

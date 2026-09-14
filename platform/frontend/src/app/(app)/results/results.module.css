@@ -101,3 +101,14 @@
   align-items: end;
   margin-bottom: var(--space-4);
 }
+
+.linkButton {
+  background: none;
+  border: none;
+  color: var(--color-accent, inherit);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-align: left;
+}
