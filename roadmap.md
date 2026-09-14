@@ -1,30 +1,25 @@
-# Package 7 — variant filtering, saved filters, presets and ranking
+# Package 8 — annotation resources & annotation ingestion
 
-Implementation order (per the package specification, section 60). All items below
-are implemented and verified: backend 433 passed, frontend 54 passed.
+Vertical slice: resource registry → annotation profile → scientific execution
+boundary → annotation ingestion → persistence/artifact → provenance → Package 7
+field registry → API → UI/admin. No scientific algorithm is implemented; external
+tools stay behind the existing scientific adapter.
 
-- [x] Inspect Packages 1–6 abstractions (variant/result data layer, analytical boundary, authorization, jobs)
-- [x] Vocabulary: filter/ranking enums and the shared definition lifecycle table
-- [x] Permissions and role grants for filters, presets, rankings and saved views
-- [x] Filter expression domain model (conditions, nested groups, operators, data types)
-- [x] Filter field registry (dictionary + version + context availability)
-- [x] Filter validation and canonicalization (+ canonical hash)
-- [x] Ranking method registry and deterministic ranking framework
-- [x] Saved filter / preset / ranking / saved view domain entities
-- [x] Analytical filter execution (parameterized DuckDB compilation, predicate pushdown, keyset pagination)
-- [x] Persistence models, migration 0007, repository ports, SQL repositories, in-memory doubles
-- [x] Use cases: field dictionary, distinct-value search, variant query, saved filters, presets, rankings, saved views
-- [x] Analysis configuration integration (frozen filter/ranking snapshot on execution)
-- [x] Audit and provenance integration (filter/ranking execution records)
-- [x] Deferred execution through the existing durable job system
-- [x] REST API: filter fields, filters, presets, validation, variant query, rankings, saved views, admin
-- [x] Frontend: filter builder, saved filters, presets, ranking controls, table columns/views
-- [x] Admin surfaces (platform registry/presets/limits, organization presets)
-- [x] Tests: unit, domain, API, analytical, security, concurrency, frontend
-- [x] Documentation (`platform/docs/filtering-and-ranking.md`) and the Package 7 report
+- [ ] Vocabulary: annotation resource categories, run/result states, job kinds
+- [ ] Permissions and platform role grants for annotation resource governance
+- [ ] Scientific annotation contract (`app/scientific/annotation.py`)
+- [ ] Domain: resource registry, profiles, runs, result versions, findings, field specs
+- [ ] Domain: payload validation (schema, reference context, variant linkage, semantics)
+- [ ] Persistence models + migration 0008 + repository ports + SQL repositories + doubles
+- [ ] Use cases: resources, profiles, runs (scientific boundary), ingestion, fields
+- [ ] Jobs: annotation execution + ingestion through the Package 5 durable job system
+- [ ] Package 7 integration: annotation fields projected into the filter registry
+- [ ] REST API under /api/v1 + admin endpoints
+- [ ] Frontend: annotation status/provenance + platform admin resource management
+- [ ] Focused Package 8 tests + lightweight regression check
+- [ ] Documentation (`platform/docs/annotation.md`)
 
-Deferred to later packages: annotation generation, evidence evaluation, the ACMG
-engine, clinical interpretation, human review, reporting, scientific AI,
-scientifically validated ranking models. Carried forward: Package 2 migration
-hardening, mail transport, duplicate TokenHasher/SystemClock instances, inherited
-lint debt, MFA enforcement, the Package 6 large-cohort sample-resolution issue.
+Carried forward (out of scope here): Package 2 migration hardening, mail transport,
+duplicate TokenHasher/SystemClock instances, MFA enforcement, the Package 6
+large-cohort sample-resolution issue, inherited lint debt. Later packages: evidence
+evaluation, ACMG, interpretation, human review, reporting, scientific AI.

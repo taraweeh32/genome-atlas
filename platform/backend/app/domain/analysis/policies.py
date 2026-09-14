@@ -52,6 +52,10 @@ JOB_KIND_NODE_CLASS: dict[JobKind, NodeClass] = {
     # A deferred variant query reads analytical files and writes an artifact. It
     # is application work: no scientific computation happens in it.
     JobKind.VARIANT_QUERY: NodeClass.APPLICATION_WORKER,
+    # Submitting an annotation run and ingesting its output are application work.
+    # The annotation itself runs on a scientific node, behind the adapter.
+    JobKind.ANNOTATION_EXECUTION: NodeClass.APPLICATION_WORKER,
+    JobKind.ANNOTATION_INGESTION: NodeClass.APPLICATION_WORKER,
 }
 
 DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
@@ -65,6 +69,8 @@ DEFAULT_QUEUE_FOR_KIND: dict[JobKind, JobQueue] = {
     JobKind.STALE_RECOVERY: JobQueue.MAINTENANCE,
     JobKind.RESULT_INGESTION: JobQueue.IMPORT,
     JobKind.VARIANT_QUERY: JobQueue.EXPORT,
+    JobKind.ANNOTATION_EXECUTION: JobQueue.SCIENTIFIC,
+    JobKind.ANNOTATION_INGESTION: JobQueue.IMPORT,
 }
 
 

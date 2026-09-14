@@ -11,7 +11,9 @@ from dataclasses import dataclass
 from app.application.ports import HealthProbe
 from app.application.services.authorization import AuthorizationService
 from app.application.services.sessions import SessionService
+from app.application.services.field_dictionary import AnnotationFieldDictionary
 from app.application.use_cases.analysis.dependencies import AnalysisServices
+from app.application.use_cases.annotation.dependencies import AnnotationServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.describe_scientific_capabilities import (
     DescribeScientificCapabilities,
@@ -289,6 +291,41 @@ class Container:
             authorization=self.authorization,
             config=self.application,
             query_engine=DuckDbQueryEngine(self.analytics),
+            # Fields declared by registered annotation resources are part of the
+            # dictionary, so a newly registered annotation field becomes
+            # filterable without a frontend change.
+            fields=self.annotation_field_dictionary().snapshot(),
+        )
+
+    def annotation_field_dictionary(self) -> AnnotationFieldDictionary:
+        """The composed filterable field dictionary, cached per process.
+
+        One instance per container: registering an annotation resource must reach
+        the filtering layer without a restart, while composing the dictionary on
+        every filtering request would read the registry far more often than it
+        changes.
+        """
+        existing = getattr(self, "_annotation_dictionary", None)
+        if existing is None:
+            existing = AnnotationFieldDictionary(self.clock)
+            self._annotation_dictionary = existing
+        return existing
+
+    def annotation_services(self) -> AnnotationServices:
+        """Annotation registry, profile, run and ingestion dependencies.
+
+        The scientific gateway is the existing one: annotation work is requested
+        through the same boundary as every other scientific execution, and this
+        application never runs a scientific tool itself.
+        """
+        return AnnotationServices(
+            unit_of_work=self.unit_of_work,
+            clock=self.clock,
+            authorization=self.authorization,
+            config=self.application,
+            scientific=self.scientific,
+            dictionary=self.annotation_field_dictionary(),
+            checksums=StreamingChecksumService(self.object_storage),
         )
 
     def get_readiness(self) -> GetReadiness:

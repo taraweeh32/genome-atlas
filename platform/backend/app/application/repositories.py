@@ -42,6 +42,14 @@ from app.domain.data.entities import (
     ValidationIssue,
     ValidationRun,
 )
+from app.domain.annotation.entities import (
+    AnnotationProfileRecord,
+    AnnotationProfileVersionRecord,
+    AnnotationResourceRecord,
+    AnnotationResultVersionRecord,
+    AnnotationRunRecord,
+    AnnotationValidationFinding,
+)
 from app.domain.events import DomainEvent
 from app.domain.identity.entities import (
     Credentials,
@@ -71,6 +79,8 @@ from app.domain.query.entities import (
 from app.domain.value_objects.enums import (
     ActorType,
     AnalysisState,
+    AnnotationResourceCategory,
+    AnnotationRunState,
     AuditChannel,
     AuditOutcome,
     CredentialTokenKind,
@@ -1085,6 +1095,118 @@ class SavedViewRepository(Protocol):
     ) -> Paged[SavedViewRecord]: ...
 
 
+class AnnotationResourceRepository(Protocol):
+    """Registered annotation resource versions.
+
+    Backed by the existing scientific resource registry: an annotation resource
+    version is a ``scientific_resources`` row of kind ``annotation_resource``
+    plus the fields it declares. No parallel registry exists.
+    """
+
+    async def add(self, resource: AnnotationResourceRecord) -> AnnotationResourceRecord: ...
+    async def get(self, resource_id: str) -> AnnotationResourceRecord | None: ...
+    async def get_by_version(
+        self, *, resource_key: str, version: str
+    ) -> AnnotationResourceRecord | None: ...
+    async def save(self, resource: AnnotationResourceRecord) -> AnnotationResourceRecord: ...
+    async def list_resources(
+        self,
+        *,
+        page: Page,
+        category: AnnotationResourceCategory | None = None,
+        resource_key: str | None = None,
+        usable_only: bool = False,
+    ) -> Paged[AnnotationResourceRecord]: ...
+    #: Every resource version whose fields may appear in the field dictionary.
+    async def list_field_sources(self) -> tuple[AnnotationResourceRecord, ...]: ...
+
+
+class AnnotationProfileRepository(Protocol):
+    async def add(self, profile: AnnotationProfileRecord) -> AnnotationProfileRecord: ...
+    async def get(self, profile_id: str) -> AnnotationProfileRecord | None: ...
+    async def get_by_name(self, name: str) -> AnnotationProfileRecord | None: ...
+    async def save(self, profile: AnnotationProfileRecord) -> AnnotationProfileRecord: ...
+    async def list_profiles(
+        self, *, page: Page, offered_only: bool = False
+    ) -> Paged[AnnotationProfileRecord]: ...
+    #: Append-only: an existing version is never rewritten.
+    async def add_version(
+        self, version: AnnotationProfileVersionRecord
+    ) -> AnnotationProfileVersionRecord: ...
+    async def get_version(
+        self, version_id: str
+    ) -> AnnotationProfileVersionRecord | None: ...
+    async def get_version_number(
+        self, *, profile_id: str, version_number: int
+    ) -> AnnotationProfileVersionRecord | None: ...
+    async def mark_version_referenced(self, version_id: str) -> None: ...
+    async def list_versions(
+        self, *, profile_id: str, page: Page
+    ) -> Paged[AnnotationProfileVersionRecord]: ...
+
+
+class AnnotationRunRepository(Protocol):
+    async def add(self, run: AnnotationRunRecord) -> AnnotationRunRecord: ...
+    async def get(self, run_id: str) -> AnnotationRunRecord | None: ...
+    async def save(self, run: AnnotationRunRecord) -> AnnotationRunRecord: ...
+    async def get_by_idempotency_key(
+        self, *, workspace_id: str, idempotency_key: str
+    ) -> AnnotationRunRecord | None: ...
+    async def list_runs(
+        self,
+        *,
+        page: Page,
+        workspace_ids: frozenset[str] | None = None,
+        project_id: str | None = None,
+        result_set_id: str | None = None,
+        state: AnnotationRunState | None = None,
+    ) -> Paged[AnnotationRunRecord]: ...
+
+
+class AnnotationResultRepository(Protocol):
+    async def add(
+        self, result: AnnotationResultVersionRecord
+    ) -> AnnotationResultVersionRecord: ...
+    async def get(self, result_id: str) -> AnnotationResultVersionRecord | None: ...
+    async def save(
+        self, result: AnnotationResultVersionRecord
+    ) -> AnnotationResultVersionRecord: ...
+    async def get_by_payload_digest(
+        self, *, annotation_run_id: str, payload_digest: str
+    ) -> AnnotationResultVersionRecord | None: ...
+    #: Highest version so far for one annotated surface and resource key, which is
+    #: what makes an updated resource produce a new version rather than an
+    #: overwrite.
+    async def latest_version_number(
+        self,
+        *,
+        resource_key: str,
+        result_set_id: str | None = None,
+        dataset_version_id: str | None = None,
+    ) -> int: ...
+    async def latest_for_surface(
+        self,
+        *,
+        resource_key: str,
+        result_set_id: str | None = None,
+        dataset_version_id: str | None = None,
+    ) -> AnnotationResultVersionRecord | None: ...
+    async def list_results(
+        self,
+        *,
+        page: Page,
+        workspace_ids: frozenset[str] | None = None,
+        result_set_id: str | None = None,
+        annotation_run_id: str | None = None,
+    ) -> Paged[AnnotationResultVersionRecord]: ...
+    async def add_findings(
+        self, findings: tuple[AnnotationValidationFinding, ...]
+    ) -> None: ...
+    async def list_findings(
+        self, *, annotation_run_id: str, page: Page
+    ) -> Paged[AnnotationValidationFinding]: ...
+
+
 @runtime_checkable
 class TransactionalRepositories(Protocol):
     """Every repository bound to one transaction.
@@ -1136,6 +1258,10 @@ class TransactionalRepositories(Protocol):
     ranking_presets: RankingPresetRepository
     query_executions: QueryExecutionRepository
     saved_views: SavedViewRepository
+    annotation_resources: AnnotationResourceRepository
+    annotation_profiles: AnnotationProfileRepository
+    annotation_runs: AnnotationRunRepository
+    annotation_results: AnnotationResultRepository
     jobs: JobRepository
     audit: AuditRepository
     security_events: SecurityEventRepository

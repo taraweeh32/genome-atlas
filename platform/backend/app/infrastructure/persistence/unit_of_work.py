@@ -15,6 +15,12 @@ from dataclasses import dataclass
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.infrastructure.persistence.database import Database
+from app.infrastructure.persistence.repositories.annotation import (
+    SqlAnnotationProfileRepository,
+    SqlAnnotationResourceRepository,
+    SqlAnnotationResultRepository,
+    SqlAnnotationRunRepository,
+)
 from app.infrastructure.persistence.repositories.analysis import (
     SqlAnalysisConfigurationRepository,
     SqlAnalysisExecutionRepository,
@@ -134,6 +140,10 @@ class SqlRepositories:
     ranking_presets: SqlRankingPresetRepository
     query_executions: SqlQueryExecutionRepository
     saved_views: SqlSavedViewRepository
+    annotation_resources: SqlAnnotationResourceRepository
+    annotation_profiles: SqlAnnotationProfileRepository
+    annotation_runs: SqlAnnotationRunRepository
+    annotation_results: SqlAnnotationResultRepository
     jobs: SqlJobRepository
     audit: SqlAuditRepository
     security_events: SqlSecurityEventRepository
@@ -185,6 +195,10 @@ class SqlRepositories:
             ranking_presets=SqlRankingPresetRepository(session),
             query_executions=SqlQueryExecutionRepository(session),
             saved_views=SqlSavedViewRepository(session),
+            annotation_resources=SqlAnnotationResourceRepository(session),
+            annotation_profiles=SqlAnnotationProfileRepository(session),
+            annotation_runs=SqlAnnotationRunRepository(session),
+            annotation_results=SqlAnnotationResultRepository(session),
             jobs=SqlJobRepository(session),
             audit=SqlAuditRepository(session),
             security_events=SqlSecurityEventRepository(session),

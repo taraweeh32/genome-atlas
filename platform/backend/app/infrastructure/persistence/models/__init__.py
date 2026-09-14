@@ -22,6 +22,14 @@ from app.infrastructure.persistence.models.annotation import (
     PopulationFrequencyObservation,
     VariantAnnotation,
 )
+from app.infrastructure.persistence.models.annotation_registry import (
+    AnnotationProfile,
+    AnnotationProfileVersion,
+    AnnotationResourceProfileField,
+    AnnotationResultVersion,
+    AnnotationRun,
+    AnnotationValidationFindingRow,
+)
 from app.infrastructure.persistence.models.dataset import (
     Dataset,
     DatasetVersion,
@@ -143,6 +151,12 @@ from app.infrastructure.persistence.models.workspace import Workspace
 
 __all__ = [
     "Analysis",
+    "AnnotationProfile",
+    "AnnotationProfileVersion",
+    "AnnotationResourceProfileField",
+    "AnnotationResultVersion",
+    "AnnotationRun",
+    "AnnotationValidationFindingRow",
     "AnalysisConfiguration",
     "AnalysisConfigurationInput",
     "AnalysisExecution",

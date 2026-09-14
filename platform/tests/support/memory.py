@@ -52,6 +52,12 @@ from tests.support.analysis_memory import (
     MemorySchedules,
     MemoryScientificExecutions,
 )
+from tests.support.annotation_memory import (
+    MemoryAnnotationProfiles,
+    MemoryAnnotationResources,
+    MemoryAnnotationResults,
+    MemoryAnnotationRuns,
+)
 from tests.support.query_memory import (
     MemoryFilterDefinitions,
     MemoryFilterPresets,
@@ -667,6 +673,17 @@ class MemoryRepositories:
     ranking_presets: MemoryRankingPresets = field(default_factory=MemoryRankingPresets)
     query_executions: MemoryQueryExecutions = field(default_factory=MemoryQueryExecutions)
     saved_views: MemorySavedViews = field(default_factory=MemorySavedViews)
+    # Package 8: annotation resources, profiles, runs and results.
+    annotation_resources: MemoryAnnotationResources = field(
+        default_factory=MemoryAnnotationResources
+    )
+    annotation_profiles: MemoryAnnotationProfiles = field(
+        default_factory=MemoryAnnotationProfiles
+    )
+    annotation_runs: MemoryAnnotationRuns = field(default_factory=MemoryAnnotationRuns)
+    annotation_results: MemoryAnnotationResults = field(
+        default_factory=MemoryAnnotationResults
+    )
 
     def __post_init__(self) -> None:
         self.organizations.memberships = self.organization_memberships

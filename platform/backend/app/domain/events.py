@@ -132,6 +132,16 @@ class EventType:
     RESULT_INGESTION_RECEIVED = "result_ingestion.received"
     RESULT_INGESTION_ACCEPTED = "result_ingestion.accepted"
     RESULT_INGESTION_REJECTED = "result_ingestion.rejected"
+    ANNOTATION_RESOURCE_REGISTERED = "annotation_resource.registered"
+    ANNOTATION_RESOURCE_STATE_CHANGED = "annotation_resource.state_changed"
+    ANNOTATION_PROFILE_VERSION_ADDED = "annotation_profile.version_added"
+    ANNOTATION_PROFILE_PUBLISHED = "annotation_profile.published"
+    ANNOTATION_RUN_REQUESTED = "annotation_run.requested"
+    ANNOTATION_RUN_SUBMITTED = "annotation_run.submitted"
+    ANNOTATION_RUN_COMPLETED = "annotation_run.completed"
+    ANNOTATION_RUN_FAILED = "annotation_run.failed"
+    ANNOTATION_RESULT_INGESTED = "annotation_result.ingested"
+    ANNOTATION_RESULT_REJECTED = "annotation_result.rejected"
 
 
 @dataclass(frozen=True, slots=True)

@@ -40,6 +40,8 @@ _PLATFORM_ADMINISTRATOR = frozenset(
         # Governance of the filtering and ranking vocabulary: which fields and
         # methods exist, which presets the platform offers, and the query limits
         # everyone runs under.
+        Permission.PLATFORM_ANNOTATION_RESOURCE_ADMINISTER,
+        Permission.PLATFORM_ANNOTATION_READ,
         Permission.PLATFORM_FILTER_FIELD_ADMINISTER,
         Permission.PLATFORM_RANKING_METHOD_ADMINISTER,
         Permission.PLATFORM_QUERY_PRESET_ADMINISTER,
@@ -181,6 +183,9 @@ _PROJECT_VIEWER = frozenset(
         Permission.PROJECT_RANKING_MANAGE,
         Permission.PROJECT_QUERY_EXECUTE,
         Permission.PROJECT_SAVED_VIEW_MANAGE,
+        # Annotation status and provenance are part of reading the project's
+        # scientific data; requesting a run is an analyst capability below.
+        Permission.PROJECT_ANNOTATION_READ,
     }
 )
 #: An analyst produces and imports data; deletion stays with project management.
@@ -197,6 +202,7 @@ _PROJECT_ANALYST = _PROJECT_VIEWER | {
     Permission.PROJECT_JOB_READ,
     Permission.PROJECT_RESULT_INGEST,
     Permission.PROJECT_RESULT_DOWNLOAD,
+    Permission.PROJECT_ANNOTATION_EXECUTE,
 }
 #: A reviewer is a scientific/clinical responsibility, not an administrator: it
 #: reviews and finalizes, it does not manage membership.
@@ -253,6 +259,8 @@ PERSONAL_WORKSPACE_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.WORKSPACE_RANKING_MANAGE,
         Permission.WORKSPACE_QUERY_EXECUTE,
         Permission.WORKSPACE_SAVED_VIEW_MANAGE,
+        Permission.WORKSPACE_ANNOTATION_READ,
+        Permission.WORKSPACE_ANNOTATION_EXECUTE,
     }
 )
 

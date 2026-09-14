@@ -326,6 +326,10 @@ class JobKind(StrEnum):
     #: Runs a filter/ranking query that is too expensive to answer inside a
     #: request, and materializes its rows as an analytical artifact.
     VARIANT_QUERY = "variant_query"
+    #: Submits an annotation run to the scientific subsystem and tracks it.
+    ANNOTATION_EXECUTION = "annotation_execution"
+    #: Validates and stores an annotation payload the subsystem produced.
+    ANNOTATION_INGESTION = "annotation_ingestion"
 
 
 class JobQueue(StrEnum):
@@ -1038,3 +1042,56 @@ class QueryExecutionOutcome(StrEnum):
     TIMED_OUT = "timed_out"
     CANCELLED = "cancelled"
     FAILED = "failed"
+
+
+# --------------------------------------------------------------------------- #
+# Annotation resources and annotation ingestion (Package 8)                   #
+# --------------------------------------------------------------------------- #
+
+
+class AnnotationResourceCategory(StrEnum):
+    """What kind of annotation a registered resource produces.
+
+    Categories describe the *role* a resource plays, never a specific vendor or
+    database: no external database is privileged by the platform.
+    """
+
+    CONSEQUENCE = "consequence"
+    TRANSCRIPT = "transcript"
+    GENE = "gene"
+    FUNCTIONAL = "functional"
+    EXTERNAL_DATABASE = "external_database"
+    OTHER = "other"
+
+
+class AnnotationRunState(StrEnum):
+    """Lifecycle of one requested annotation run.
+
+    Separate from ``JobState`` (operational) and from ``ScientificExecutionState``
+    (what the compute subsystem reported): the run is the application's own
+    workflow record and must stay distinguishable from both.
+    """
+
+    REQUESTED = "requested"
+    SUBMITTED = "submitted"
+    RUNNING = "running"
+    INGESTING = "ingesting"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    REJECTED = "rejected"
+
+
+class AnnotationResultState(StrEnum):
+    """Lifecycle of one annotation result version.
+
+    ``SUPERSEDED`` marks a version that a newer annotation result replaced for
+    reading purposes. Nothing is overwritten: the superseded version stays
+    readable so historical analyses remain reproducible.
+    """
+
+    REGISTERED = "registered"
+    VALIDATED = "validated"
+    AVAILABLE = "available"
+    REJECTED = "rejected"
+    SUPERSEDED = "superseded"

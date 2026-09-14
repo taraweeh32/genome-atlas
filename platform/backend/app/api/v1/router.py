@@ -12,6 +12,7 @@ from fastapi import APIRouter
 from app.api.v1.routes import (
     administration,
     analyses,
+    annotation,
     authentication,
     datasets,
     identity,
@@ -58,3 +59,10 @@ api_v1_router.include_router(queries.ranking_presets_router)
 api_v1_router.include_router(queries.variant_query_router)
 api_v1_router.include_router(queries.saved_views_router)
 api_v1_router.include_router(queries.query_admin_router)
+api_v1_router.include_router(annotation.resources_router)
+api_v1_router.include_router(annotation.fields_router)
+api_v1_router.include_router(annotation.profiles_router)
+api_v1_router.include_router(annotation.runs_router)
+api_v1_router.include_router(annotation.results_router)
+api_v1_router.include_router(annotation.admin_resources_router)
+api_v1_router.include_router(annotation.admin_profiles_router)
