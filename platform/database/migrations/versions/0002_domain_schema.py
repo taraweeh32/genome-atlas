@@ -1910,6 +1910,11 @@ UPGRADE_STATEMENTS: tuple[str, ...] = (
     KEY(workspace_id) REFERENCES app.workspaces (id) ON DELETE RESTRICT )
     """,
     """
+    ALTER TABLE app.interpretations ADD CONSTRAINT
+    uq_interpretations_project_id_variant_id_condition_identifier UNIQUE (project_id,
+    variant_id, condition_identifier)
+    """,
+    """
     CREATE INDEX ix_interpretations_created_by ON app.interpretations (created_by)
     """,
     """
