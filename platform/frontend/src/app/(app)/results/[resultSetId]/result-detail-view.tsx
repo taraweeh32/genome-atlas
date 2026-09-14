@@ -23,6 +23,7 @@ import { useToasts } from "@/components/ui/toast";
 import { useApiResource } from "@/hooks/use-api-resource";
 import { ApiClient, ApiError } from "@/lib/api-client";
 import type { ResultProvenanceResponse } from "@/lib/result-types";
+import { AnnotationPanel } from "./annotation-panel";
 import styles from "../results.module.css";
 
 const WINDOW_SIZE = 100;
@@ -183,6 +184,8 @@ export function ResultDetailView({ resultSetId }: { resultSetId: string }) {
           ))}
         </dl>
       </Card>
+
+      <AnnotationPanel resultSetId={resultSetId} />
 
       <Card
         title="Artifacts"

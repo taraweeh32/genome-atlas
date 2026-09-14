@@ -155,6 +155,14 @@ export const ADMINISTRATION_NAVIGATION: readonly NavigationItem[] = [
     available: true,
   },
   {
+    id: "admin-annotation",
+    label: "Annotation resources",
+    href: "/admin/annotation",
+    namespace: "administration",
+    requiredPermission: "platform.annotation_resource.administer",
+    available: true,
+  },
+  {
     id: "admin-audit",
     label: "Audit",
     href: "/admin/audit",
