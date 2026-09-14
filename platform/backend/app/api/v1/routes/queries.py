@@ -24,7 +24,7 @@ from typing import Annotated
 from fastapi import APIRouter, Query, status
 
 from app.api.authentication import CallerDep, RequestContextDep
-from app.api.dependencies import ContainerDep
+from app.api.dependencies import ContainerDep, FieldDictionaryDep
 from app.api.v1.mapping import PageDep, page_meta, parse_enum
 from app.api.v1.query_mapping import (
     configuration_response,
@@ -114,14 +114,22 @@ from app.domain.errors import NotFoundError
 from app.domain.query.fields import FilterFieldCategory
 from app.domain.value_objects.enums import QueryScope
 
-filter_fields_router = APIRouter(prefix="/filter-fields", tags=["filtering"])
-filters_router = APIRouter(prefix="/filters", tags=["filtering"])
+filter_fields_router = APIRouter(
+    prefix="/filter-fields", tags=["filtering"], dependencies=[FieldDictionaryDep]
+)
+filters_router = APIRouter(
+    prefix="/filters", tags=["filtering"], dependencies=[FieldDictionaryDep]
+)
 filter_presets_router = APIRouter(prefix="/filter-presets", tags=["filtering"])
 ranking_methods_router = APIRouter(prefix="/ranking-methods", tags=["ranking"])
 rankings_router = APIRouter(prefix="/rankings", tags=["ranking"])
 ranking_presets_router = APIRouter(prefix="/ranking-presets", tags=["ranking"])
-variant_query_router = APIRouter(prefix="/variants", tags=["filtering"])
-saved_views_router = APIRouter(prefix="/saved-views", tags=["filtering"])
+variant_query_router = APIRouter(
+    prefix="/variants", tags=["filtering"], dependencies=[FieldDictionaryDep]
+)
+saved_views_router = APIRouter(
+    prefix="/saved-views", tags=["filtering"], dependencies=[FieldDictionaryDep]
+)
 query_admin_router = APIRouter(
     prefix="/administration/query", tags=["administration"]
 )

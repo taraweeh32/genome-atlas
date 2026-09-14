@@ -70,6 +70,14 @@ class Permission(str, enum.Enum):
     #: Resource-governance limits on filtering and ranking (tree depth, page
     #: size, value-list size). Configuration, never per-tenant negotiation.
     PLATFORM_QUERY_LIMIT_MANAGE = "platform.query_limit.manage"
+    #: The annotation resource registry and annotation execution profiles are
+    #: platform scientific governance: which annotation resources exist, in which
+    #: versions, and whether a version may be used at all. An organization
+    #: administrator may never reach them.
+    PLATFORM_ANNOTATION_RESOURCE_ADMINISTER = "platform.annotation_resource.administer"
+    #: Cross-tenant read of annotation runs, result versions and validation
+    #: findings for operational oversight. Never a grant over variant content.
+    PLATFORM_ANNOTATION_READ = "platform.annotation.read"
     #: Cross-tenant read of filter/ranking definitions and execution records for
     #: operational oversight. It never grants access to variant content.
     PLATFORM_QUERY_READ = "platform.query.read"
@@ -138,6 +146,12 @@ class Permission(str, enum.Enum):
     WORKSPACE_QUERY_EXECUTE = "workspace.query.execute"
     #: Saved table views: presentation state only, never scientific content.
     WORKSPACE_SAVED_VIEW_MANAGE = "workspace.saved_view.manage"
+    #: Reading annotation runs and annotation result metadata for the workspace's
+    #: own data. Separate from requesting one, and separate from variant read.
+    WORKSPACE_ANNOTATION_READ = "workspace.annotation.read"
+    #: Requesting an annotation run against the workspace's own surface. It never
+    #: implies any control over the annotation resources themselves.
+    WORKSPACE_ANNOTATION_EXECUTE = "workspace.annotation.execute"
 
     # --- project scope --------------------------------------------------- #
     PROJECT_READ = "project.read"
@@ -183,6 +197,9 @@ class Permission(str, enum.Enum):
     PROJECT_RANKING_MANAGE = "project.ranking.manage"
     PROJECT_QUERY_EXECUTE = "project.query.execute"
     PROJECT_SAVED_VIEW_MANAGE = "project.saved_view.manage"
+    #: Project-scoped annotation read and annotation execution.
+    PROJECT_ANNOTATION_READ = "project.annotation.read"
+    PROJECT_ANNOTATION_EXECUTE = "project.annotation.execute"
 
     @property
     def scope(self) -> Scope:

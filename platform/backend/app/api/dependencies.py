@@ -30,6 +30,20 @@ def get_container(request: Request) -> Container:
 ContainerDep = Annotated[Container, Depends(get_container)]
 
 
+async def refresh_field_dictionary(container: ContainerDep) -> None:
+    """Bring the composed filter field dictionary up to date for this request.
+
+    Filtering must offer the annotation fields of currently usable resource
+    versions. Refreshing here — not inside the query use cases — keeps the
+    dictionary a request-boundary concern and keeps the refresh bounded by its own
+    interval rather than happening per use case.
+    """
+    await container.annotation_field_dictionary().refresh_if_stale(container.unit_of_work)
+
+
+FieldDictionaryDep = Depends(refresh_field_dictionary)
+
+
 def get_readiness_use_case(container: ContainerDep) -> GetReadiness:
     return container.get_readiness()
 

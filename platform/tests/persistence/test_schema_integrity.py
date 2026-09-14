@@ -80,6 +80,7 @@ TABLE_OWNING_REVISIONS = (
     "0005_analysis_jobs.py",
     "0006_variant_results.py",
     "0007_filtering_ranking.py",
+    "0008_annotation_resources.py",
 )
 
 
@@ -168,6 +169,9 @@ ALLOWED_CASCADES = {
     ("user_preferences", "user_id"),
     ("validation_issues", "validation_run_id"),
     ("scientific_resource_compatibility", "resource_id"),
+    ("annotation_profile_versions", "profile_id"),
+    ("annotation_resource_fields", "scientific_resource_id"),
+    ("annotation_validation_findings", "annotation_run_id"),
 }
 
 

@@ -19,6 +19,8 @@ from app.application.use_cases.identity.dependencies import IdentityServices
 from app.application.use_cases.data.dependencies import DataServices
 from app.application.use_cases.tenancy.dependencies import TenancyServices
 from app.application.use_cases.analysis.dependencies import AnalysisServices
+from app.application.use_cases.annotation.dependencies import AnnotationServices
+from app.application.services.field_dictionary import AnnotationFieldDictionary
 from app.application.use_cases.results.dependencies import ResultServices
 from app.core.environment import Environment
 from app.scientific.adapters.development import DevelopmentScientificAdapter
@@ -65,6 +67,8 @@ class Harness:
     scientific: DevelopmentScientificAdapter
     results: ResultServices
     analytics: StubAnalyticalReader
+    annotation: AnnotationServices
+    field_dictionary: AnnotationFieldDictionary
 
     def advance_to(self, moment: datetime) -> None:
         self.clock._moment = moment  # noqa: SLF001 - test clock
@@ -137,7 +141,19 @@ def build_harness(
         checksums=StubChecksums(storage),
         object_storage=storage,
     )
+    field_dictionary = AnnotationFieldDictionary(clock)
+    annotation = AnnotationServices(
+        unit_of_work=unit_of_work,
+        clock=clock,
+        authorization=authorization,
+        config=ApplicationSettings(),
+        scientific=scientific,
+        dictionary=field_dictionary,
+        checksums=StubChecksums(storage),
+    )
     return Harness(
+        annotation=annotation,
+        field_dictionary=field_dictionary,
         results=results,
         analytics=analytics,
         analysis=analysis,
