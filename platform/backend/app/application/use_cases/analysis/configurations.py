@@ -28,6 +28,7 @@ from app.application.use_cases.analysis.dependencies import (
     AnalysisServices,
     require_analysis_access,
 )
+from app.application.use_cases.query.analysis_binding import validate_query_sections
 from app.domain.analysis.entities import (
     AnalysisConfigurationVersion,
     ConfigurationInput,
@@ -171,6 +172,12 @@ class CreateConfigurationVersion:
                             "state": version.state.value,
                         },
                     )
+            # Structural validation of the two sections this package owns. The
+            # remaining sections stay opaque: their meaning is the scientific
+            # subsystem's business.
+            validate_query_sections(
+                command.filtering_configuration, command.ranking_configuration
+            )
             sections = {
                 "filtering": command.filtering_configuration or {},
                 "ranking": command.ranking_configuration or {},

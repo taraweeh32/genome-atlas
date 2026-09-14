@@ -59,6 +59,20 @@ class Permission(str, enum.Enum):
     #: scientific content.
     PLATFORM_RESULT_ADMINISTER = "platform.result.administer"
     PLATFORM_RESULT_READ = "platform.result.read"
+    #: The filter field dictionary and the ranking method registry are platform
+    #: vocabularies: what may be filtered on, and which prioritization methods
+    #: exist at all. An organization administrator may never change either.
+    PLATFORM_FILTER_FIELD_ADMINISTER = "platform.filter_field.administer"
+    PLATFORM_RANKING_METHOD_ADMINISTER = "platform.ranking_method.administer"
+    #: Publishing and withdrawing platform-scoped filter and ranking presets,
+    #: which are offered to every tenant.
+    PLATFORM_QUERY_PRESET_ADMINISTER = "platform.query_preset.administer"
+    #: Resource-governance limits on filtering and ranking (tree depth, page
+    #: size, value-list size). Configuration, never per-tenant negotiation.
+    PLATFORM_QUERY_LIMIT_MANAGE = "platform.query_limit.manage"
+    #: Cross-tenant read of filter/ranking definitions and execution records for
+    #: operational oversight. It never grants access to variant content.
+    PLATFORM_QUERY_READ = "platform.query.read"
 
     # --- organization scope ---------------------------------------------- #
     ORGANIZATION_READ = "organization.read"
@@ -71,6 +85,10 @@ class Permission(str, enum.Enum):
     ORGANIZATION_INVITATION_READ = "organization.invitation.read"
     ORGANIZATION_INVITATION_REVOKE = "organization.invitation.revoke"
     ORGANIZATION_AUDIT_READ = "organization.audit.read"
+    #: Organization-scoped filter and ranking presets: curated configurations
+    #: offered to that organization's members and to nobody else.
+    ORGANIZATION_QUERY_PRESET_READ = "organization.query_preset.read"
+    ORGANIZATION_QUERY_PRESET_MANAGE = "organization.query_preset.manage"
 
     # --- workspace scope ------------------------------------------------- #
     WORKSPACE_READ = "workspace.read"
@@ -108,6 +126,18 @@ class Permission(str, enum.Enum):
     WORKSPACE_RESULT_INGEST = "workspace.result.ingest"
     #: Retrieving result artifact bytes, separate from reading result metadata.
     WORKSPACE_RESULT_DOWNLOAD = "workspace.result.download"
+    #: Filtering and ranking are separate capabilities throughout, including in
+    #: the permission vocabulary: reading a saved filter is not managing one, and
+    #: neither implies anything about ranking.
+    WORKSPACE_FILTER_READ = "workspace.filter.read"
+    WORKSPACE_FILTER_MANAGE = "workspace.filter.manage"
+    WORKSPACE_RANKING_READ = "workspace.ranking.read"
+    WORKSPACE_RANKING_MANAGE = "workspace.ranking.manage"
+    #: Running a filtered/ranked variant query. Distinct from reading a filter
+    #: definition, because executing one reads genomic content.
+    WORKSPACE_QUERY_EXECUTE = "workspace.query.execute"
+    #: Saved table views: presentation state only, never scientific content.
+    WORKSPACE_SAVED_VIEW_MANAGE = "workspace.saved_view.manage"
 
     # --- project scope --------------------------------------------------- #
     PROJECT_READ = "project.read"
@@ -146,6 +176,13 @@ class Permission(str, enum.Enum):
     PROJECT_RESULT_READ = "project.result.read"
     PROJECT_RESULT_INGEST = "project.result.ingest"
     PROJECT_RESULT_DOWNLOAD = "project.result.download"
+    #: Project-scoped filtering, ranking, query execution and saved views.
+    PROJECT_FILTER_READ = "project.filter.read"
+    PROJECT_FILTER_MANAGE = "project.filter.manage"
+    PROJECT_RANKING_READ = "project.ranking.read"
+    PROJECT_RANKING_MANAGE = "project.ranking.manage"
+    PROJECT_QUERY_EXECUTE = "project.query.execute"
+    PROJECT_SAVED_VIEW_MANAGE = "project.saved_view.manage"
 
     @property
     def scope(self) -> Scope:

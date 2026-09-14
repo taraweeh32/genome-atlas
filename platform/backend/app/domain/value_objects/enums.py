@@ -323,6 +323,9 @@ class JobKind(StrEnum):
     STALE_RECOVERY = "stale_recovery"
     #: Validates, materializes and accepts a scientific result payload.
     RESULT_INGESTION = "result_ingestion"
+    #: Runs a filter/ranking query that is too expensive to answer inside a
+    #: request, and materializes its rows as an analytical artifact.
+    VARIANT_QUERY = "variant_query"
 
 
 class JobQueue(StrEnum):

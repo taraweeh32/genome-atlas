@@ -37,6 +37,14 @@ _PLATFORM_ADMINISTRATOR = frozenset(
         Permission.PLATFORM_SCHEDULE_ADMINISTER,
         Permission.PLATFORM_RESULT_ADMINISTER,
         Permission.PLATFORM_RESULT_READ,
+        # Governance of the filtering and ranking vocabulary: which fields and
+        # methods exist, which presets the platform offers, and the query limits
+        # everyone runs under.
+        Permission.PLATFORM_FILTER_FIELD_ADMINISTER,
+        Permission.PLATFORM_RANKING_METHOD_ADMINISTER,
+        Permission.PLATFORM_QUERY_PRESET_ADMINISTER,
+        Permission.PLATFORM_QUERY_LIMIT_MANAGE,
+        Permission.PLATFORM_QUERY_READ,
     }
 )
 
@@ -54,6 +62,8 @@ _PLATFORM_OPERATOR = frozenset(
         # Operational visibility of the result surface, without the authority to
         # invalidate one.
         Permission.PLATFORM_RESULT_READ,
+        # Visibility of what was queried, without authority over the vocabulary.
+        Permission.PLATFORM_QUERY_READ,
     }
 )
 
@@ -85,6 +95,16 @@ _ORGANIZATION_MEMBER = _ORGANIZATION_GUEST | {
     Permission.WORKSPACE_RESULT_READ,
     Permission.WORKSPACE_RESULT_INGEST,
     Permission.WORKSPACE_RESULT_DOWNLOAD,
+    # Filtering, ranking and view state are working capabilities of anyone who
+    # may read the workspace's results. They are separate grants so a filter
+    # permission never implies a ranking permission.
+    Permission.WORKSPACE_FILTER_READ,
+    Permission.WORKSPACE_FILTER_MANAGE,
+    Permission.WORKSPACE_RANKING_READ,
+    Permission.WORKSPACE_RANKING_MANAGE,
+    Permission.WORKSPACE_QUERY_EXECUTE,
+    Permission.WORKSPACE_SAVED_VIEW_MANAGE,
+    Permission.ORGANIZATION_QUERY_PRESET_READ,
 }
 _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_UPDATE,
@@ -97,6 +117,9 @@ _ORGANIZATION_ADMIN = _ORGANIZATION_MEMBER | {
     Permission.ORGANIZATION_AUDIT_READ,
     Permission.WORKSPACE_DATA_DELETE,
     Permission.WORKSPACE_ANALYSIS_DELETE,
+    # Curating the organization's own offered presets. Platform presets stay out
+    # of reach.
+    Permission.ORGANIZATION_QUERY_PRESET_MANAGE,
 }
 
 ORGANIZATION_ROLE_PERMISSIONS: Mapping[OrganizationRole, frozenset[Permission]] = {
@@ -150,6 +173,14 @@ _PROJECT_VIEWER = frozenset(
         # not downloading: bytes need their own grant.
         Permission.PROJECT_VARIANT_READ,
         Permission.PROJECT_RESULT_READ,
+        # Reading results implies being able to query them and to keep one's own
+        # view and configuration state; it never implies curating a preset.
+        Permission.PROJECT_FILTER_READ,
+        Permission.PROJECT_FILTER_MANAGE,
+        Permission.PROJECT_RANKING_READ,
+        Permission.PROJECT_RANKING_MANAGE,
+        Permission.PROJECT_QUERY_EXECUTE,
+        Permission.PROJECT_SAVED_VIEW_MANAGE,
     }
 )
 #: An analyst produces and imports data; deletion stays with project management.
@@ -216,6 +247,12 @@ PERSONAL_WORKSPACE_PERMISSIONS: frozenset[Permission] = frozenset(
         Permission.WORKSPACE_RESULT_READ,
         Permission.WORKSPACE_RESULT_INGEST,
         Permission.WORKSPACE_RESULT_DOWNLOAD,
+        Permission.WORKSPACE_FILTER_READ,
+        Permission.WORKSPACE_FILTER_MANAGE,
+        Permission.WORKSPACE_RANKING_READ,
+        Permission.WORKSPACE_RANKING_MANAGE,
+        Permission.WORKSPACE_QUERY_EXECUTE,
+        Permission.WORKSPACE_SAVED_VIEW_MANAGE,
     }
 )
 

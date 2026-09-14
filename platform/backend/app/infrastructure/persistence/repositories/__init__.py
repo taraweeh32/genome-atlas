@@ -26,6 +26,14 @@ from app.infrastructure.persistence.repositories.projects import (
     SqlProjectMembershipRepository,
     SqlProjectRepository,
 )
+from app.infrastructure.persistence.repositories.queries import (
+    SqlFilterDefinitionRepository,
+    SqlFilterPresetRepository,
+    SqlQueryExecutionRepository,
+    SqlRankingDefinitionRepository,
+    SqlRankingPresetRepository,
+    SqlSavedViewRepository,
+)
 from app.infrastructure.persistence.repositories.tenancy import (
     SqlOrganizationInvitationRepository,
     SqlOrganizationMembershipRepository,
@@ -35,6 +43,12 @@ from app.infrastructure.persistence.repositories.tenancy import (
 
 __all__ = [
     "SqlAuditRepository",
+    "SqlFilterDefinitionRepository",
+    "SqlFilterPresetRepository",
+    "SqlQueryExecutionRepository",
+    "SqlRankingDefinitionRepository",
+    "SqlRankingPresetRepository",
+    "SqlSavedViewRepository",
     "SqlCredentialTokenRepository",
     "SqlCredentialsRepository",
     "SqlNotificationRepository",

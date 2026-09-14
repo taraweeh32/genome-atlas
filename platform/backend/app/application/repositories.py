@@ -55,6 +55,19 @@ from app.domain.organization.entities import (
     OrganizationMembership,
 )
 from app.domain.project.entities import Project, ProjectMembership
+from app.domain.query.entities import (
+    FilterDefinitionRecord,
+    FilterExecutionRecord,
+    FilterPresetRecord,
+    FilterPresetVersionRecord,
+    FilterVersionRecord,
+    RankingDefinitionRecord,
+    RankingExecutionRecord,
+    RankingPresetRecord,
+    RankingPresetVersionRecord,
+    RankingVersionRecord,
+    SavedViewRecord,
+)
 from app.domain.value_objects.enums import (
     ActorType,
     AnalysisState,
@@ -916,6 +929,162 @@ class ResultIngestionRepository(Protocol):
     ) -> Paged[ResultIngestionRequest]: ...
 
 
+# --------------------------------------------------------------------------- #
+# Filtering, ranking and saved views                                          #
+# --------------------------------------------------------------------------- #
+
+
+@dataclass(frozen=True, slots=True)
+class QueryScopeFilter:
+    """The scopes a caller has been authorized to see configurations from.
+
+    Passed explicitly on every read, so no listing can accidentally reach outside
+    a tenant. An empty filter selects platform-scoped configurations only, which
+    is exactly what an authenticated caller with no memberships should see.
+    """
+
+    user_id: str | None = None
+    workspace_ids: tuple[str, ...] = ()
+    project_ids: tuple[str, ...] = ()
+    organization_ids: tuple[str, ...] = ()
+    include_platform: bool = True
+
+
+@runtime_checkable
+class FilterDefinitionRepository(Protocol):
+    """Saved filters and their immutable version history.
+
+    ``save`` only ever writes definition *metadata* — name, description,
+    lifecycle, ownership. Content changes go through ``add_version``, which is
+    append-only, so an execution that referenced version 3 keeps resolving to
+    version 3 forever.
+    """
+
+    async def add(self, definition: FilterDefinitionRecord) -> FilterDefinitionRecord: ...
+    async def get(self, definition_id: str) -> FilterDefinitionRecord | None: ...
+    async def save(self, definition: FilterDefinitionRecord) -> FilterDefinitionRecord: ...
+    async def add_version(self, version: FilterVersionRecord) -> FilterVersionRecord: ...
+    async def get_version(self, version_id: str) -> FilterVersionRecord | None: ...
+    async def find_version(
+        self, *, definition_id: str, version_number: int
+    ) -> FilterVersionRecord | None: ...
+    async def latest_version(self, definition_id: str) -> FilterVersionRecord | None: ...
+    async def list_versions(
+        self, definition_id: str
+    ) -> tuple[FilterVersionRecord, ...]: ...
+    async def mark_version_referenced(self, version_id: str) -> None: ...
+    async def list_for_scope(
+        self, *, scopes: QueryScopeFilter, page: Page
+    ) -> Paged[FilterDefinitionRecord]: ...
+
+
+@runtime_checkable
+class FilterPresetRepository(Protocol):
+    async def add(self, preset: FilterPresetRecord) -> FilterPresetRecord: ...
+    async def get(self, preset_id: str) -> FilterPresetRecord | None: ...
+    async def save(self, preset: FilterPresetRecord) -> FilterPresetRecord: ...
+    async def add_version(
+        self, version: FilterPresetVersionRecord
+    ) -> FilterPresetVersionRecord: ...
+    async def get_version(self, version_id: str) -> FilterPresetVersionRecord | None: ...
+    async def find_version(
+        self, *, definition_id: str, version_number: int
+    ) -> FilterPresetVersionRecord | None: ...
+    async def latest_version(
+        self, definition_id: str
+    ) -> FilterPresetVersionRecord | None: ...
+    async def list_versions(
+        self, definition_id: str
+    ) -> tuple[FilterPresetVersionRecord, ...]: ...
+    async def mark_version_referenced(self, version_id: str) -> None: ...
+    async def list_for_scope(
+        self, *, scopes: QueryScopeFilter, page: Page
+    ) -> Paged[FilterPresetRecord]: ...
+
+
+@runtime_checkable
+class RankingDefinitionRepository(Protocol):
+    """Saved ranking configurations. Structurally parallel to saved filters and
+    deliberately a separate port: a ranking is never reachable through a filter."""
+
+    async def add(self, definition: RankingDefinitionRecord) -> RankingDefinitionRecord: ...
+    async def get(self, definition_id: str) -> RankingDefinitionRecord | None: ...
+    async def save(self, definition: RankingDefinitionRecord) -> RankingDefinitionRecord: ...
+    async def add_version(self, version: RankingVersionRecord) -> RankingVersionRecord: ...
+    async def get_version(self, version_id: str) -> RankingVersionRecord | None: ...
+    async def find_version(
+        self, *, definition_id: str, version_number: int
+    ) -> RankingVersionRecord | None: ...
+    async def latest_version(self, definition_id: str) -> RankingVersionRecord | None: ...
+    async def list_versions(
+        self, definition_id: str
+    ) -> tuple[RankingVersionRecord, ...]: ...
+    async def mark_version_referenced(self, version_id: str) -> None: ...
+    async def list_for_scope(
+        self, *, scopes: QueryScopeFilter, page: Page
+    ) -> Paged[RankingDefinitionRecord]: ...
+
+
+@runtime_checkable
+class RankingPresetRepository(Protocol):
+    async def add(self, preset: RankingPresetRecord) -> RankingPresetRecord: ...
+    async def get(self, preset_id: str) -> RankingPresetRecord | None: ...
+    async def save(self, preset: RankingPresetRecord) -> RankingPresetRecord: ...
+    async def add_version(
+        self, version: RankingPresetVersionRecord
+    ) -> RankingPresetVersionRecord: ...
+    async def get_version(self, version_id: str) -> RankingPresetVersionRecord | None: ...
+    async def find_version(
+        self, *, definition_id: str, version_number: int
+    ) -> RankingPresetVersionRecord | None: ...
+    async def latest_version(
+        self, definition_id: str
+    ) -> RankingPresetVersionRecord | None: ...
+    async def list_versions(
+        self, definition_id: str
+    ) -> tuple[RankingPresetVersionRecord, ...]: ...
+    async def mark_version_referenced(self, version_id: str) -> None: ...
+    async def list_for_scope(
+        self, *, scopes: QueryScopeFilter, page: Page
+    ) -> Paged[RankingPresetRecord]: ...
+
+
+@runtime_checkable
+class QueryExecutionRepository(Protocol):
+    """Append-only execution records. There is no ``save``: an execution is a
+    historical fact, and a fact that can be edited is not provenance."""
+
+    async def add_filter_execution(
+        self, execution: FilterExecutionRecord
+    ) -> FilterExecutionRecord: ...
+    async def add_ranking_execution(
+        self, execution: RankingExecutionRecord
+    ) -> RankingExecutionRecord: ...
+    async def get_filter_execution(
+        self, execution_id: str
+    ) -> FilterExecutionRecord | None: ...
+    async def get_ranking_execution_for_filter(
+        self, filter_execution_id: str
+    ) -> RankingExecutionRecord | None: ...
+    async def list_filter_executions(
+        self,
+        *,
+        workspace_ids: tuple[str, ...],
+        page: Page,
+        result_set_id: str | None = None,
+    ) -> Paged[FilterExecutionRecord]: ...
+
+
+@runtime_checkable
+class SavedViewRepository(Protocol):
+    async def add(self, view: SavedViewRecord) -> SavedViewRecord: ...
+    async def get(self, view_id: str) -> SavedViewRecord | None: ...
+    async def save(self, view: SavedViewRecord) -> SavedViewRecord: ...
+    async def list_for_scope(
+        self, *, scopes: QueryScopeFilter, page: Page
+    ) -> Paged[SavedViewRecord]: ...
+
+
 @runtime_checkable
 class TransactionalRepositories(Protocol):
     """Every repository bound to one transaction.
@@ -961,6 +1130,12 @@ class TransactionalRepositories(Protocol):
     result_sets: ResultSetRepository
     result_artifacts: ResultArtifactRepository
     result_ingestions: ResultIngestionRepository
+    filter_definitions: FilterDefinitionRepository
+    filter_presets: FilterPresetRepository
+    ranking_definitions: RankingDefinitionRepository
+    ranking_presets: RankingPresetRepository
+    query_executions: QueryExecutionRepository
+    saved_views: SavedViewRepository
     jobs: JobRepository
     audit: AuditRepository
     security_events: SecurityEventRepository
@@ -976,17 +1151,6 @@ class UnitOfWorkFactory(Protocol):
 
 
 __all__ = [
-    "VariantSourceRepresentationRepository",
-    "VariantRepresentationRepository",
-    "VariantRepository",
-    "VariantIdentifierRepository",
-    "VariantContextRepository",
-    "SampleRepository",
-    "ResultSetRepository",
-    "ResultIngestionRepository",
-    "ResultArtifactRepository",
-    "GeneTranscriptRepository",
-    "DatasetVersionVariantRepository",
     "AnalysisConfigurationRepository",
     "AnalysisExecutionRepository",
     "AnalysisRepository",
@@ -998,7 +1162,9 @@ __all__ = [
     "CredentialsRepository",
     "DatasetRepository",
     "DatasetVersionRepository",
+    "DatasetVersionVariantRepository",
     "FileArtifactRepository",
+    "GeneTranscriptRepository",
     "ImportSessionRepository",
     "JobRepository",
     "NotificationRepository",
@@ -1011,6 +1177,10 @@ __all__ = [
     "PlatformRoleRepository",
     "ProjectMembershipRepository",
     "ProjectRepository",
+    "ResultArtifactRepository",
+    "ResultIngestionRepository",
+    "ResultSetRepository",
+    "SampleRepository",
     "ScheduleRepository",
     "ScientificExecutionRepository",
     "SecurityEventRepository",
@@ -1022,5 +1192,10 @@ __all__ = [
     "UserRepository",
     "ValidationIssueRepository",
     "ValidationRunRepository",
+    "VariantContextRepository",
+    "VariantIdentifierRepository",
+    "VariantRepository",
+    "VariantRepresentationRepository",
+    "VariantSourceRepresentationRepository",
     "WorkspaceRepository",
 ]

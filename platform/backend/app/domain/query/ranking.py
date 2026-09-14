@@ -621,3 +621,161 @@ __all__ = [
     "ranking_sort_key",
     "validate_ranking",
 ]
+
+
+def spec_from_payload(payload: Any) -> RankingConfigurationSpec:
+    """Parse a ranking configuration from a client payload, strictly.
+
+    Strict for the same reason the filter parser is: silently ignoring an unknown
+    key would mean executing a configuration that is not the one the author wrote.
+    Every rejection names the offending path so the UI can point at it.
+    """
+    if not isinstance(payload, Mapping):
+        raise ValidationError(
+            "a ranking configuration must be an object", details={"path": "$"}
+        )
+    unknown = set(payload) - {
+        "method_id",
+        "method_version",
+        "direction",
+        "tie_breakers",
+        "components",
+        "parameters",
+    }
+    if unknown:
+        raise ValidationError(
+            "the ranking configuration contains unknown keys",
+            details={"path": "$", "keys": sorted(unknown)},
+        )
+    method_id = payload.get("method_id")
+    if not isinstance(method_id, str) or not method_id:
+        raise ValidationError(
+            "a ranking configuration requires a method", details={"path": "$.method_id"}
+        )
+    method_version = payload.get("method_version")
+    if method_version is not None and not isinstance(method_version, str):
+        raise ValidationError(
+            "the method version must be a string", details={"path": "$.method_version"}
+        )
+    raw_direction = payload.get("direction", RankingDirection.DESCENDING.value)
+    try:
+        direction = RankingDirection(raw_direction)
+    except ValueError:
+        raise ValidationError(
+            "the ranking direction is not recognised",
+            details={"path": "$.direction", "value": raw_direction},
+        ) from None
+    tie_breakers = payload.get("tie_breakers")
+    if tie_breakers is None:
+        breakers = RankingConfigurationSpec.__dataclass_fields__["tie_breakers"].default
+    else:
+        if not isinstance(tie_breakers, (list, tuple)) or not all(
+            isinstance(item, str) for item in tie_breakers
+        ):
+            raise ValidationError(
+                "tie breakers must be a list of field identifiers",
+                details={"path": "$.tie_breakers"},
+            )
+        breakers = tuple(tie_breakers)
+    parameters = payload.get("parameters") or {}
+    if not isinstance(parameters, Mapping):
+        raise ValidationError(
+            "ranking parameters must be an object", details={"path": "$.parameters"}
+        )
+    raw_components = payload.get("components") or ()
+    if not isinstance(raw_components, (list, tuple)):
+        raise ValidationError(
+            "ranking components must be a list", details={"path": "$.components"}
+        )
+    components = tuple(
+        _component_from_payload(item, path=f"$.components[{index}]")
+        for index, item in enumerate(raw_components)
+    )
+    return RankingConfigurationSpec(
+        method_id=method_id,
+        method_version=method_version or "",
+        components=components,
+        direction=direction,
+        tie_breakers=breakers,
+        parameters=dict(parameters),
+    )
+
+
+def _component_from_payload(payload: Any, *, path: str) -> RankingComponent:
+    if not isinstance(payload, Mapping):
+        raise ValidationError(
+            "a ranking component must be an object", details={"path": path}
+        )
+    unknown = set(payload) - {
+        "field_id",
+        "kind",
+        "weight",
+        "scale_min",
+        "scale_max",
+        "category_priority",
+        "missing_behaviour",
+        "missing_floor",
+        "label",
+    }
+    if unknown:
+        raise ValidationError(
+            "the ranking component contains unknown keys",
+            details={"path": path, "keys": sorted(unknown)},
+        )
+    field_id = payload.get("field_id")
+    if not isinstance(field_id, str) or not field_id:
+        raise ValidationError(
+            "a ranking component requires a field", details={"path": f"{path}.field_id"}
+        )
+    try:
+        kind = RankingComponentKind(payload.get("kind"))
+    except ValueError:
+        raise ValidationError(
+            "the ranking component kind is not recognised",
+            details={"path": f"{path}.kind", "value": payload.get("kind")},
+        ) from None
+    weight = payload.get("weight")
+    if not isinstance(weight, (int, float)) or isinstance(weight, bool):
+        raise ValidationError(
+            "a ranking component requires a numeric weight",
+            details={"path": f"{path}.weight"},
+        )
+    try:
+        missing_behaviour = RankingMissingBehaviour(
+            payload.get("missing_behaviour", RankingMissingBehaviour.EXCLUDE.value)
+        )
+    except ValueError:
+        raise ValidationError(
+            "the missing-value behaviour is not recognised",
+            details={"path": f"{path}.missing_behaviour"},
+        ) from None
+    category_priority = payload.get("category_priority") or ()
+    if not isinstance(category_priority, (list, tuple)) or not all(
+        isinstance(item, str) for item in category_priority
+    ):
+        raise ValidationError(
+            "the category order must be a list of values",
+            details={"path": f"{path}.category_priority"},
+        )
+    return RankingComponent(
+        field_id=field_id,
+        kind=kind,
+        weight=float(weight),
+        scale_min=_optional_number(payload.get("scale_min"), path=f"{path}.scale_min"),
+        scale_max=_optional_number(payload.get("scale_max"), path=f"{path}.scale_max"),
+        category_priority=tuple(category_priority),
+        missing_behaviour=missing_behaviour,
+        missing_floor=float(payload.get("missing_floor") or 0.0),
+        label=payload.get("label"),
+    )
+
+
+def _optional_number(value: Any, *, path: str) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValidationError("a numeric bound is required", details={"path": path})
+    return float(value)
+
+
+__all__ += ["spec_from_payload"]

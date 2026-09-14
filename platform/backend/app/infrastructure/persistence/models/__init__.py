@@ -93,6 +93,14 @@ from app.infrastructure.persistence.models.reporting import (
     ReportVersion,
     ReportVersionInterpretation,
 )
+from app.infrastructure.persistence.models.queries import (
+    FilterExecution,
+    FilterPreset,
+    FilterPresetVersion,
+    RankingExecution,
+    RankingPreset,
+    RankingPresetVersion,
+)
 from app.infrastructure.persistence.models.results import (
     FilterDefinition,
     FilterDefinitionVersion,
@@ -158,6 +166,9 @@ __all__ = [
     "FileArtifact",
     "FilterDefinition",
     "FilterDefinitionVersion",
+    "FilterExecution",
+    "FilterPreset",
+    "FilterPresetVersion",
     "Gene",
     "ImportSession",
     "Interpretation",
@@ -181,6 +192,9 @@ __all__ = [
     "ProvenanceManifest",
     "RankingConfiguration",
     "RankingConfigurationVersion",
+    "RankingExecution",
+    "RankingPreset",
+    "RankingPresetVersion",
     "Report",
     "ReportTemplate",
     "ReportVersion",

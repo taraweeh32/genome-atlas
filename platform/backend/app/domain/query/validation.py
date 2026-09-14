@@ -570,6 +570,15 @@ def validate_filter(
         touched=touched,
     )
 
+    # "No filter at all" is a legitimate request when the caller allows it: the
+    # root group is then empty on purpose, and only the root may be.
+    if allow_empty and not conditions:
+        issues[:] = [
+            issue
+            for issue in issues
+            if not (issue.path == "$" and issue.code == "empty_group")
+        ]
+
     # A position range is only meaningful on a stated contig. The condition pair
     # is required rather than assumed, so the platform never invents a contig.
     position_fields = {

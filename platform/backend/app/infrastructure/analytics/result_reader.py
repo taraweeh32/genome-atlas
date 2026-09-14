@@ -38,7 +38,8 @@ _LOCATION_PATTERN = re.compile(r"^[A-Za-z0-9:/._@=*-]{1,1024}$")
 MAX_PAGE_ROWS = 500
 
 
-def _validated(location: str) -> str:
+def validated_location(location: str) -> str:
+    """Refuse any location that the platform did not itself construct."""
     if not _LOCATION_PATTERN.fullmatch(location) or "'" in location or ".." in location:
         raise InfrastructureError("invalid analytical location")
     return location
@@ -51,14 +52,14 @@ class DuckDbResultReader:
         self._analytics = analytics
 
     async def describe(self, location: str) -> AnalyticalDescription:
-        return await asyncio.to_thread(self._describe, _validated(location))
+        return await asyncio.to_thread(self._describe, validated_location(location))
 
     async def read_page(
         self, location: str, *, offset: int, limit: int
     ) -> AnalyticalPage:
         bounded = max(1, min(int(limit), MAX_PAGE_ROWS))
         return await asyncio.to_thread(
-            self._read_page, _validated(location), max(0, int(offset)), bounded
+            self._read_page, validated_location(location), max(0, int(offset)), bounded
         )
 
     # -- synchronous bodies, executed off the event loop ------------------- #
@@ -100,4 +101,4 @@ class DuckDbResultReader:
         )
 
 
-__all__ = ["MAX_PAGE_ROWS", "DuckDbResultReader"]
+__all__ = ["MAX_PAGE_ROWS", "DuckDbResultReader", "validated_location"]
