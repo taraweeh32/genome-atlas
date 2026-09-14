@@ -34,6 +34,7 @@ describe("navigation model", () => {
       "/analyses",
       "/dashboard",
       "/datasets",
+      "/interpretations",
       "/jobs",
       "/organizations",
       "/projects",
