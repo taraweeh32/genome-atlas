@@ -88,6 +88,22 @@ export const APPLICATION_NAVIGATION: readonly NavigationItem[] = [
     available: true,
   },
   {
+    id: "variant-query",
+    label: "Variant query",
+    href: "/variant-query",
+    namespace: "application",
+    requiredPermission: "workspace.query.execute",
+    available: true,
+  },
+  {
+    id: "query-library",
+    label: "Query library",
+    href: "/query-library",
+    namespace: "application",
+    requiredPermission: "workspace.filter.read",
+    available: true,
+  },
+  {
     id: "reports",
     label: "Reports",
     href: "/reports",
@@ -129,6 +145,14 @@ export const ADMINISTRATION_NAVIGATION: readonly NavigationItem[] = [
     namespace: "administration",
     requiredPermission: "platform.compute.manage",
     available: false,
+  },
+  {
+    id: "admin-query",
+    label: "Filtering & ranking",
+    href: "/admin/query",
+    namespace: "administration",
+    requiredPermission: "platform.query_preset.administer",
+    available: true,
   },
   {
     id: "admin-audit",

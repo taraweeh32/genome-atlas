@@ -67,6 +67,24 @@ import type {
   VariantDetailResponse,
 } from "./result-types";
 import type {
+  DeferredQueryResponse,
+  FieldDictionaryResponse,
+  FieldValuesResponse,
+  FilterValidationResponse,
+  QueryConfigurationCollection,
+  QueryConfigurationCreateRequest,
+  QueryConfigurationKind,
+  QueryConfigurationResponse,
+  QueryConfigurationVersionCollection,
+  QueryLimitsResponse,
+  RankingMethodCollection,
+  RankingMethodResponse,
+  SavedViewCollection,
+  SavedViewResponse,
+  VariantQueryRequest,
+  VariantQueryResponse,
+} from "./query-types";
+import type {
   ApiErrorBody,
   HealthResponse,
   MetaResponse,
@@ -886,5 +904,237 @@ export class ApiClient {
     return this.request<VariantDetailResponse>(
       `/variants/${encodeURIComponent(variantId)}?${search.toString()}`,
     );
+  }
+
+  // ------------------------------------------------------------------ //
+  // Filtering, ranking, variant queries and saved views (Package 7)     //
+  // ------------------------------------------------------------------ //
+
+  /**
+   * The published field dictionary. Naming a result set narrows availability to
+   * the columns that surface actually carries, which the server decides.
+   */
+  filterFields(params: { result_set_id?: string } = {}): Promise<FieldDictionaryResponse> {
+    const search = new URLSearchParams();
+    if (params.result_set_id) search.set("result_set_id", params.result_set_id);
+    const query = search.toString();
+    return this.request<FieldDictionaryResponse>(
+      `/filter-fields${query ? `?${query}` : ""}`,
+    );
+  }
+
+  /**
+   * Bounded, server-side value search for a high-cardinality field. The browser
+   * never requests an unbounded distinct list: `limit` is a request, and the
+   * server clamps it and reports whether more values exist.
+   */
+  filterFieldValues(
+    fieldId: string,
+    params: {
+      result_set_id: string;
+      search?: string;
+      limit?: number;
+      with_counts?: boolean;
+    },
+  ): Promise<FieldValuesResponse> {
+    const search = new URLSearchParams({ result_set_id: params.result_set_id });
+    if (params.search) search.set("search", params.search);
+    if (params.limit !== undefined) search.set("limit", String(params.limit));
+    if (params.with_counts) search.set("with_counts", "true");
+    return this.request<FieldValuesResponse>(
+      `/filter-fields/${encodeURIComponent(fieldId)}/values?${search.toString()}`,
+    );
+  }
+
+  /**
+   * Validates an expression without saving or executing it. Issues are reported
+   * per condition path; the server never repairs an expression, and neither does
+   * this client.
+   */
+  validateFilter(expression: Record<string, unknown>): Promise<FilterValidationResponse> {
+    return this.request<FilterValidationResponse>("/filters/validate", {
+      method: "POST",
+      body: { expression },
+    });
+  }
+
+  queryConfigurations(
+    kind: QueryConfigurationKind,
+    params: { page?: number; size?: number } = {},
+  ): Promise<QueryConfigurationCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    const query = search.toString();
+    return this.request<QueryConfigurationCollection>(
+      `/${kind}${query ? `?${query}` : ""}`,
+    );
+  }
+
+  queryConfiguration(
+    kind: QueryConfigurationKind,
+    definitionId: string,
+    params: { version_number?: number } = {},
+  ): Promise<QueryConfigurationResponse> {
+    const search = new URLSearchParams();
+    if (params.version_number !== undefined) {
+      search.set("version_number", String(params.version_number));
+    }
+    const query = search.toString();
+    return this.request<QueryConfigurationResponse>(
+      `/${kind}/${encodeURIComponent(definitionId)}${query ? `?${query}` : ""}`,
+    );
+  }
+
+  createQueryConfiguration(
+    kind: QueryConfigurationKind,
+    body: QueryConfigurationCreateRequest,
+  ): Promise<QueryConfigurationResponse> {
+    return this.request<QueryConfigurationResponse>(`/${kind}`, {
+      method: "POST",
+      body,
+    });
+  }
+
+  /** Renames or re-describes a configuration. Content is never edited in place. */
+  updateQueryConfiguration(
+    kind: QueryConfigurationKind,
+    definitionId: string,
+    body: { expected_version: number; name?: string; description?: string },
+  ): Promise<QueryConfigurationResponse> {
+    return this.request<QueryConfigurationResponse>(
+      `/${kind}/${encodeURIComponent(definitionId)}`,
+      { method: "PATCH", body },
+    );
+  }
+
+  queryConfigurationVersions(
+    kind: QueryConfigurationKind,
+    definitionId: string,
+  ): Promise<QueryConfigurationVersionCollection> {
+    return this.request<QueryConfigurationVersionCollection>(
+      `/${kind}/${encodeURIComponent(definitionId)}/versions`,
+    );
+  }
+
+  /**
+   * Issues a new version. Editing a saved filter or ranking never mutates the
+   * version an existing execution referenced.
+   */
+  addQueryConfigurationVersion(
+    kind: QueryConfigurationKind,
+    definitionId: string,
+    body: {
+      expected_version: number;
+      content: Record<string, unknown>;
+      change_note?: string;
+    },
+  ): Promise<QueryConfigurationResponse> {
+    return this.request<QueryConfigurationResponse>(
+      `/${kind}/${encodeURIComponent(definitionId)}/versions`,
+      { method: "POST", body },
+    );
+  }
+
+  transitionQueryConfiguration(
+    kind: QueryConfigurationKind,
+    definitionId: string,
+    transition: "publish" | "archive" | "restore",
+    body: { expected_version: number },
+  ): Promise<QueryConfigurationResponse> {
+    return this.request<QueryConfigurationResponse>(
+      `/${kind}/${encodeURIComponent(definitionId)}/${transition}`,
+      { method: "POST", body },
+    );
+  }
+
+  deleteQueryConfiguration(
+    kind: QueryConfigurationKind,
+    definitionId: string,
+    body: { expected_version: number },
+  ): Promise<QueryConfigurationResponse> {
+    return this.request<QueryConfigurationResponse>(
+      `/${kind}/${encodeURIComponent(definitionId)}`,
+      { method: "DELETE", body },
+    );
+  }
+
+  rankingMethods(): Promise<RankingMethodCollection> {
+    return this.request<RankingMethodCollection>("/ranking-methods");
+  }
+
+  rankingMethod(methodId: string): Promise<RankingMethodResponse> {
+    return this.request<RankingMethodResponse>(
+      `/ranking-methods/${encodeURIComponent(methodId)}`,
+    );
+  }
+
+  /**
+   * Runs one bounded page of a variant query. Filtering and ranking travel as
+   * separate payloads, the server executes both, and the response reports the
+   * exact configuration that ran.
+   */
+  queryVariants(body: VariantQueryRequest): Promise<VariantQueryResponse> {
+    return this.request<VariantQueryResponse>("/variants/query", {
+      method: "POST",
+      body,
+    });
+  }
+
+  /** Hands an oversized query to the durable job system rather than a request. */
+  deferVariantQuery(
+    body: Omit<VariantQueryRequest, "page_size" | "cursor" | "include_total"> & {
+      max_rows?: number;
+    },
+  ): Promise<DeferredQueryResponse> {
+    return this.request<DeferredQueryResponse>("/variants/query/deferred", {
+      method: "POST",
+      body,
+    });
+  }
+
+  savedViews(params: { page?: number; size?: number } = {}): Promise<SavedViewCollection> {
+    const search = new URLSearchParams();
+    if (params.page !== undefined) search.set("page", String(params.page));
+    if (params.size !== undefined) search.set("size", String(params.size));
+    const query = search.toString();
+    return this.request<SavedViewCollection>(`/saved-views${query ? `?${query}` : ""}`);
+  }
+
+  createSavedView(body: Record<string, unknown>): Promise<SavedViewResponse> {
+    return this.request<SavedViewResponse>("/saved-views", { method: "POST", body });
+  }
+
+  updateSavedView(
+    viewId: string,
+    body: Record<string, unknown> & { expected_version: number },
+  ): Promise<SavedViewResponse> {
+    return this.request<SavedViewResponse>(`/saved-views/${encodeURIComponent(viewId)}`, {
+      method: "PATCH",
+      body,
+    });
+  }
+
+  deleteSavedView(
+    viewId: string,
+    body: { expected_version: number },
+  ): Promise<SavedViewResponse> {
+    return this.request<SavedViewResponse>(`/saved-views/${encodeURIComponent(viewId)}`, {
+      method: "DELETE",
+      body,
+    });
+  }
+
+  /** Platform-administrative reads of the registries and the safety limits. */
+  adminFilterFields(): Promise<FieldDictionaryResponse> {
+    return this.request<FieldDictionaryResponse>("/administration/query/filter-fields");
+  }
+
+  adminRankingMethods(): Promise<RankingMethodCollection> {
+    return this.request<RankingMethodCollection>("/administration/query/ranking-methods");
+  }
+
+  adminQueryLimits(): Promise<QueryLimitsResponse> {
+    return this.request<QueryLimitsResponse>("/administration/query/limits");
   }
 }

@@ -22,18 +22,21 @@ describe("navigation model", () => {
     const available = [...APPLICATION_NAVIGATION, ...ADMINISTRATION_NAVIGATION].filter(
       (item) => item.available,
     );
-    // Identity/tenancy, dataset, analysis, job, result and variant surfaces are
-    // implemented and reachable; the remaining scientific modules stay
-    // unavailable rather than linking to empty pages.
+    // Identity/tenancy, dataset, analysis, job, result, variant, filtering and
+    // prioritization surfaces are implemented and reachable; the remaining
+    // scientific modules stay unavailable rather than linking to empty pages.
     expect(available.map((item) => item.href).sort()).toEqual([
       "/admin",
+      "/admin/query",
       "/analyses",
       "/dashboard",
       "/datasets",
       "/jobs",
       "/organizations",
       "/projects",
+      "/query-library",
       "/results",
+      "/variant-query",
       "/variants",
     ]);
   });
