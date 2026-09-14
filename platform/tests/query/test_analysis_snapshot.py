@@ -183,7 +183,7 @@ async def test_editing_the_saved_filter_afterwards_leaves_the_run_untouched(tmp_
             actor=await actor_for(harness, user_id),
             request=harness.request,
             definition_id=saved.definition.id,
-            expected_version=saved.definition.record_version,
+            expected_version=saved.definition.version,
             content=group(condition("gene_symbol", "in", "CFTR", "ABCA4")),
             change_note="widened the gene list",
         )
@@ -213,7 +213,7 @@ async def test_a_referenced_version_is_never_rewritten_in_place(tmp_path):
             actor=await actor_for(harness, user_id),
             request=harness.request,
             definition_id=saved.definition.id,
-            expected_version=saved.definition.record_version,
+            expected_version=saved.definition.version,
             content=group(condition("gene_symbol", "in", "ABCA4")),
         )
     )
@@ -232,7 +232,7 @@ async def test_an_explicit_version_number_is_honoured_over_the_latest(tmp_path):
             actor=await actor_for(harness, user_id),
             request=harness.request,
             definition_id=saved.definition.id,
-            expected_version=saved.definition.record_version,
+            expected_version=saved.definition.version,
             content=group(condition("gene_symbol", "in", "ABCA4")),
         )
     )
