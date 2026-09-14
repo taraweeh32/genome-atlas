@@ -709,9 +709,11 @@ class TestVariantQueryTransport:
                         "method_version": "1.0.0",
                         "components": [
                             {
-                                "kind": "numeric_weight",
+                                "kind": "numeric_descending",
                                 "field_id": "read_depth",
                                 "weight": 1.0,
+                                "scale_min": 0,
+                                "scale_max": 100,
                             }
                         ],
                     }
