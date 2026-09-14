@@ -365,8 +365,12 @@ export function QueryWorkbench() {
       <ErrorState
         title="Result sets could not be read"
         description={resultSets.error ?? ""}
-        correlationId={resultSets.correlationId}
-        onRetry={resultSets.reload}
+        correlationId={resultSets.correlationId ?? undefined}
+        action={
+          <Button type="button" variant="secondary" onClick={resultSets.reload}>
+            Retry
+          </Button>
+        }
       />
     );
   }
@@ -374,7 +378,7 @@ export function QueryWorkbench() {
   const available = resultSets.data?.items ?? [];
 
   return (
-    <div className={styles.stack}>
+    <div className={styles.filters}>
       <Card
         title="Result surface"
         description="A variant query always runs against one result set you are authorized to read."
@@ -460,8 +464,12 @@ export function QueryWorkbench() {
           <ErrorState
             title="The field dictionary could not be read"
             description={dictionary.error ?? ""}
-            correlationId={dictionary.correlationId}
-            onRetry={dictionary.reload}
+            correlationId={dictionary.correlationId ?? undefined}
+        action={
+          <Button type="button" variant="secondary" onClick={dictionary.reload}>
+            Retry
+          </Button>
+        }
           />
         ) : (
           <>
@@ -547,8 +555,12 @@ export function QueryWorkbench() {
           <ErrorState
             title="Prioritization methods could not be read"
             description={methods.error ?? ""}
-            correlationId={methods.correlationId}
-            onRetry={methods.reload}
+            correlationId={methods.correlationId ?? undefined}
+        action={
+          <Button type="button" variant="secondary" onClick={methods.reload}>
+            Retry
+          </Button>
+        }
           />
         ) : (
           <>
@@ -652,7 +664,7 @@ export function QueryWorkbench() {
           <ErrorState
             title="The query was refused"
             description={failure}
-            correlationId={correlationId}
+            correlationId={correlationId ?? undefined}
           />
         ) : null}
 
@@ -725,7 +737,7 @@ export function QueryWorkbench() {
                 description="The filter excluded every row of this surface. Rows that never reported a filtered field are excluded because the value is missing."
               />
             ) : (
-              <div className={styles.tableWrap}>
+              <div className={styles.scroll}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
