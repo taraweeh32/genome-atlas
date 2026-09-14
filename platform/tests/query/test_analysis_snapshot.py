@@ -250,7 +250,7 @@ async def test_an_explicit_version_number_is_honoured_over_the_latest(tmp_path):
 
 
 async def test_an_inline_filter_is_frozen_in_canonical_form(tmp_path):
-    harness, user_id, services = await build(tmp_path)
+    harness, user_id, _services = await build(tmp_path)
     execution = await bound_execution(
         harness,
         user_id,
